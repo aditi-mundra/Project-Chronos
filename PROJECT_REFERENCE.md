@@ -67,12 +67,12 @@ Player PCs
      ▼
 Central Server
      │
-     ├── React Frontend
+     ├── React Frontend (Port 5173 / 0.0.0.0)
      │
-     └── FastAPI Backend
+     └── FastAPI Backend (Port 8000 / 0.0.0.0)
               │
               ▼
-           SQLite
+           SQLite (chronos.db - WAL Mode & Busy Timeout)
               │
               └── Gemini API
 ```
@@ -80,6 +80,20 @@ Central Server
 There should be **one central backend and database**.
 
 Do not run separate databases/backends for individual player PCs.
+
+### Unified One-Command Deployment
+
+To start both the central FastAPI backend and the React frontend simultaneously:
+
+```bash
+# Using bash launcher
+./start.sh
+
+# Or using python runner
+python3 run.py
+```
+
+This automatically checks dependencies, creates/verifies the SQLite schema in WAL mode, binds to `0.0.0.0` for LAN access, and provisions both services concurrently.
 
 ---
 

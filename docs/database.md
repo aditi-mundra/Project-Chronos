@@ -25,7 +25,10 @@ The schema is partitioned into functional subsystems:
 
 ### 2.3 Concurrency, Locking & Integrity Constraints
 * **Foreign Key Support**: Foreign key enforcement is explicitly activated on every SQLite connection (`PRAGMA foreign_keys = ON;`).
-* **Write-Ahead Logging (WAL)**: Recommended for high-concurrency LAN setups (`PRAGMA journal_mode = WAL;`) allowing concurrent reads while writes are processed atomically.
+* **Write-Ahead Logging (WAL)**: Enabled by default (`PRAGMA journal_mode = WAL;`) allowing concurrent reads while writes are processed atomically.
+* **Busy Timeout & Lock Resistance**: `PRAGMA busy_timeout = 30000;` (30 seconds) along with `sqlite3.connect(..., timeout=30.0)` prevents "database is locked" operational errors under concurrent LAN traffic.
+* **Synchronous Optimization**: `PRAGMA synchronous = NORMAL;` optimizes disk sync operations in WAL mode without risking database corruption.
+* **Dynamic Path Resolution**: Configurable via `CHRONOS_DB_PATH` environment variable with automated directory creation upon startup.
 * **Cascading Integrity**: Child tables linked to `team_id` enforce `ON DELETE CASCADE` to maintain relational cleanliness.
 * **Server-Authoritative Scores**: The backend recalculates `total_score` and `r1_time_diff` atomically within database transactions, preventing client-side score manipulation.
 
