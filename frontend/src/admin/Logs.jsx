@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, RotateCcw } from 'lucide-react';
+import { Terminal, RotateCcw, Activity } from 'lucide-react';
+import { soundEngine } from '../components/AudioEngine';
 import { api } from '../services/api';
 
 export default function Logs() {
@@ -9,7 +10,7 @@ export default function Logs() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const res = await api.getAdminLogs(50);
+      const res = await api.getAdminLogs(100);
       if (res.logs) {
         setLogs(res.logs);
       }
@@ -22,40 +23,77 @@ export default function Logs() {
 
   useEffect(() => {
     fetchLogs();
+    const interval = setInterval(fetchLogs, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="space-y-4 font-space text-[#F5F0FF]">
-      <div className="flex items-center justify-between pb-3 border-b border-neon-purple/20">
-        <div className="flex items-center gap-2">
-          <Terminal className="w-6 h-6 text-neon-light" />
-          <h2 className="font-orbitron font-bold text-xl text-white">
-            TELEMETRY & AUDIT <span className="text-neon-purple">LOGS</span>
-          </h2>
+    <div className="space-y-6 font-space text-[var(--text-body)]">
+      <div className="flex items-center justify-between pb-4 border-b border-white/15">
+        <div className="flex items-center gap-3">
+          <Terminal className="w-7 h-7 text-[var(--neon-light)]" />
+          <div>
+            <h2 className="font-orbitron font-black text-2xl text-white">
+              LIVE AUDIT & TELEMETRY STREAM
+            </h2>
+            <p className="text-sm font-mono text-[var(--text-muted)]">
+              Real-time audit log of team decisions, logins, and state transitions
+            </p>
+          </div>
         </div>
+        
         <button
-          onClick={fetchLogs}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-void-black border border-neon-purple/30 text-xs font-mono text-dusty-lavender hover:text-neon-light hover:border-neon-purple transition-all"
+          onClick={() => {
+            soundEngine.playClick();
+            fetchLogs();
+          }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 text-sm font-mono text-[var(--text-muted)] hover:text-white hover:border-[var(--neon-primary)] transition-all cursor-pointer"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>REFRESH LOGS</span>
+          <RotateCcw className="w-4 h-4" />
+          <span>Refresh</span>
         </button>
       </div>
 
-      <div className="space-y-2 max-h-[600px] overflow-y-auto font-mono text-xs">
-        {logs.map((log) => (
-          <div key={log.id} className="p-3 bg-void-black rounded-xl border border-neon-purple/20 flex flex-wrap items-center justify-between gap-2 hover:border-neon-purple/40 transition-all">
-            <div className="flex items-center gap-3">
-              <span className="px-2 py-0.5 rounded bg-neon-purple/25 border border-neon-purple/40 text-neon-light font-bold text-[10px]">
-                {log.event_type}
+      <div className="space-y-3 max-h-[650px] overflow-y-auto font-mono text-sm pr-2">
+        {logs.map((log) => {
+          const isSubmit = log.event_type.includes('SUBMIT');
+          const isStart = log.event_type.includes('START');
+          const isLogin = log.event_type.includes('LOGIN');
+
+          return (
+            <div 
+              key={log.id} 
+              className="p-4 bg-black/60 rounded-xl border border-white/10 flex flex-wrap items-center justify-between gap-3 hover:border-[var(--neon-primary)] transition-all"
+            >
+              <div className="flex items-center gap-3 flex-wrap">
+                <span 
+                  className="px-2.5 py-1 rounded-md font-bold text-xs uppercase tracking-wider border"
+                  style={{
+                    backgroundColor: isSubmit ? 'rgba(16, 185, 129, 0.2)' : isStart ? 'rgba(6, 182, 212, 0.2)' : 'var(--theme-accent-badge-bg)',
+                    borderColor: isSubmit ? 'rgba(16, 185, 129, 0.4)' : isStart ? 'rgba(6, 182, 212, 0.4)' : 'var(--theme-accent-badge-border)',
+                    color: isSubmit ? '#34D399' : isStart ? '#38BDF8' : 'var(--neon-light)'
+                  }}
+                >
+                  {log.event_type}
+                </span>
+
+                <span className="text-white font-bold font-space text-base">
+                  {log.team_name || `Team #${log.team_id}`}
+                </span>
+
+                <span className="text-[var(--text-muted)] text-xs truncate max-w-xl bg-black/40 px-2.5 py-1 rounded border border-white/5">
+                  {log.event_data}
+                </span>
+              </div>
+
+              <span className="text-[var(--text-dim)] text-xs">
+                {log.created_at}
               </span>
-              <span className="text-white font-bold">{log.team_name || `Team #${log.team_id}`}</span>
-              <span className="text-dusty-lavender text-[11px] truncate max-w-lg">{log.event_data}</span>
             </div>
-            <span className="text-dusty-lavender/70 text-[10px]">{log.created_at}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
+

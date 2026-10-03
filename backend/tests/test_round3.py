@@ -67,11 +67,11 @@ def run_all_tests():
     print(f"   - Team 103 Case: {res_103['case']['case_id']}")
     print("✔ 5. Anti-collusion team scenario isolation verified.")
 
-    # 5. Test Evidence Constraint (< 2 evidence items must be rejected)
-    sub_fail = Round3Service.submit_round3_decision(101, "cand_a", ["ev_01_timeline"])
-    assert sub_fail["status"] == "error", "Submitting with 1 evidence item should fail"
-    assert sub_fail["error_code"] == "INVALID_EVIDENCE_COUNT"
-    print("✔ 6. Minimum 2 supporting evidence validation constraint verified.")
+    # 5. Test Candidate Constraint (Missing candidate must be rejected)
+    sub_fail = Round3Service.submit_round3_decision(101, "", [])
+    assert sub_fail["status"] == "error", "Submitting with empty suspect candidate should fail"
+    assert sub_fail["error_code"] == "MISSING_CANDIDATE"
+    print("✔ 6. Suspect candidate designation validation verified.")
 
     # 6. Test Scoring: Correct Culprit (+30 Points)
     # Get internal case for 101 to know correct answer

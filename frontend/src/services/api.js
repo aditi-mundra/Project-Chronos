@@ -89,5 +89,9 @@ export const api = {
   async getAdminLogs(limit = 100) {
     const res = await fetch(`${API_BASE}/admin/logs?limit=${limit}`);
     return handleResponse(res);
+  },
+
+  getExportCsvUrl() {
+    return `${API_BASE}/admin/export-csv`;
   }
 };

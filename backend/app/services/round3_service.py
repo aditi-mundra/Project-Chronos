@@ -135,31 +135,26 @@ class Round3Service:
     def submit_round3_decision(
         team_id: int,
         selected_candidate_id: str,
-        selected_evidence_ids: List[str]
+        selected_evidence_ids: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         Validates, grades, and records the final Round 3 decision.
-        - Enforces minimum 2 supporting evidence constraint.
+        - Direct accusation of canonical suspect (alpha, beta, or gamma).
+        - Evidence carried over from Round 2 is optional.
         - Prevents duplicate submission tampering (idempotency lock).
         - Computes Round 3 score (+30 for correct culprit, 0 for incorrect).
         - Updates total_score atomically in the master teams table.
         - Records round3_completed_at as tie-breaker timestamp.
         - Logs R3_SUBMIT in game_logs and submissions table.
         """
-        # Validate evidence count
-        valid, msg = validate_round3_evidence(selected_evidence_ids)
-        if not valid:
-            return {
-                "status": "error",
-                "error_code": "INVALID_EVIDENCE_COUNT",
-                "message": msg
-            }
+        if selected_evidence_ids is None:
+            selected_evidence_ids = []
         
         if not selected_candidate_id or not selected_candidate_id.strip():
             return {
                 "status": "error",
                 "error_code": "MISSING_CANDIDATE",
-                "message": "A suspect candidate must be designated for final accusation."
+                "message": "A suspect candidate (Alpha, Beta, or Gamma) must be designated for final accusation."
             }
 
         connection = get_connection()

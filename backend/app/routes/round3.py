@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 from ..services.round3_service import Round3Service
-from ..data.round3_cases import ROUND_3_SCENARIO_TEMPLATES
+from ..data.round3_cases import ROUND_3_CANONICAL_CASES, ROUND_3_SCENARIO_TEMPLATES
 
 router = APIRouter(prefix="/api/round3", tags=["Round 3: Final Decision"])
 
@@ -21,8 +21,8 @@ class Round3StartRequest(BaseModel):
 
 class Round3SubmitRequest(BaseModel):
     team_id: int = Field(..., description="Unique database ID of the team", example=1)
-    selected_candidate_id: str = Field(..., description="ID of the accused suspect", example="cand_a")
-    selected_evidence_ids: List[str] = Field(..., min_items=2, description="At least two corroborating evidence IDs", example=["ev_01_timeline", "ev_04_auth"])
+    selected_candidate_id: str = Field(..., description="ID of the accused suspect (alpha, beta, or gamma)", example="alpha")
+    selected_evidence_ids: Optional[List[str]] = Field(default_factory=list, description="Optional supporting evidence IDs carried from Round 2")
 
 # =============================================================================
 # Endpoints
