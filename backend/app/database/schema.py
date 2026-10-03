@@ -1,3 +1,5 @@
+import sqlite3
+
 from .connection import get_connection
 
 def create_tables():
@@ -111,6 +113,36 @@ def create_tables():
         """)
 
         
+        _migrate_teams_for_auth(connection)
         connection.commit()
     finally:
         connection.close()
+
+
+def _migrate_teams_for_auth(connection):
+    """
+    Additive, idempotent changes required by login/authentication.
+
+    - member_1_prn / member_2_prn: PRNs are verified (never modified) when an
+      existing team name logs in again.
+    - Unique team_name (case-insensitive): a team name can belong to only one team.
+    """
+    existing_columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(teams)")
+    }
+
+    for column in ("member_1_prn", "member_2_prn"):
+        if column not in existing_columns:
+            connection.execute(
+                f"ALTER TABLE teams ADD COLUMN {column} TEXT NOT NULL DEFAULT ''"
+            )
+
+    try:
+        connection.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_team_name_nocase "
+            "ON teams(team_name COLLATE NOCASE)"
+        )
+    except sqlite3.IntegrityError:
+        # Pre-existing duplicate team names (old test data): skip the index rather
+        # than fail startup. The login service still checks names case-insensitively.
+        pass

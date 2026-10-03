@@ -1,4 +1,6 @@
 from ..database.connection import get_connection
+from datetime import datetime, timezone
+import json
 import secrets
 import string
 
@@ -7,6 +9,47 @@ ROUND1_CLUE = (
     "The timeline was not broken at the point of failure. "
     "Find the system that changed first."
 )
+
+# Round 1 time limit. The clock starts when the team's items are first fetched
+# (round1_started_at) and is enforced here, not in the browser.
+ROUND1_DURATION_SECONDS = 10 * 60
+# Answers sent shortly after the limit (the browser auto-submits when time runs out)
+# are still accepted.
+ROUND1_SUBMIT_GRACE_SECONDS = 30
+# A finish request may arrive a moment before the browser's own clock reaches zero.
+ROUND1_FINISH_TOLERANCE_SECONDS = 3
+
+
+def _log_event(cursor, team_id, event_type, data):
+    cursor.execute("""
+        INSERT INTO game_logs (team_id, event_type, event_data, created_at)
+        VALUES (?, ?, ?, ?)
+    """, (
+        team_id,
+        event_type,
+        json.dumps(data),
+        datetime.now(timezone.utc).isoformat(timespec="seconds")
+    ))
+
+
+def _elapsed_seconds(cursor, team_id):
+    """
+    Seconds since this team's Round 1 started, or None if it has not started.
+    Computed by SQLite so it uses the same clock (UTC) as round1_started_at.
+    """
+    cursor.execute("""
+        SELECT CAST(
+            (julianday('now') - julianday(round1_started_at)) * 86400
+            AS INTEGER
+        )
+        FROM teams
+        WHERE id = ?
+          AND round1_started_at IS NOT NULL
+    """, (team_id,))
+
+    row = cursor.fetchone()
+
+    return None if row is None else row[0]
 
 
 def generate_auth_code():
@@ -177,6 +220,8 @@ def get_round1_items(team_id):
                 WHERE id = ?
             """, (team_id,))
 
+            _log_event(cursor, team_id, "ROUND1_STARTED", {"items": 25})
+
             connection.commit()
 
         # ---------------------------------------------------------
@@ -256,6 +301,25 @@ def submit_answer(team_id, item_id, answer):
         if team is None:
             return {
                 "error": "Invalid team_id."
+            }
+
+        # ---------------------------------------------------------
+        # CHECK ROUND 1 IS STILL OPEN
+        # ---------------------------------------------------------
+
+        if team["current_state"] == "ROUND1_COMPLETED":
+            return {
+                "error": "Round 1 has already been completed."
+            }
+
+        elapsed = _elapsed_seconds(cursor, team_id)
+
+        if (
+            elapsed is not None
+            and elapsed > ROUND1_DURATION_SECONDS + ROUND1_SUBMIT_GRACE_SECONDS
+        ):
+            return {
+                "error": "Round 1 time is over."
             }
 
         # ---------------------------------------------------------
@@ -405,6 +469,8 @@ def submit_answer(team_id, item_id, answer):
                 WHERE id = ?
             """, (auth_code, team_id))
 
+            _log_event(cursor, team_id, "ROUND1_COMPLETED", {"via": "ALL_SUBMITTED"})
+
             # Calculate elapsed Round 1 time
             cursor.execute("""
                 SELECT
@@ -498,6 +564,13 @@ def finish_round1(team_id):
 
         total_items = cursor.fetchone()[0]
 
+        # A team that never received its items cannot finish (and so cannot be
+        # handed an authentication code).
+        if total_items == 0:
+            return {
+                "error": "Round 1 has not been started."
+            }
+
         # ---------------------------------------------------------
         # CHECK SUBMISSIONS
         # ---------------------------------------------------------
@@ -514,7 +587,20 @@ def finish_round1(team_id):
         # NOT COMPLETE
         # ---------------------------------------------------------
 
-        if submitted_items < total_items:
+        # Normally every assigned item must be submitted. Once the time limit has
+        # passed the team may finish with what it submitted (unanswered items score 0).
+        already_completed = team["current_state"] == "ROUND1_COMPLETED"
+        elapsed = _elapsed_seconds(cursor, team_id)
+        time_is_up = (
+            elapsed is not None
+            and elapsed >= ROUND1_DURATION_SECONDS - ROUND1_FINISH_TOLERANCE_SECONDS
+        )
+
+        if (
+            submitted_items < total_items
+            and not already_completed
+            and not time_is_up
+        ):
 
             return {
                 "round1_completed": False,
@@ -573,13 +659,26 @@ def finish_round1(team_id):
 
         auth_code = generate_auth_code()
 
+        # Only the first of two simultaneous finish requests completes the round;
+        # the other one must report the same code, not overwrite it.
         cursor.execute("""
             UPDATE teams
             SET current_state = 'ROUND1_COMPLETED',
                 round1_completed_at = CURRENT_TIMESTAMP,
                 round1_auth_code = ?
             WHERE id = ?
+              AND COALESCE(current_state, '') != 'ROUND1_COMPLETED'
         """, (auth_code, team_id))
+
+        if cursor.rowcount == 0:
+            connection.rollback()
+            return finish_round1(team_id)
+
+        _log_event(cursor, team_id, "ROUND1_COMPLETED", {
+            "via": "ALL_SUBMITTED" if submitted_items >= total_items else "TIME_UP",
+            "submitted_items": submitted_items,
+            "total_items": total_items
+        })
 
         connection.commit()
 
@@ -613,6 +712,107 @@ def finish_round1(team_id):
             "clue": ROUND1_CLUE,
             "completion_time_seconds": completion_time_seconds,
             "next_round": "ROUND2"
+        }
+
+    finally:
+        connection.close()
+
+def get_round1_status(team_id):
+    """
+    Where this team is in Round 1. Used by the frontend after a reload and to
+    show the Round 1 result in the Round 2 lobby.
+
+    The remaining time is computed here so the browser clock cannot be reset by
+    refreshing the page.
+    """
+
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            SELECT
+                id,
+                current_state,
+                round1_score,
+                round1_started_at,
+                round1_completed_at,
+                round1_auth_code
+            FROM teams
+            WHERE id = ?
+        """, (team_id,))
+
+        team = cursor.fetchone()
+
+        if team is None:
+            return {
+                "error": "Invalid team_id."
+            }
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM round1_team_items
+            WHERE team_id = ?
+        """, (team_id,))
+
+        total_items = cursor.fetchone()[0]
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM round1_submissions
+            WHERE team_id = ?
+        """, (team_id,))
+
+        submitted_items = cursor.fetchone()[0]
+
+        completed = team["current_state"] == "ROUND1_COMPLETED"
+        elapsed = _elapsed_seconds(cursor, team_id)
+
+        remaining = None
+
+        if elapsed is not None:
+            remaining = max(0, ROUND1_DURATION_SECONDS - elapsed)
+
+        result = None
+
+        if completed:
+            completion_time_seconds = None
+
+            if team["round1_started_at"] and team["round1_completed_at"]:
+                cursor.execute("""
+                    SELECT CAST(
+                        (
+                            julianday(round1_completed_at)
+                            - julianday(round1_started_at)
+                        ) * 86400
+                        AS INTEGER
+                    )
+                    FROM teams
+                    WHERE id = ?
+                """, (team_id,))
+
+                completion_time_seconds = cursor.fetchone()[0]
+
+            result = {
+                "score": team["round1_score"],
+                "auth_code": team["round1_auth_code"],
+                "clue": ROUND1_CLUE,
+                "completion_time_seconds": completion_time_seconds,
+                "next_round": "ROUND2"
+            }
+
+        return {
+            "team_id": team["id"],
+            "current_state": team["current_state"],
+            "started": elapsed is not None,
+            "completed": completed,
+            "duration_seconds": ROUND1_DURATION_SECONDS,
+            "elapsed_seconds": elapsed,
+            "remaining_seconds": remaining,
+            "submitted_items": submitted_items,
+            "total_items": total_items,
+            "result": result
         }
 
     finally:
