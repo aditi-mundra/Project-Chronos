@@ -253,34 +253,51 @@ In `backend/app/database/schema.py`:
 ## 2.6 Module 6: Step-by-Step Implementation Roadmap
 
 ### Phase 1: Case Data & Backend Core (Day 1)
-- [ ] Create `backend/app/data/round3_cases.py` with 5-10 balanced, logically verified scenario templates.
-- [ ] Implement `round3_service.py` to handle case assignment, evidence checking, and score computation.
-- [ ] Update `backend/app/database/schema.py` to include `round3_team_cases` table if storing extended case states.
+- [x] Create `backend/app/data/round3_cases.py` with 5-10 balanced, logically verified scenario templates.
+- [x] Implement `round3_service.py` to handle case assignment, evidence checking, and score computation.
+- [x] Update `backend/app/database/schema.py` to include `round3_team_cases` table if storing extended case states.
 
 ### Phase 2: API Endpoints & State Machine (Day 1 - Day 2)
-- [ ] Implement `backend/app/routes/round3.py` (`/start`, `/scenario`, `/submit`).
-- [ ] Integrate state validation with `backend/app/services/game_service.py`.
-- [ ] Register `round3_router` inside `backend/app/main.py`.
-- [ ] Write backend unit tests in `backend/tests/test_round3.py` for scoring, evidence thresholds, and anti-cheat guards.
+- [x] Implement `backend/app/routes/round3.py` (`/start`, `/scenario`, `/submit`).
+- [x] Integrate state validation with `backend/app/services/game_service.py`.
+- [x] Register `round3_router` inside `backend/app/main.py`.
+- [x] Write backend unit tests in `backend/tests/test_round3.py` for scoring, evidence thresholds, and anti-cheat guards.
 
 ### Phase 3: Frontend Interface & Terminal Aesthetic (Day 2 - Day 3)
-- [ ] Build `Round3.jsx` using Tailwind CSS and terminal glitch aesthetic components.
-- [ ] Implement Candidate selection cards with active holographic glowing states.
-- [ ] Implement Evidence selection checkbox grid with live validation count.
-- [ ] Connect `api.js` endpoints (`startRound3`, `getRound3Scenario`, `submitRound3Decision`).
-- [ ] Add confirmation modal and navigation redirect to `Completion.jsx`.
+- [x] Build `Round3.jsx` using Tailwind CSS and terminal glitch aesthetic components.
+- [x] Implement Candidate selection cards with active holographic glowing states.
+- [x] Implement Evidence selection checkbox grid with live validation count.
+- [x] Connect `api.js` endpoints (`startRound3`, `getRound3Scenario`, `submitRound3Decision`).
+- [x] Add confirmation modal and navigation redirect to `Completion.jsx`.
 
 ### Phase 4: Integration, Admin Leaderboard & Verification (Day 3 - Day 4)
-- [ ] Test complete end-to-end player trajectory: Login ➔ Round 1 ➔ Round 2 ➔ Round 3 ➔ Completion.
-- [ ] Verify Admin Leaderboard reflects Round 3 score (+30 / 0) and accurately breaks ties using `round3_completed_at`.
-- [ ] Conduct multi-team concurrency test to verify scenario isolation.
+- [x] Test complete end-to-end player trajectory: Login ➔ Round 1 ➔ Round 2 ➔ Round 3 ➔ Completion.
+- [x] Verify Admin Leaderboard reflects Round 3 score (+30 / 0) and accurately breaks ties using `round3_completed_at`.
+- [x] Conduct multi-team concurrency test to verify scenario isolation.
 
 ---
 
 # Part 3: Verification & Test Checklist
 
-* [ ] **Scenario Determinism**: Team 1 always receives Case 1 on reload; Team 2 receives Case 2.
-* [ ] **Evidence Constraint**: Submitting with 1 evidence item returns a 422/400 validation error.
-* [ ] **Scoring Accuracy**: Correct candidate awards exactly +30 points; incorrect awards 0 points.
-* [ ] **Tie-Breaker Integrity**: `round3_completed_at` is accurately recorded in UTC ISO8601 format.
-* [ ] **State Lockdown**: Once submitted, navigating back or calling `/submit` again cannot alter score or timestamp.
+* [x] **Scenario Determinism**: Team 1 always receives Case 1 on reload; Team 2 receives Case 2.
+* [x] **Evidence Constraint**: Submitting with 1 evidence item returns a 422/400 validation error.
+* [x] **Scoring Accuracy**: Correct candidate awards exactly +30 points; incorrect awards 0 points.
+* [x] **Tie-Breaker Integrity**: `round3_completed_at` is accurately recorded in UTC ISO8601 format.
+* [x] **State Lockdown**: Once submitted, navigating back or calling `/submit` again cannot alter score or timestamp.
+
+---
+
+# Part 4: Unified Deployment & Launch Guide
+
+### 🚀 One-Command Launch
+```bash
+./start.sh
+# or
+python3 run.py
+```
+
+### ⚙️ Database Hardening Configuration
+- SQLite engine operates in **WAL Mode** (`PRAGMA journal_mode = WAL;`).
+- Busy timeout set to **30,000ms** (`PRAGMA busy_timeout = 30000;`) to eliminate lock contention.
+- Network exposure bound to `0.0.0.0` for full LAN player workstation connectivity.
+- Dynamic DB path override supported via `CHRONOS_DB_PATH`.
