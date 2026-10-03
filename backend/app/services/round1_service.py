@@ -1,5 +1,6 @@
 from ..database.connection import get_connection
 from datetime import datetime, timezone
+from pathlib import Path
 import json
 import secrets
 import string
@@ -18,6 +19,19 @@ ROUND1_DURATION_SECONDS = 10 * 60
 ROUND1_SUBMIT_GRACE_SECONDS = 30
 # A finish request may arrive a moment before the browser's own clock reaches zero.
 ROUND1_FINISH_TOLERANCE_SECONDS = 3
+
+
+# Small web copies of the Round 1 images (made by optimize_round1_images.py), named by
+# item id so the file name does not reveal the answer. The originals are ~4 MB each.
+WEB_IMAGE_DIR = Path(__file__).resolve().parents[2] / "static" / "round1_web"
+
+
+def _image_url(item_id, stored_path):
+    """Use the small web copy when it exists, otherwise the path stored in the database."""
+    if (WEB_IMAGE_DIR / f"{item_id}.webp").is_file():
+        return f"/static/round1_web/{item_id}.webp"
+
+    return stored_path
 
 
 def _log_event(cursor, team_id, event_type, data):
@@ -243,7 +257,7 @@ def get_round1_items(team_id):
         return [
             {
                 "id": row["item_id"],
-                "image": row["image_path"]
+                "image": _image_url(row["item_id"], row["image_path"])
             }
             for row in rows
         ]

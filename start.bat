@@ -7,7 +7,7 @@ rem
 rem  * Builds the frontend once so the backend serves EVERYTHING from one address
 rem    (no localhost / port numbers baked into the app).
 rem  * Starts the backend on 0.0.0.0, so other PCs on the same network can open it.
-rem  * Never creates, seeds or modifies the database.
+rem  * The backend creates the database and loads the Round 1 items on first start.
 rem
 rem Usage:  start.bat            (port 8000)
 rem         start.bat 8080       (custom port)
@@ -80,9 +80,6 @@ if not exist "%ROOT%frontend\dist\index.html" (
   pause
   exit /b 1
 )
-
-rem ---- Read-only warning if Round 1 items have not been seeded ----
-%PY% -c "import sqlite3;c=sqlite3.connect('file:%ROOT:\=/%backend/chronos.db?mode=ro',uri=True);n=c.execute('select count(*) from round1_items').fetchone()[0];print('[WARNING] round1_items is empty - Round 1 will show an error until it is seeded (python seed_round1.py in the backend folder).') if n==0 else None" 2>nul
 
 rem ---- Allow other PCs through the Windows firewall (only works when run as Administrator) ----
 netsh advfirewall firewall show rule name="CHRONOS Server" >nul 2>nul

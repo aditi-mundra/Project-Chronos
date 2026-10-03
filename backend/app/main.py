@@ -1,3 +1,4 @@
+import mimetypes
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -7,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .database.schema import create_tables
+from .database.schema import create_tables, seed_round1_items_if_empty
 from .routes.auth import router as auth_router
 from .routes.round1 import router as round1_router
 
@@ -15,8 +16,13 @@ from .routes.round1 import router as round1_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    seed_round1_items_if_empty()  # no-op when items already exist
     yield
 
+
+# Some Windows Python installs do not know .webp (the Round 1 images); register it so the
+# static files are always served as image/webp.
+mimetypes.add_type("image/webp", ".webp")
 
 app = FastAPI(
     title="Project Chronos API",

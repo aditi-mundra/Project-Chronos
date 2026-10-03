@@ -1,6 +1,11 @@
+import csv
 import sqlite3
+from pathlib import Path
 
 from .connection import get_connection
+
+ROUND1_MANIFEST = Path(__file__).resolve().parents[2] / "round1_manifest.csv"
+ROUND1_IMAGE_FOLDER = "static/round1"
 
 def create_tables():
     connection = get_connection()
@@ -146,3 +151,44 @@ def _migrate_teams_for_auth(connection):
         # Pre-existing duplicate team names (old test data): skip the index rather
         # than fail startup. The login service still checks names case-insensitively.
         pass
+
+
+def seed_round1_items_if_empty():
+    """
+    Load the Round 1 items from round1_manifest.csv when (and only when) the
+    round1_items table is empty, so a fresh database on a new PC works without a manual
+    seed step. Existing items are never touched. Returns the number of rows inserted.
+    """
+    connection = get_connection()
+
+    try:
+        count = connection.execute("SELECT COUNT(*) FROM round1_items").fetchone()[0]
+
+        if count > 0 or not ROUND1_MANIFEST.is_file():
+            return 0
+
+        inserted = 0
+
+        with open(ROUND1_MANIFEST, "r", encoding="utf-8-sig", newline="") as file:
+            for row in csv.DictReader(file):
+                connection.execute(
+                    """
+                    INSERT OR IGNORE INTO round1_items
+                    (item_id, item_name, image_path, correct_era,
+                     points_positive, points_negative, is_active)
+                    VALUES (?, ?, ?, ?, 2, 1, 1)
+                    """,
+                    (
+                        int(row["item_id"]),
+                        row["item_name"].strip(),
+                        f"/{ROUND1_IMAGE_FOLDER}/{row['image_filename'].strip()}",
+                        row["correct_era"].strip().upper(),
+                    ),
+                )
+                inserted += 1
+
+        connection.commit()
+        print(f"Round 1: seeded {inserted} items from round1_manifest.csv")
+        return inserted
+    finally:
+        connection.close()
