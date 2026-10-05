@@ -3,7 +3,8 @@ from fastapi import APIRouter
 from ..services.round1_service import (
     get_round1_items,
     submit_answer,
-    finish_round1
+    finish_round1,
+    get_round1_status
 )
 
 router = APIRouter()
@@ -39,3 +40,12 @@ def finish(team_id: int):
     the team to proceed to Round 2.
     """
     return finish_round1(team_id)
+
+
+@router.get("/status")
+def status(team_id: int):
+    """
+    Round 1 progress for a team: whether it has started or completed, the
+    remaining time (server clock), and the result once completed.
+    """
+    return get_round1_status(team_id)
