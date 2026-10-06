@@ -38,7 +38,12 @@ const PRE_ROUND_STATES = ['READY', 'LOGGED_IN'];
 
 function AppContent() {
   const { team, logoutTeam } = useAuth();
-  const [currentView, setCurrentView] = useState(() => (team ? 'resuming' : 'landing'));
+  const [currentView, setCurrentView] = useState(() => {
+    const path = window.location.pathname;
+    if (path === '/leaderboard') return 'leaderboard';
+    if (path === '/admin') return 'adminLogin';
+    return team ? 'resuming' : 'landing';
+  });
   const [isCrtActive, setIsCrtActive] = useState(false);
   const [round1Result, setRound1Result] = useState(null);
 

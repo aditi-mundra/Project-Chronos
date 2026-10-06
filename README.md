@@ -52,6 +52,32 @@ python3 run.py
 
 ---
 
+## 🚀 Production Deployment
+
+For the actual event, it is recommended to build the frontend and serve everything from the single FastAPI backend process. This eliminates the need to run the Vite dev server (`npm run dev`) and ensures better performance.
+
+1. **Build the Frontend Client**
+   Navigate to the frontend directory and create a production build. This will generate optimized static files in `frontend/dist`.
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   cd ..
+   ```
+
+2. **Launch the Production Server**
+   Run the backend using Uvicorn. FastAPI is configured to automatically serve the `frontend/dist` directory for all unmatched routes, meaning it will serve the React app on port `8000` alongside the API.
+   ```bash
+   pip install -r backend/requirements.txt
+   uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+   ```
+
+3. **Client Access**
+   - Players: `http://<SERVER_IP>:8000`
+   - Host/Admin Leaderboard: `http://<SERVER_IP>:8000/leaderboard` (or `/admin`)
+
+---
+
 ## 🎮 Game Architecture & Rounds
 
 1. **Round 0**: Team Registration & Cinematic Briefing.
