@@ -14,6 +14,8 @@ import Round3 from './pages/Round3.jsx';
 import Completion from './pages/Completion.jsx';
 import Leaderboard from './admin/Leaderboard.jsx';
 import AdminControls from './components/AdminControls.jsx';
+import AdminLogin from './admin/AdminLogin.jsx';
+import Dashboard from './admin/Dashboard.jsx';
 
 // View order:
 //  'landing'  -> Glitch title page  (START MISSION button)
@@ -135,6 +137,7 @@ function AppContent() {
         >
           <LandingGlitch
             onStart={handleStartMission}
+            onAdminMode={() => setCurrentView('adminLogin')}
             isStarting={isCrtActive}
           />
         </div>
@@ -207,7 +210,7 @@ function AppContent() {
         {currentView === 'completion' && team && (
           <Completion
             teamId={team.team_id}
-            onRestart={() => setCurrentView('landing')}
+            onRestart={handleLogout}
           />
         )}
 
@@ -216,6 +219,14 @@ function AppContent() {
           <Leaderboard
             onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
           />
+        )}
+
+        {currentView === 'adminLogin' && (
+          <AdminLogin onLoginSuccess={() => setCurrentView('adminDashboard')} />
+        )}
+        
+        {currentView === 'adminDashboard' && (
+          <Dashboard onLogout={() => setCurrentView('landing')} />
         )}
 
       </main>

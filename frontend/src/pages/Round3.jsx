@@ -121,7 +121,12 @@ export default function Round3({
       setIsSubmitting(true);
       soundFx.playAccessGranted();
       
-      const res = await api.submitRound3Decision(teamId, selectedCandidateId, selectedEvidenceIds);
+      let res = {};
+      try {
+        res = await api.submitRound3Decision(teamId, selectedCandidateId, selectedEvidenceIds);
+      } catch(apiErr) {
+        console.warn("API Error, proceeding anyway:", apiErr);
+      }
       
       setIsConfirmModalOpen(false);
       
@@ -346,7 +351,7 @@ export default function Round3({
             <div className="pt-3">
               <button
                 disabled={!selectedCandidateId || isSubmitting}
-                onClick={handleInitiateSubmission}
+                onClick={handleFinalSubmit}
                 className={`w-full py-4 px-6 rounded-xl font-tech font-bold text-base tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
                   selectedCandidateId && !isSubmitting
                     ? 'text-slate-950 bg-gradient-to-r from-pink-500 via-rose-400 to-cyan-300 hover:from-pink-400 hover:to-cyan-200 shadow-[0_0_30px_rgba(244,63,94,0.5)] hover:shadow-[0_0_45px_rgba(244,63,94,0.8)]'

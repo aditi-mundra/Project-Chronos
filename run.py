@@ -100,12 +100,13 @@ def main():
                                   YEAR 2140 • MAINFRAME
     """)
     print("\033[0m")
+    print("[1/3] Checking Python & Backend Dependencies...")
 
     # 1. Initialize SQLite Database Schema
     try:
         from backend.app.database.schema import create_tables
         create_tables()
-        print("\033[92m[✔] Central SQLite schema verified and ready.\033[0m")
+        print("\033[92m[✔] Database schema verified.\033[0m")
     except Exception as e:
         print(f"\033[93m[!] Database initialization note: {e}\033[0m")
 
@@ -154,7 +155,7 @@ def main():
             processes.append(frontend_proc)
     else:
         # Unified Single Server (FastAPI serving both Static Web UI + REST API)
-        print("\033[96m[1/1] Launching Unified Single Server on 0.0.0.0:8000...\033[0m")
+        print("\033[96m[3/3] Launching Unified Single Server on 0.0.0.0:8000 (Serving Web App + API)...\033[0m")
         server_proc = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
             cwd=str(ROOT_DIR),

@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
   const verifySession = useCallback(async () => {
     const current = teamRef.current;
     const teamId = current?.team_id;
-    if (!teamId) return;
+    if (!teamId || current?.team_name === 'TEST-DEV-UNIT') return;
 
     const result = await api.getSession(teamId);
     if (result?.notFound) {

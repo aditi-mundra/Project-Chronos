@@ -83,6 +83,10 @@ export default function AdminControls({ currentView, onSelectView }) {
     { id: 'leaderboard', label: '📊 Master Leaderboard', icon: Trophy },
   ];
 
+  if (!window.location.search.includes('admin=1')) {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-4 right-4 z-50 font-mono text-xs">
       {!isOpen ? (

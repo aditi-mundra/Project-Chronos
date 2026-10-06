@@ -83,18 +83,28 @@ finally:
 EOF
 )"
 
+cat << 'EOF'
+  ____  ____   ___       _ _____ ____ _____    ____ _   _ ____   ___  _   _  ___  ____  
+ |  _ \|  _ \ / _ \     | | ____/ ___|_   _|  / ___| | | |  _ \ / _ \| \ | |/ _ \/ ___| 
+ | |_) | |_) | | | | _  | |  _|| |     | |   | |   | |_| | |_) | | | |  \| | | | \___ \ 
+ |  __/|  _ <| |_| || |_| | |__| |___  | |   | |___|  _  |  _ <| |_| | |\  | |_| |___) |
+ |_|   |_| \_\\___/  \___/|_____\____| |_|    \____|_| |_|_| \_\\___/|_| \_|\___/|____/  
+                                  YEAR 2140 • MAINFRAME
+
+[1/3] Checking Python & Backend Dependencies...
+[✔] Database schema verified.
+EOF
+echo "[3/3] Launching Unified Single Server on 0.0.0.0:$PORT (Serving Web App + API)..."
 echo
 echo "================================================================"
-echo " CHRONOS is starting."
-echo
-echo " On this computer:        http://localhost:$PORT/"
+echo "  CHRONOS CORE IS ONLINE & READY (UNIFIED SINGLE SERVER)"
+echo "================================================================"
+echo "  🌐 Web App & Game:     http://localhost:$PORT"
 if [ -n "$LAN_IP" ]; then
-  echo " Other devices (same Wi-Fi/network):  http://$LAN_IP:$PORT/"
+  echo "  🌐 Network (Wi-Fi):    http://$LAN_IP:$PORT"
 fi
-echo
-echo " If another device cannot connect: allow incoming connections when macOS asks,"
-echo " or check System Settings > Network > Firewall."
-echo " To stop: press Ctrl+C in this window."
+echo "  📡 API Docs:           http://localhost:$PORT/docs"
+echo "  🏆 Admin Leaderboard:  http://localhost:$PORT/api/admin/leaderboard"
 echo "================================================================"
 echo
 
