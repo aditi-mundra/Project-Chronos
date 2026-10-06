@@ -55,7 +55,7 @@ fi
 
 # ---- Frontend: build it so the backend can serve it (needs Node.js) ----
 if command -v npm >/dev/null 2>&1; then
-  if [ ! -d "$ROOT/frontend/node_modules" ]; then
+  if [ ! -x "$ROOT/frontend/node_modules/.bin/vite" ]; then
     echo "Installing frontend packages (internet needed the first time)..."
     (cd "$ROOT/frontend" && npm install) || echo "[WARNING] npm install failed."
   fi

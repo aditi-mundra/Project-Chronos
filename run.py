@@ -81,7 +81,7 @@ def build_frontend_if_needed(force_build=False):
         return False
 
     print("\033[96m[i] Building frontend production bundle for single-server hosting...\033[0m")
-    if not (FRONTEND_DIR / "node_modules").exists():
+    if not (FRONTEND_DIR / "node_modules" / ".bin" / "vite").exists():
         print(f"\033[93m[i] Installing node modules using {npm_bin}...\033[0m")
         subprocess.run([npm_bin, "install"], cwd=str(FRONTEND_DIR), check=True)
 
