@@ -62,9 +62,15 @@ def calculate_r1_time_diff(started_at: Optional[str], completed_at: Optional[str
 
 
 def fetch_leaderboard_data() -> List[Dict[str, Any]]:
+    from ..database.queries import update_team_scores
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        # Synchronize and recompute total_score for all teams to ensure DB consistency
+        cursor.execute("SELECT id FROM teams")
+        for row in cursor.fetchall():
+            update_team_scores(conn, row["id"])
+
         cursor.execute("""
             SELECT 
                 id as team_id,

@@ -436,6 +436,10 @@ def submit_answer(team_id, item_id, answer):
             SET round1_score = round1_score + ?
             WHERE id = ?
         """, (points, team_id))
+        
+        # Calculate total score properly and sync aliases
+        from ..database.queries import update_team_scores
+        update_team_scores(connection, team_id)
 
         # ---------------------------------------------------------
         # CHECK COMPLETION

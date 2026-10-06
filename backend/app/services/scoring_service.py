@@ -13,26 +13,13 @@ class ScoringService:
         Atomically aggregates round1_score, round2_score, and round3_score
         and persists total_score in the master teams table.
         """
+        from ..database.queries import update_team_scores
         connection = get_connection()
         try:
+            update_team_scores(connection, team_id)
             cursor = connection.cursor()
-            cursor.execute("SELECT round1_score, round2_score, round3_score FROM teams WHERE id = ?", (team_id,))
+            cursor.execute("SELECT total_score FROM teams WHERE id = ?", (team_id,))
             row = cursor.fetchone()
-            if not row:
-                return 0
-            
-            r1 = row["round1_score"] or 0
-            r2 = row["round2_score"] or 0
-            r3 = row["round3_score"] or 0
-            total = r1 + r2 + r3
-
-            cursor.execute("""
-                UPDATE teams
-                SET total_score = ?,
-                    updated_at = (datetime('now'))
-                WHERE id = ?
-            """, (total, team_id))
-            connection.commit()
-            return total
+            return row["total_score"] if row else 0
         finally:
             connection.close()

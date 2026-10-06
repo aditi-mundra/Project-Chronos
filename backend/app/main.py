@@ -102,8 +102,7 @@ app.include_router(
 )
 
 app.include_router(
-    admin_router,
-    prefix="/api/admin"
+    admin_router
 )
 
 
