@@ -3,41 +3,46 @@ Project Chronos — Round 2 Service
 Manages digital investigation files (Alpha, Beta, Gamma), restricted AI chat, and culprit submissions.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from ..database.connection import get_connection
 from .gemini_service import GeminiService
 
+
 class Round2Service:
     @staticmethod
-    def get_files() -> List[Dict[str, Any]]:
+    def get_files(team_id: Optional[int] = None) -> List[Dict[str, Any]]:
         connection = get_connection()
         try:
             cursor = connection.cursor()
-            cursor.execute("SELECT file_id, project_name, timeline_tag, filename, content_text, is_locked FROM round2_files")
+            cursor.execute("""
+                SELECT file_id, project_name, timeline_tag, filename, content_text, is_locked 
+                FROM round2_files 
+                WHERE is_locked = 0
+                ORDER BY file_id
+            """)
             rows = cursor.fetchall()
             if not rows:
-                # Default audit logs if not pre-seeded
                 return [
                     {
-                        "file_id": "PROJECT_ALPHA_AUDIT",
-                        "project_name": "PROJECT ALPHA",
-                        "timeline_tag": "FUTURE",
+                        "file_id": "alpha",
+                        "project_name": "Project Alpha",
+                        "timeline_tag": "future",
                         "filename": "future_audit.log",
                         "content_text": "21:11:04 UTC — Future timeline configuration modified. Parameter rewrite executed on Terminal Node Gamma-7.",
                         "is_locked": 0
                     },
                     {
-                        "file_id": "PROJECT_BETA_INCIDENT",
-                        "project_name": "PROJECT BETA",
-                        "timeline_tag": "PRESENT",
+                        "file_id": "beta",
+                        "project_name": "Project Beta",
+                        "timeline_tag": "present",
                         "filename": "incident_report.txt",
                         "content_text": "21:11:18 UTC — Temporal anomaly detected. Chronon frequency spike observed immediately post-override.",
                         "is_locked": 0
                     },
                     {
-                        "file_id": "PROJECT_GAMMA_ACCESS",
-                        "project_name": "PROJECT GAMMA",
-                        "timeline_tag": "PAST",
+                        "file_id": "gamma",
+                        "project_name": "Project Gamma",
+                        "timeline_tag": "past",
                         "filename": "access_history.log",
                         "content_text": "21:10:58 UTC — Biometric key SIGMA-99-0x7F1A authenticated from Sub-Level 4 vault.",
                         "is_locked": 0
@@ -48,12 +53,31 @@ class Round2Service:
             connection.close()
 
     @staticmethod
+    def get_file_by_id(file_id: str, team_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+        connection = get_connection()
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT file_id, project_name, timeline_tag, filename, content_text, is_locked
+                FROM round2_files
+                WHERE (file_id = ? OR file_id LIKE ?)
+                  AND is_locked = 0
+            """, (file_id, f"%{file_id}%"))
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return dict(row)
+        finally:
+            connection.close()
+
+    @staticmethod
     def ask_ai(team_id: int, user_prompt: str) -> Dict[str, Any]:
         connection = get_connection()
         try:
             cursor = connection.cursor()
             cursor.execute("SELECT COUNT(*) as count FROM round2_chat_messages WHERE team_id = ?", (team_id,))
-            count = cursor.fetchone()["count"]
+            row = cursor.fetchone()
+            count = row["count"] if row else 0
             if count >= 3:
                 return {"status": "error", "message": "Maximum 3 AI questions reached."}
             
@@ -78,3 +102,16 @@ class Round2Service:
             }
         finally:
             connection.close()
+
+
+def get_round2_files() -> List[Dict[str, Any]]:
+    return Round2Service.get_files()
+
+
+def get_files_for_team(team_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    return Round2Service.get_files(team_id=team_id)
+
+
+def get_file_by_id(file_id: str, team_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+    return Round2Service.get_file_by_id(file_id=file_id, team_id=team_id)
+

@@ -1,132 +1,632 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  /* Default: Neon Purple Theme */
-  --bg-primary: #060509;
-  --bg-surface: #0F0A18;
-  --bg-surface-elevated: #160F24;
-  --bg-void: #030206;
-  
-  --neon-primary: #A855F7;
-  --neon-secondary: #9333EA;
-  --neon-light: #C084FC;
-  --neon-glow: rgba(168, 85, 247, 0.45);
-  --neon-glow-strong: rgba(168, 85, 247, 0.75);
-  --neon-card-border: rgba(168, 85, 247, 0.28);
-  --neon-card-border-hover: rgba(168, 85, 247, 0.65);
-  --neon-gradient: linear-gradient(135deg, #9333EA 0%, #A855F7 50%, #C084FC 100%);
-  
-  --text-main: #FFFFFF;
-  --text-body: #E5E7EB;
-  --text-muted: #D1D5DB;
-  --text-dim: #9CA3AF;
-  
-  --theme-accent-badge-bg: rgba(168, 85, 247, 0.15);
-  --theme-accent-badge-border: rgba(168, 85, 247, 0.4);
+@font-face {
+  font-family: 'Super Sliced';
+  src: url('/fonts/SuperSliced.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
-[data-theme="blue"] {
-  /* Neon Cyan / Sci-Fi Blue Theme */
-  --bg-primary: #040810;
-  --bg-surface: #081120;
-  --bg-surface-elevated: #0E1B32;
-  --bg-void: #020408;
-  
-  --neon-primary: #06B6D4;
-  --neon-secondary: #0284C7;
-  --neon-light: #38BDF8;
-  --neon-glow: rgba(6, 182, 212, 0.45);
-  --neon-glow-strong: rgba(6, 182, 212, 0.75);
-  --neon-card-border: rgba(6, 182, 212, 0.28);
-  --neon-card-border-hover: rgba(6, 182, 212, 0.65);
-  --neon-gradient: linear-gradient(135deg, #0284C7 0%, #06B6D4 50%, #38BDF8 100%);
-  
-  --theme-accent-badge-bg: rgba(6, 182, 212, 0.15);
-  --theme-accent-badge-border: rgba(6, 182, 212, 0.4);
+@layer base {
+  body {
+    font-family: 'Share Tech', sans-serif;
+    background-color: #05070c;
+    color: #e2e8f0;
+    overflow-x: hidden;
+  }
+
+  code, pre, .font-mono,
+  .font-tech,
+  .font-sans {
+    font-family: 'Share Tech', sans-serif;
+  }
+
+  .font-title {
+    font-family: 'Super Sliced', 'Share Tech', sans-serif;
+  }
 }
 
-[data-theme="green"] {
-  /* Neon Matrix / Terminal Green Theme */
-  --bg-primary: #030805;
-  --bg-surface: #06140B;
-  --bg-surface-elevated: #0C2013;
-  --bg-void: #010402;
-  
-  --neon-primary: #10B981;
-  --neon-secondary: #059669;
-  --neon-light: #34D399;
-  --neon-glow: rgba(16, 185, 129, 0.45);
-  --neon-glow-strong: rgba(16, 185, 129, 0.75);
-  --neon-card-border: rgba(16, 185, 129, 0.28);
-  --neon-card-border-hover: rgba(16, 185, 129, 0.65);
-  --neon-gradient: linear-gradient(135deg, #059669 0%, #10B981 50%, #34D399 100%);
-  
-  --theme-accent-badge-bg: rgba(16, 185, 129, 0.15);
-  --theme-accent-badge-border: rgba(16, 185, 129, 0.4);
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg-primary);
-  color: var(--text-body);
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Subtle CRT Grain & Scanline Overlay */
-.crt-overlay {
-  pointer-events: none;
+/* Subtle CRT Scanline overlay */
+.scanlines {
   background: linear-gradient(
-    rgba(8, 6, 12, 0) 50%, 
-    rgba(0, 0, 0, 0.2) 50%
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
   );
-  background-size: 100% 4px;
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
 }
 
-/* Universal Glassmorphism Cards */
-.game-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--neon-card-border);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 18px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* Grid overlay */
+.cyber-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
 
-.game-card:hover {
-  border-color: var(--neon-card-border-hover);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), 0 0 24px var(--neon-glow);
+/* Glowing text & borders */
+.glow-cyan {
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.2);
 }
 
-.game-card.active {
-  border-color: var(--neon-light);
-  box-shadow: 0 0 36px var(--neon-glow-strong), 0 0 16px var(--neon-primary);
+.glow-purple {
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.6), 0 0 20px rgba(168, 85, 247, 0.2);
 }
 
-/* Monospace Text */
-.terminal-code {
-  font-family: 'JetBrains Mono', monospace;
+.glow-amber {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.6), 0 0 20px rgba(245, 158, 11, 0.2);
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.border-glow-cyan {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25), inset 0 0 15px rgba(6, 182, 212, 0.05);
 }
-::-webkit-scrollbar-track {
-  background: var(--bg-void);
+
+.border-glow-purple {
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.25), inset 0 0 15px rgba(168, 85, 247, 0.05);
 }
-::-webkit-scrollbar-thumb {
-  background: var(--neon-card-border);
-  border-radius: 4px;
+
+/* Glitch animation */
+@keyframes subtle-glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-1.5px, 1.5px); }
+  40% { transform: translate(-1px, -1px); }
+  60% { transform: translate(1.5px, 1px); }
+  80% { transform: translate(1px, -1.5px); }
+  100% { transform: translate(0); }
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--neon-primary);
+
+.glitch-hover:hover {
+  animation: subtle-glitch 0.25s infinite;
 }
+
+/* Standalone dynamic text glitch */
+@keyframes glitch-skew {
+  0% { transform: skew(0deg); }
+  10% { transform: skew(-3deg); }
+  20% { transform: skew(2deg); }
+  21% { transform: skew(0deg); }
+  60% { transform: skew(0deg); }
+  61% { transform: skew(5deg); }
+  62% { transform: skew(-2deg); }
+  63% { transform: skew(0deg); }
+  90% { transform: skew(-4deg); }
+  92% { transform: skew(0deg); }
+  100% { transform: skew(0deg); }
+}
+
+@keyframes glitch-anim-1 {
+  0% { clip-path: inset(20% 0 60% 0); transform: translate(-4px, -2px); }
+  20% { clip-path: inset(80% 0 5% 0); transform: translate(4px, 1px); }
+  40% { clip-path: inset(40% 0 45% 0); transform: translate(-3px, 2px); }
+  60% { clip-path: inset(10% 0 75% 0); transform: translate(3px, -2px); }
+  80% { clip-path: inset(50% 0 25% 0); transform: translate(-2px, 1px); }
+  100% { clip-path: inset(20% 0 60% 0); transform: translate(-4px, -2px); }
+}
+
+@keyframes glitch-anim-2 {
+  0% { clip-path: inset(10% 0 80% 0); transform: translate(3px, 2px); }
+  20% { clip-path: inset(70% 0 15% 0); transform: translate(-4px, -1px); }
+  40% { clip-path: inset(30% 0 55% 0); transform: translate(2px, -2px); }
+  60% { clip-path: inset(85% 0 5% 0); transform: translate(-3px, 1px); }
+  80% { clip-path: inset(15% 0 65% 0); transform: translate(4px, -1px); }
+  100% { clip-path: inset(10% 0 80% 0); transform: translate(3px, 2px); }
+}
+
+/* =========================================================
+   CHRONOS TITLE — locked holographic mark
+   ========================================================= */
+.chrono-stage {
+  position: relative;
+  width: 100%;
+  min-height: 8.5rem;
+  padding: 1.1rem 0 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.chrono-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.chrono-seam {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 48%;
+  height: 1px;
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: 50% 50%;
+  background: linear-gradient(90deg, transparent, #22d3ee, #ffffff, #f472b6, transparent);
+  box-shadow: 0 0 12px #22d3ee;
+  pointer-events: none;
+  z-index: 1;
+  animation: chrono-seam 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes chrono-seam {
+  0% { transform: translateY(-50%) scaleX(0); opacity: 0; }
+  22% { transform: translateY(-50%) scaleX(1); opacity: 1; }
+  100% { transform: translateY(-50%) scaleX(1); opacity: 0; }
+}
+
+.chrono-bloom {
+  position: absolute;
+  width: 240px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(34, 211, 238, 0.35) 34%, transparent 70%);
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  z-index: 5;
+}
+
+.chrono-bloom.is-firing {
+  animation: chrono-bloom 1.05s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes chrono-bloom {
+  0%, 55% { opacity: 0; transform: scale(0.4); }
+  68% { opacity: 0.7; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+
+.chrono-rig {
+  position: relative;
+}
+
+.chrono-aura {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(3.4rem, 12vw, 8.5rem);
+  line-height: 0.9;
+  letter-spacing: 0.08em;
+  color: #67e8f9;
+  opacity: 0.22;
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.chrono-stage.is-locked .chrono-aura {
+  animation: chrono-aura 4.8s ease-in-out infinite alternate;
+}
+
+.chrono-word {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: clamp(3.4rem, 12vw, 8.5rem);
+  line-height: 0.9;
+  letter-spacing: 0.08em;
+  color: #f8fbff;
+  font-weight: 400;
+}
+
+.chrono-cell {
+  position: relative;
+  display: block;
+  width: 0.94em;
+  text-align: center;
+  flex: 0 0 0.94em;
+  overflow: visible;
+}
+
+.chrono-solid {
+  position: relative;
+  z-index: 2;
+  display: block;
+  text-shadow:
+    0 0 10px rgba(103, 232, 249, 0.45),
+    0 0 22px rgba(6, 182, 212, 0.25);
+  transition: color 0.04s step-start, text-shadow 0.04s step-start;
+}
+
+/* Scrambled cells: flash cyan-green like corrupted data */
+.chrono-cell.is-scrambled .chrono-solid,
+.chrono-solid.is-corrupt {
+  color: #a5f3fc;
+  text-shadow:
+    0 0 6px  #22d3ee,
+    0 0 18px #06b6d4,
+    0 0 36px rgba(6, 182, 212, 0.7),
+    2px 0 8px rgba(244, 114, 182, 0.5);
+}
+
+.chrono-ghost {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  transition: opacity 0.04s ease, transform 0.04s ease;
+}
+
+.chrono-ghost--c { color: #22d3ee; }
+.chrono-ghost--m { color: #f472b6; }
+
+/* During glitch: wider RGB split on ALL cells */
+.chrono-word.is-glitching .chrono-ghost--c {
+  opacity: 0.88;
+  transform: translateX(-6px);
+}
+
+.chrono-word.is-glitching .chrono-ghost--m {
+  opacity: 0.88;
+  transform: translateX(6px);
+}
+
+/* Scrambled cells: extra-wide split to make them pop */
+.chrono-cell.is-scrambled .chrono-ghost--c {
+  opacity: 1;
+  transform: translateX(-9px);
+}
+.chrono-cell.is-scrambled .chrono-ghost--m {
+  opacity: 1;
+  transform: translateX(9px);
+}
+
+/* Whole-word horizontal shake during glitch bursts */
+@keyframes chrono-word-shake {
+  0%   { transform: translate(0,      0)   skewX(0deg);   }
+  12%  { transform: translate(-3px,  1px)  skewX(-2deg);  }
+  25%  { transform: translate(4px,  -1px)  skewX(2.5deg); }
+  37%  { transform: translate(-2px,  2px)  skewX(-1deg);  }
+  50%  { transform: translate(3px,   0)    skewX(1.5deg); }
+  62%  { transform: translate(-4px, -1px)  skewX(-2deg);  }
+  75%  { transform: translate(2px,   1px)  skewX(1deg);   }
+  87%  { transform: translate(-1px,  0)    skewX(-0.5deg);}
+  100% { transform: translate(0,      0)   skewX(0deg);   }
+}
+
+.chrono-word.is-glitching {
+  animation: chrono-word-shake 0.12s steps(1, end) infinite;
+}
+
+.chrono-scan {
+  position: absolute;
+  inset: -8% -4%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 3;
+}
+
+.chrono-scan::before {
+  content: '';
+  position: absolute;
+  left: -28%;
+  top: -16%;
+  bottom: -16%;
+  width: 14%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  mix-blend-mode: overlay;
+  transform: skewX(-18deg);
+  opacity: 0;
+}
+
+.chrono-stage.is-locked .chrono-scan::before {
+  animation: chrono-scan 5.6s ease-in-out 0.4s infinite;
+}
+
+@keyframes chrono-scan {
+  0%, 72% { left: -28%; opacity: 0; }
+  78% { opacity: 0.7; }
+  100% { left: 118%; opacity: 0; }
+}
+
+.chrono-underline {
+  height: 1px;
+  margin: 0.45rem auto 0;
+  width: 68%;
+  transform: scaleX(0);
+  transform-origin: center;
+  background: linear-gradient(90deg, transparent, #22d3ee 22%, #fff 50%, #f472b6 78%, transparent);
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.55);
+  animation: chrono-underline 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
+}
+
+@keyframes chrono-underline {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes chrono-aura {
+  0% { opacity: 0.16; }
+  100% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chrono-seam,
+  .chrono-bloom,
+  .chrono-scan::before,
+  .chrono-underline,
+  .chrono-stage.is-locked .chrono-aura {
+    animation: none;
+  }
+  .chrono-underline { transform: scaleX(1); opacity: 1; }
+  .chrono-ghost { display: none; }
+}
+
+/* ==========================================================================
+   CRT TV Shutdown Transition Animation
+   ========================================================================== */
+
+/* 1. Underlying Screen Physical Vertical & Horizontal Collapse */
+.crt-screen-collapse {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  z-index: 40 !important;
+  pointer-events: none !important;
+  transform-origin: 50% 50% !important;
+  animation: crtCollapseScreen 1.28s cubic-bezier(0.2, 0.9, 0.3, 1) forwards !important;
+  background-color: #05070c;
+}
+
+@keyframes crtCollapseScreen {
+  0% {
+    transform: scale(1, 1);
+    filter: brightness(1) contrast(1);
+    opacity: 1;
+  }
+  6% {
+    transform: scale(1, 1);
+    filter: brightness(1.3) contrast(1.15);
+    opacity: 1;
+  }
+  28% {
+    transform: scale(1, 0.003);
+    filter: brightness(3.2) contrast(2.2) drop-shadow(0 0 15px #00f0ff);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1, 0.003);
+    filter: brightness(3.5) contrast(2.5) drop-shadow(0 0 20px #06b6d4);
+    opacity: 1;
+  }
+  68% {
+    transform: scale(0.004, 0.003);
+    filter: brightness(4.5) contrast(3);
+    opacity: 1;
+  }
+  76% {
+    transform: scale(0.002, 0.002);
+    filter: brightness(3);
+    opacity: 0.8;
+  }
+  86% {
+    transform: scale(0, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0, 0);
+    opacity: 0;
+  }
+}
+
+/* 2. Phosphor Horizontal Beam */
+.crt-beam-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  transform-origin: 50% 50%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(6, 182, 212, 0.85) 15%,
+    #00f0ff 35%,
+    #ffffff 50%,
+    #00f0ff 65%,
+    rgba(6, 182, 212, 0.85) 85%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 8px #ffffff,
+    0 0 20px #00f0ff,
+    0 0 45px #06b6d4,
+    0 0 90px rgba(0, 240, 255, 0.8),
+    0 0 160px rgba(6, 182, 212, 0.5);
+  animation: crtBeamAnimation 1.28s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+
+@keyframes crtBeamAnimation {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(1) scaleY(0);
+  }
+  7% {
+    opacity: 0.9;
+    transform: translateY(-50%) scaleX(1) scaleY(1.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(1) scaleY(2);
+  }
+  28% {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(1) scaleY(1.5);
+  }
+  48% {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(1) scaleY(1.2);
+  }
+  54% {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(0.92) scaleY(1.4);
+  }
+  67% {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(0.003) scaleY(1.8);
+  }
+  69% {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0) scaleY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0) scaleY(0);
+  }
+}
+
+/* 3. Phosphor Center Dot with Micro-Flicker Decay */
+.crt-center-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow:
+    0 0 10px #ffffff,
+    0 0 22px #00f0ff,
+    0 0 50px #06b6d4,
+    0 0 95px rgba(0, 240, 255, 0.85);
+  animation: crtCenterDotAnimation 1.28s ease-out forwards;
+}
+
+@keyframes crtCenterDotAnimation {
+  0%, 65% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  67% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+  71% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+  74% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  78% {
+    opacity: 0.35;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  82% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  86% {
+    opacity: 0.2;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  90% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(0.55);
+  }
+  94% {
+    opacity: 0.12;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  97% {
+    opacity: 0.04;
+    transform: translate(-50%, -50%) scale(0.25);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+/* 4. CRT Ambient Flash & Phosphor Haze */
+.crt-ambient-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(0, 240, 255, 0.25) 0%, rgba(6, 182, 212, 0.08) 50%, transparent 80%);
+  animation: crtAmbientFlashAnimation 1.28s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes crtAmbientFlashAnimation {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.6;
+  }
+  16% {
+    opacity: 0.25;
+  }
+  30% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  67% {
+    opacity: 0.65;
+  }
+  74% {
+    opacity: 0.15;
+  }
+  85% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 5. Scanlines overlay during CRT shutdown */
+.crt-shutdown-scanlines {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.45) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(0, 240, 255, 0.04),
+    rgba(0, 0, 0, 0),
+    rgba(6, 182, 212, 0.04)
+  );
+  background-size: 100% 4px, 8px 100%;
+  pointer-events: none;
+  animation: crtScanlineFlicker 1.28s steps(20) forwards;
+}
+
+@keyframes crtScanlineFlicker {
+  0% { opacity: 0.4; }
+  25% { opacity: 0.8; }
+  50% { opacity: 0.9; }
+  75% { opacity: 0.5; }
+  88% { opacity: 0.1; }
+  100% { opacity: 0; }
+}
+
+/* 6. CRT Vignette & Curvature Tube Frame */
+.crt-tube-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.92) 100%);
+  pointer-events: none;
+}
+
 

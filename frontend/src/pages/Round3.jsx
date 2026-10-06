@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ShieldAlert, 
   AlertCircle, 
@@ -6,8 +6,6 @@ import {
   CheckCircle2, 
   FileText, 
   Lock, 
-  Volume2, 
-  VolumeX, 
   Info, 
   Sparkles, 
   ChevronRight,
@@ -16,27 +14,24 @@ import {
   FileCheck2,
   FolderLock,
   ArrowRight,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
-import { soundEngine } from '../components/AudioEngine';
-import ThemeSelector from '../components/ThemeSelector';
-import { useTheme } from '../context/ThemeContext';
-import { api } from '../services/api';
+import { soundFx } from '../utils/audio.js';
+import api from '../services/api.js';
 
 /**
  * Project Chronos — Round 3: Final Decision / Wisdom Round
- * 24-inch display optimized, high-contrast, clean layout.
+ * Responsive, high-contrast, cybersecurity terminal layout.
  * Left: Project Alpha, Beta, Gamma candidate selection.
- * Right: Round 2 carried-over evidence references (Read-only).
- * Points are hidden from players.
+ * Right: Round 2 carried-over evidence references.
+ * Points are server-authoritative and kept secret for the awards ceremony.
  */
 export default function Round3({ 
-  teamId = 1, 
+  teamId, 
   teamName = "Temporal Engineers",
-  onNavigateToCompletion = null 
+  onNavigateToCompletion 
 }) {
-  const { themeConfig } = useTheme();
-
   // Scenario & Game State
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,9 +40,9 @@ export default function Round3({
 
   // User Candidate Selection (Alpha, Beta, or Gamma)
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+  const [selectedEvidenceIds, setSelectedEvidenceIds] = useState([]);
 
   // UI States
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBriefingModal, setShowBriefingModal] = useState(false);
@@ -58,325 +53,232 @@ export default function Round3({
       try {
         setLoading(true);
         setError(null);
-
-        const response = await api.startRound3(teamId);
         
-        if (response.status === 'success') {
-          setScenarioData(response.case);
-          setTeamInfo({
-            id: response.team_id || teamId,
-            name: response.team_name || teamName,
-            state: response.team_state
-          });
-
-          // If already submitted, navigate to completion
-          if (response.is_submitted) {
-            if (onNavigateToCompletion) {
-              onNavigateToCompletion();
-            }
+        // Start or resume Round 3 session on server
+        const startRes = await api.startRound3(teamId);
+        
+        if (startRes.is_submitted) {
+          if (onNavigateToCompletion) {
+            onNavigateToCompletion();
+            return;
           }
-        } else {
-          throw new Error(response.message || "Failed to initialize Round 3");
+        }
+        
+        setScenarioData(startRes.scenario);
+        setTeamInfo({
+          id: startRes.team_id,
+          name: startRes.team_name || teamName
+        });
+        
+        if (startRes.scenario?.evidence_archive?.length > 0) {
+          // Pre-select first 2 evidence items as starting context
+          setSelectedEvidenceIds(startRes.scenario.evidence_archive.slice(0, 2).map(e => e.id));
         }
       } catch (err) {
-        console.error("Round 3 loading error:", err);
-        setError(err.message || "Failed to connect to CHRONOS Mainframe.");
+        console.error("Failed to initialize Round 3:", err);
+        setError(err.message || "Failed to establish secure connection to Round 3 Mainframe.");
       } finally {
         setLoading(false);
       }
     }
-
-    loadRound3();
+    
+    if (teamId) {
+      loadRound3();
+    }
   }, [teamId, teamName, onNavigateToCompletion]);
 
-  // Audio Toggle
-  const toggleSound = () => {
-    const isMuted = soundEngine.toggleMute();
-    setIsAudioMuted(isMuted);
-    if (!isMuted) soundEngine.playClick();
+  // Handle Candidate Selection
+  const handleSelectCandidate = (candidateId) => {
+    soundFx.playKeystroke();
+    setSelectedCandidateId(candidateId);
   };
 
-  // Select Candidate
-  const handleSelectCandidate = (candId) => {
-    soundEngine.playDossierSelect();
-    setSelectedCandidateId(candId);
+  // Toggle Evidence Selection
+  const handleToggleEvidence = (evId) => {
+    soundFx.playKeystroke();
+    setSelectedEvidenceIds((prev) => {
+      if (prev.includes(evId)) {
+        return prev.filter((id) => id !== evId);
+      } else {
+        return [...prev, evId];
+      }
+    });
   };
 
-  // Selected Suspect Object
-  const selectedSuspect = useMemo(() => {
-    if (!scenarioData || !selectedCandidateId) return null;
-    return scenarioData.candidates.find(c => c.id === selectedCandidateId);
-  }, [scenarioData, selectedCandidateId]);
+  // Open Confirmation Modal
+  const handleInitiateSubmission = () => {
+    if (!selectedCandidateId) {
+      soundFx.playError();
+      return;
+    }
+    soundFx.playWhoosh();
+    setIsConfirmModalOpen(true);
+  };
 
-  // Execute Submission
-  const executeFinalSubmission = async () => {
-    if (!selectedCandidateId || isSubmitting) return;
-
+  // Final Submit
+  const handleFinalSubmit = async () => {
     try {
       setIsSubmitting(true);
-      soundEngine.playPurgeConfirm();
+      soundFx.playAccessGranted();
+      
+      const res = await api.submitRound3Decision(teamId, selectedCandidateId, selectedEvidenceIds);
+      
       setIsConfirmModalOpen(false);
-
-      const availableEvidenceIds = scenarioData?.evidence_pool?.map(e => e.id) || [];
-
-      const res = await api.submitRound3Decision(
-        teamId,
-        selectedCandidateId,
-        availableEvidenceIds
-      );
-
-      if (res.status === 'success') {
-        if (onNavigateToCompletion) {
-          onNavigateToCompletion();
-        } else {
-          window.location.href = '/completion';
-        }
-      } else {
-        alert(res.message || "Failed to record verdict.");
+      
+      if (onNavigateToCompletion) {
+        onNavigateToCompletion(res);
       }
     } catch (err) {
       console.error("Submission failed:", err);
-      alert(`Submission Error: ${err.message}`);
-    } finally {
+      soundFx.playError();
+      alert(`Submission Error: ${err.message || "Could not record decision"}`);
       setIsSubmitting(false);
     }
   };
 
-  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-8">
-        <div 
-          className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin mb-4"
-          style={{ borderColor: 'var(--neon-primary)', borderTopColor: 'transparent' }}
-        ></div>
-        <h2 className="font-orbitron text-xl tracking-wider text-white">
-          CHRONOS CENTRAL MAINFRAME
-        </h2>
-        <p className="font-mono text-sm text-[var(--text-muted)] mt-2">
-          Synchronizing Round 3 Investigation Dossiers...
+      <div className="min-h-[calc(100vh-2.5rem)] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-14 h-14 rounded-full border-4 border-cyan-500 border-t-transparent animate-spin mb-4" />
+        <p className="font-mono text-cyan-300 tracking-widest text-sm animate-pulse">
+          INITIALIZING ROUND 3: FINAL DECISION MAINFRAME...
         </p>
       </div>
     );
   }
 
-  // Error State
-  if (error || !scenarioData) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-8">
-        <div className="game-card max-w-lg p-8 text-center space-y-4">
-          <AlertCircle className="w-14 h-14 text-red-400 mx-auto" />
-          <h2 className="font-orbitron font-bold text-2xl text-white">SYSTEM CONNECTION ERROR</h2>
-          <p className="text-base text-[var(--text-muted)]">{error || "Failed to load case data."}</p>
+      <div className="min-h-[calc(100vh-2.5rem)] flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md p-6 rounded-2xl bg-rose-950/80 border border-rose-700 text-rose-200 space-y-4">
+          <AlertCircle className="w-10 h-10 text-rose-400 mx-auto" />
+          <h2 className="text-xl font-bold font-tech">TIMELINE LINK FAILURE</h2>
+          <p className="font-mono text-xs text-rose-300 leading-relaxed">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 rounded-xl font-orbitron font-bold text-sm text-white"
-            style={{ background: 'var(--neon-gradient)' }}
+            className="px-5 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-mono font-bold text-xs uppercase cursor-pointer"
           >
-            RETRY CONNECTION
+            Retry Connection
           </button>
         </div>
       </div>
     );
   }
 
+  const candidates = scenarioData?.candidates || [];
+  const evidenceList = scenarioData?.evidence_archive || [];
+  const activeCandidate = candidates.find((c) => c.id === selectedCandidateId);
+
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-body)] font-space pb-36">
-      {/* Scanline CRT overlay */}
-      <div className="fixed inset-0 crt-overlay pointer-events-none opacity-20 z-40"></div>
+    <div className="relative min-h-[calc(100vh-2.5rem)] flex flex-col items-center justify-center p-3 sm:p-5 lg:p-6">
+      <div className="absolute inset-0 cyber-grid opacity-30 pointer-events-none" />
+      <div className="absolute inset-0 bg-radial from-transparent via-[#05070c]/85 to-[#05070c] pointer-events-none" />
 
-      {/* Atmospheric Glow */}
-      <div 
-        className="fixed top-1/4 left-1/4 w-[600px] h-[600px] rounded-full blur-[200px] pointer-events-none opacity-15"
-        style={{ backgroundColor: 'var(--neon-primary)' }}
-      ></div>
-
-      {/* =====================================================================
-          1. TOP NAVIGATION & STATUS BAR (24" Optimized)
-      ====================================================================== */}
-      <header className="sticky top-0 z-30 bg-[var(--bg-primary)]/90 border-b border-white/15 backdrop-blur-xl px-6 lg:px-12 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          
-          {/* Main Title */}
-          <div className="flex items-center gap-4">
-            <div 
-              className="p-3 rounded-2xl border shadow-lg"
-              style={{ 
-                backgroundColor: 'var(--theme-accent-badge-bg)', 
-                borderColor: 'var(--theme-accent-badge-border)',
-                boxShadow: '0 0 15px var(--neon-glow)'
-              }}
-            >
-              <Cpu className="w-6 h-6 text-[var(--neon-light)]" />
+      <div className="relative w-full max-w-6xl z-10 space-y-4 my-auto">
+        {/* Top Header Card */}
+        <div className="bg-[#070c18]/95 border border-cyan-800/60 rounded-2xl p-4 sm:p-5 shadow-[0_0_35px_rgba(6,182,212,0.15)] backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-700/80 text-cyan-300">
+              <ShieldAlert className="w-6 h-6 text-pink-400 animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="font-orbitron font-black text-xl lg:text-2xl tracking-wide text-white">
-                  ROUND 3: <span style={{ color: 'var(--neon-primary)' }}>FINAL DECISION</span>
-                </h1>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-bold">
-                  UNTIMED
-                </span>
-              </div>
-              <p className="text-sm font-mono text-[var(--text-muted)] mt-0.5">
-                Investigating Unit: <strong className="text-white">{teamInfo?.name || teamName}</strong>
-              </p>
+              <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 block">
+                PHASE 3 // TIME-LOCK CRITICAL
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold font-tech text-cyan-300 tracking-wide">
+                FINAL ACCUSATION // <span className="text-pink-400">CORRUPTED CORE IDENTIFICATION</span>
+              </h1>
             </div>
           </div>
 
-          {/* Right Controls: Theme Selector, Sound & Rules */}
-          <div className="flex items-center gap-3">
-            <ThemeSelector />
-
+          <div className="flex items-center gap-2.5">
             <button
-              onClick={toggleSound}
-              title={isAudioMuted ? "Unmute Audio" : "Mute Audio"}
-              className="p-3 rounded-xl bg-black/50 border border-white/15 hover:border-[var(--neon-primary)] text-[var(--text-muted)] hover:text-white transition-all backdrop-blur-md"
+              onClick={() => setShowBriefingModal(true)}
+              className="px-3 py-1.5 rounded-lg border border-cyan-700/80 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 text-xs font-mono font-bold tracking-wider inline-flex items-center gap-1.5 transition cursor-pointer"
             >
-              {isAudioMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5 text-[var(--neon-light)]" />}
+              <Info className="w-3.5 h-3.5" />
+              <span>INCIDENT DOSSIER</span>
             </button>
-
-            <button
-              onClick={() => {
-                soundEngine.playClick();
-                setShowBriefingModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-black/50 border border-white/15 hover:border-[var(--neon-primary)] text-sm font-mono text-[var(--text-muted)] hover:text-white transition-all backdrop-blur-md"
-            >
-              <Info className="w-4 h-4 text-[var(--neon-light)]" />
-              <span>Rules</span>
-            </button>
-          </div>
-
-        </div>
-      </header>
-
-      {/* =====================================================================
-          2. MAIN INVESTIGATION WORKSPACE (2-Column Layout)
-      ====================================================================== */}
-      <main className="max-w-7xl mx-auto px-6 lg:px-12 pt-8 space-y-8">
-
-        {/* Narrative Briefing Header */}
-        <section className="game-card p-6 lg:p-8 border-white/15 space-y-3 bg-[var(--bg-surface)]">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2 text-sm font-mono text-[var(--neon-light)]">
-              <Radio className="w-5 h-5 animate-pulse text-[var(--neon-primary)]" />
-              <span className="font-bold uppercase tracking-wider">{scenarioData.title || "Timeline Anomaly Brief"}</span>
-            </div>
-            <span className="text-xs font-mono text-[var(--text-dim)] bg-black/40 px-3 py-1 rounded-lg border border-white/10">
-              CASE: {scenarioData.case_code || scenarioData.case_id}
+            <span className="px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 text-xs font-mono font-bold tracking-wider">
+              CALLSIGN: {teamInfo?.name || teamName}
             </span>
           </div>
+        </div>
+
+        {/* Main Grid: Suspects on Left, Evidence Archives on Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
-          <p className="text-base text-[var(--text-body)] leading-relaxed font-space max-w-5xl">
-            {scenarioData.incident_brief}
-          </p>
-        </section>
-
-        {/* 2-Column Split: Suspect Selection (Left) & Round 2 Evidence (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-          {/* ===================================================================
-              LEFT COLUMN: SUSPECT DESIGNATION (Alpha, Beta, Gamma)
-          ==================================================================== */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-white/15">
-              <div>
-                <h2 className="font-orbitron font-bold text-xl text-white">
-                  1. Designate Primary Suspect
-                </h2>
-                <p className="text-sm text-[var(--text-muted)] mt-1">
-                  Select which project sector initiated the fatal breach.
-                </p>
-              </div>
-              <span 
-                className="text-xs font-mono font-bold px-3 py-1 rounded-lg border"
-                style={{ 
-                  color: 'var(--neon-light)', 
-                  borderColor: 'var(--theme-accent-badge-border)',
-                  backgroundColor: 'var(--theme-accent-badge-bg)'
-                }}
-              >
-                1 REQUIRED
+          {/* LEFT 7 COLUMNS: Suspect Candidates (Alpha, Beta, Gamma) */}
+          <div className="lg:col-span-7 space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                SELECT CORRUPTED CORE CANDIDATE (CHOOSE 1)
+              </span>
+              <span className="text-[11px] font-mono text-pink-400">
+                {selectedCandidateId ? '1 CANDIDATE SELECTED' : 'SELECTION REQUIRED'}
               </span>
             </div>
 
-            <div className="space-y-4">
-              {scenarioData.candidates.map((candidate) => {
-                const isSelected = selectedCandidateId === candidate.id;
-
+            <div className="grid grid-cols-1 gap-3">
+              {candidates.map((cand) => {
+                const isSelected = selectedCandidateId === cand.id;
                 return (
                   <div
-                    key={candidate.id}
-                    onClick={() => handleSelectCandidate(candidate.id)}
-                    className={`game-card p-6 cursor-pointer transition-all duration-200 border relative ${
-                      isSelected 
-                        ? 'ring-2 active scale-[1.01]' 
-                        : 'hover:bg-[var(--bg-surface-elevated)]'
+                    key={cand.id}
+                    onClick={() => handleSelectCandidate(cand.id)}
+                    className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
+                      isSelected
+                        ? 'bg-[#0b1528] border-pink-500 shadow-[0_0_25px_rgba(244,63,94,0.3)]'
+                        : 'bg-[#070c18]/90 border-cyan-900/50 hover:border-cyan-700/80'
                     }`}
-                    style={{
-                      borderColor: isSelected ? 'var(--neon-light)' : undefined,
-                      boxShadow: isSelected ? '0 0 30px var(--neon-glow-strong)' : undefined
-                    }}
                   >
-                    <div className="space-y-4">
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--neon-light)]">
-                            {candidate.timeline_sector} • {candidate.designation}
-                          </span>
-                          <h3 className="font-orbitron font-black text-2xl text-white mt-1">
-                            {candidate.name}
-                          </h3>
-                          <div className="text-sm text-[var(--text-muted)] mt-1 font-mono">
-                            Lead Architect: <strong className="text-white">{candidate.lead_name}</strong>
-                          </div>
-                        </div>
-
-                        <div 
-                          className={`p-3 rounded-2xl transition-all ${
-                            isSelected 
-                              ? 'text-white shadow-lg' 
-                              : 'bg-white/5 text-[var(--text-dim)]'
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono font-bold text-sm ${
+                            isSelected
+                              ? 'bg-pink-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.6)]'
+                              : 'bg-cyan-950 border border-cyan-800 text-cyan-400'
                           }`}
-                          style={{
-                            background: isSelected ? 'var(--neon-gradient)' : undefined,
-                            boxShadow: isSelected ? '0 0 18px var(--neon-glow)' : undefined
-                          }}
                         >
-                          {isSelected ? <CheckCircle2 className="w-6 h-6" /> : <UserX className="w-6 h-6" />}
+                          {cand.id.toUpperCase().slice(0, 1)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-tech text-lg sm:text-xl font-bold text-white tracking-wide">
+                              {cand.name}
+                            </h3>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 uppercase">
+                              {cand.timeline_sector}
+                            </span>
+                          </div>
+                          <p className="text-xs font-mono text-slate-400 mt-0.5">
+                            Lead: <span className="text-slate-200">{cand.lead_name}</span> • Clearance: {cand.clearance_level}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Dossier */}
-                      <p className="text-sm text-[var(--text-body)] leading-relaxed pt-3 border-t border-white/10">
-                        {candidate.dossier}
-                      </p>
-
-                      {/* Forensic Discrepancy Box */}
-                      <div className="bg-black/60 p-4 rounded-xl border border-white/10 text-sm text-[var(--text-body)] space-y-1">
-                        <span className="text-xs font-mono text-[var(--neon-light)] font-bold block uppercase tracking-wider">
-                          ROUND 2 AUDIT DISCREPANCY:
-                        </span>
-                        <p className="text-xs leading-relaxed text-[var(--text-muted)]">{candidate.discrepancy}</p>
+                      <div className="flex items-center">
+                        <div
+                          className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
+                            isSelected
+                              ? 'border-pink-500 bg-pink-500 text-white'
+                              : 'border-slate-600 bg-transparent'
+                          }`}
+                        >
+                          {isSelected && <CheckCircle2 className="w-4 h-4" />}
+                        </div>
                       </div>
+                    </div>
 
-                      {/* Action Button */}
-                      <button
-                        type="button"
-                        className={`w-full py-3.5 rounded-xl font-orbitron font-bold text-sm tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                          isSelected 
-                            ? 'text-white shadow-lg' 
-                            : 'bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-white border border-white/15'
-                        }`}
-                        style={{
-                          background: isSelected ? 'var(--neon-gradient)' : undefined,
-                          boxShadow: isSelected ? '0 0 20px var(--neon-glow)' : undefined
-                        }}
-                      >
-                        {isSelected ? "SECTOR DESIGNATED AS CULPRIT" : "SELECT SECTOR"}
-                      </button>
+                    {/* Dossier & Forensic Discrepancy */}
+                    <div className="mt-3 text-xs font-mono text-slate-300 bg-black/50 p-3 rounded-xl border border-cyan-950 space-y-1.5">
+                      <p className="leading-relaxed">{cand.dossier}</p>
+                      <div className="text-[11px] text-pink-300/90 pt-1 border-t border-cyan-950 flex items-start gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-pink-400 shrink-0 mt-0.5" />
+                        <span><strong>Forensic Discrepancy:</strong> {cand.discrepancy}</span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -384,212 +286,154 @@ export default function Round3({
             </div>
           </div>
 
-          {/* ===================================================================
-              RIGHT COLUMN: CARRIED-OVER EVIDENCE ARCHIVES FROM ROUND 2
-          ==================================================================== */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-white/15">
-              <div>
-                <h2 className="font-orbitron font-bold text-xl text-white flex items-center gap-2">
-                  <FolderLock className="w-5 h-5 text-[var(--neon-light)]" />
-                  <span>2. Round 2 Evidence Archives</span>
-                </h2>
-                <p className="text-sm text-[var(--text-muted)] mt-1">
-                  Corroborating telemetry logs carried over from terminal extraction.
+          {/* RIGHT 5 COLUMNS: Carried Evidence Logs & Submit Button */}
+          <div className="lg:col-span-5 space-y-3 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between px-1 mb-3">
+                <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
+                  <FileCheck2 className="w-3.5 h-3.5 text-cyan-400" />
+                  SUPPORTING EVIDENCE ARCHIVE
+                </span>
+                <span className="text-[11px] font-mono text-emerald-400">
+                  {selectedEvidenceIds.length} VERIFIED
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {evidenceList.map((ev) => {
+                  const isChecked = selectedEvidenceIds.includes(ev.id);
+                  return (
+                    <div
+                      key={ev.id}
+                      onClick={() => handleToggleEvidence(ev.id)}
+                      className={`p-3.5 rounded-xl border transition cursor-pointer flex items-start justify-between gap-2.5 ${
+                        isChecked
+                          ? 'bg-[#091523] border-emerald-500/80 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                          : 'bg-[#070c18]/80 border-cyan-900/40 hover:border-cyan-800'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <FileText className={`w-4 h-4 mt-0.5 shrink-0 ${isChecked ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-xs text-cyan-300">
+                              {ev.title}
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/60 border border-cyan-900 text-slate-400 uppercase">
+                              {ev.source_tag}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-mono text-slate-400 mt-1 leading-relaxed">
+                            {ev.excerpt}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-4 h-4 rounded mt-1 border flex items-center justify-center shrink-0 transition ${
+                          isChecked ? 'border-emerald-400 bg-emerald-500 text-slate-950' : 'border-slate-600'
+                        }`}
+                      >
+                        {isChecked && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Submission CTA Block */}
+            <div className="pt-3">
+              <button
+                disabled={!selectedCandidateId || isSubmitting}
+                onClick={handleInitiateSubmission}
+                className={`w-full py-4 px-6 rounded-xl font-tech font-bold text-base tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
+                  selectedCandidateId && !isSubmitting
+                    ? 'text-slate-950 bg-gradient-to-r from-pink-500 via-rose-400 to-cyan-300 hover:from-pink-400 hover:to-cyan-200 shadow-[0_0_30px_rgba(244,63,94,0.5)] hover:shadow-[0_0_45px_rgba(244,63,94,0.8)]'
+                    : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <span>LOCK IN FINAL ACCUSATION</span>
+                <ArrowRight className="w-5 h-5 text-current" />
+              </button>
+              <p className="text-[11px] font-mono text-slate-500 text-center mt-2">
+                All decisions are permanent and recorded in the temporal ledger.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Modal: Incident Briefing Dossier */}
+        {showBriefingModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="max-w-2xl w-full bg-[#070c18] border border-cyan-800 rounded-2xl p-6 space-y-4 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+              <div className="flex items-center justify-between border-b border-cyan-900 pb-3">
+                <h3 className="font-tech text-xl font-bold text-cyan-300 flex items-center gap-2">
+                  <Info className="w-5 h-5 text-cyan-400" />
+                  INCIDENT DOSSIER // CHRONOS COLLAPSE
+                </h3>
+                <button
+                  onClick={() => setShowBriefingModal(false)}
+                  className="p-1 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-xs sm:text-sm font-mono text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {scenarioData?.mission_brief || 'At 21:14:32 UTC, a catastrophic parameter rewrite on T-17 triggered a desynchronization loop across past, present, and future timelines. Synthesize your audit logs to identify which project introduced the rogue payload.'}
+              </p>
+              <div className="text-right">
+                <button
+                  onClick={() => setShowBriefingModal(false)}
+                  className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase cursor-pointer"
+                >
+                  Close Dossier
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Confirmation & Lock-In */}
+        {isConfirmModalOpen && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-[#070c18] border border-pink-700 rounded-2xl p-6 space-y-5 shadow-[0_0_60px_rgba(244,63,94,0.4)] text-center">
+              <ShieldAlert className="w-12 h-12 text-pink-400 mx-auto animate-bounce" />
+              <div className="space-y-1">
+                <h3 className="text-2xl font-bold font-tech text-white">CONFIRM FINAL ACCUSATION</h3>
+                <p className="text-xs font-mono text-pink-300">
+                  YOU ARE ACCUSING <span className="text-white font-bold">{activeCandidate?.name.toUpperCase()}</span>
                 </p>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              {scenarioData.evidence_pool.map((evidence) => (
-                <div
-                  key={evidence.id}
-                  className="game-card p-5 border-white/15 bg-[var(--bg-surface)] space-y-2 hover:border-[var(--neon-primary)] transition-all"
+              <div className="p-4 bg-black/60 rounded-xl border border-pink-900/60 text-left text-xs font-mono text-slate-300 space-y-1.5">
+                <div>• Selected Candidate: <strong className="text-pink-400">{activeCandidate?.name}</strong></div>
+                <div>• Lead: {activeCandidate?.lead_name} ({activeCandidate?.timeline_sector})</div>
+                <div>• Verified Supporting Evidence: {selectedEvidenceIds.length} items</div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  disabled={isSubmitting}
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="flex-1 py-3 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 font-mono font-bold text-xs uppercase cursor-pointer"
                 >
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span 
-                      className="text-xs font-mono px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border"
-                      style={{
-                        backgroundColor: 'var(--theme-accent-badge-bg)',
-                        borderColor: 'var(--theme-accent-badge-border)',
-                        color: 'var(--neon-light)'
-                      }}
-                    >
-                      {evidence.source_file}
-                    </span>
-                    <span className="text-xs font-mono text-[var(--text-dim)]">
-                      {evidence.timestamp}
-                    </span>
-                  </div>
-
-                  <h4 className="font-orbitron font-bold text-base text-white pt-1">
-                    {evidence.label}
-                  </h4>
-
-                  <p className="text-sm text-[var(--text-body)] leading-relaxed">
-                    {evidence.description}
-                  </p>
-
-                  <div className="pt-2 border-t border-white/10 text-xs font-mono text-[var(--neon-light)]">
-                    Link: {evidence.relevance}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-
-      </main>
-
-      {/* =====================================================================
-          3. STICKY BOTTOM DECISION COMMIT BAR (24" High Contrast)
-      ====================================================================== */}
-      <footer className="fixed bottom-0 left-0 right-0 z-30 bg-[var(--bg-primary)]/95 border-t border-white/15 backdrop-blur-2xl px-6 lg:px-12 py-5 shadow-2xl">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          
-          {/* Status Text */}
-          <div className="flex items-center gap-4 text-sm font-mono">
-            <span className="text-[var(--text-muted)]">Designated Target:</span>
-            <strong 
-              className="text-base font-orbitron"
-              style={{ color: selectedSuspect ? 'var(--neon-light)' : 'var(--text-dim)' }}
-            >
-              {selectedSuspect ? `${selectedSuspect.name} (${selectedSuspect.timeline_sector})` : "NO SECTOR SELECTED"}
-            </strong>
-          </div>
-
-          {/* Submit Button */}
-          <div>
-            <button
-              type="button"
-              disabled={!selectedCandidateId || isSubmitting}
-              onClick={() => {
-                soundEngine.playLockdownPulse();
-                setIsConfirmModalOpen(true);
-              }}
-              className={`px-10 py-4 rounded-xl font-orbitron font-black text-sm tracking-wider transition-all flex items-center gap-3 cursor-pointer ${
-                selectedCandidateId
-                  ? 'text-white shadow-xl'
-                  : 'bg-white/5 border border-white/15 text-[var(--text-dim)] cursor-not-allowed opacity-50'
-              }`}
-              style={{
-                background: selectedCandidateId ? 'var(--neon-gradient)' : undefined,
-                boxShadow: selectedCandidateId ? '0 0 25px var(--neon-glow)' : undefined
-              }}
-            >
-              <Lock className="w-5 h-5" />
-              <span>SUBMIT FINAL DETERMINATION</span>
-            </button>
-          </div>
-
-        </div>
-      </footer>
-
-      {/* =====================================================================
-          4. CONFIRMATION MODAL
-      ====================================================================== */}
-      {isConfirmModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/85 backdrop-blur-md">
-          <div className="game-card max-w-lg w-full p-8 border-white/20 bg-[var(--bg-surface)] space-y-6 shadow-2xl">
-            
-            <div className="space-y-2 text-center">
-              <div 
-                className="inline-flex p-3 rounded-2xl border shadow-lg"
-                style={{ 
-                  backgroundColor: 'var(--theme-accent-badge-bg)', 
-                  borderColor: 'var(--theme-accent-badge-border)' 
-                }}
-              >
-                <ShieldAlert className="w-8 h-8 text-[var(--neon-light)]" />
-              </div>
-              <h3 className="font-orbitron font-black text-2xl text-white">
-                CONFIRM FINAL ACCUSATION
-              </h3>
-              <p className="text-sm text-[var(--text-muted)] font-mono">
-                Your determination will be permanently committed to the central audit ledger.
-              </p>
-            </div>
-
-            <div className="space-y-3 bg-black/60 p-5 rounded-xl border border-white/10 text-sm font-mono">
-              <span className="text-xs text-[var(--text-dim)] uppercase tracking-wider block">
-                PRIMARY ACCUSED SECTOR:
-              </span>
-              <div className="font-orbitron font-bold text-lg text-white">
-                {selectedSuspect?.name}
-              </div>
-              <div className="text-xs text-[var(--neon-light)]">
-                Lead: {selectedSuspect?.lead_name} ({selectedSuspect?.timeline_sector})
+                  Cancel
+                </button>
+                <button
+                  disabled={isSubmitting}
+                  onClick={handleFinalSubmit}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-bold text-xs uppercase shadow-[0_0_20px_rgba(244,63,94,0.6)] cursor-pointer"
+                >
+                  {isSubmitting ? 'RECORDING...' : 'YES, TRANSMIT'}
+                </button>
               </div>
             </div>
-
-            <div className="flex items-center gap-4 pt-2">
-              <button
-                type="button"
-                onClick={executeFinalSubmission}
-                disabled={isSubmitting}
-                className="flex-1 py-4 rounded-xl font-orbitron font-black text-sm text-white tracking-wider transition-all cursor-pointer shadow-lg"
-                style={{
-                  background: 'var(--neon-gradient)',
-                  boxShadow: '0 0 25px var(--neon-glow)'
-                }}
-              >
-                {isSubmitting ? "TRANSMITTING VERDICT..." : "CONFIRM & LOCK VERDICT"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsConfirmModalOpen(false)}
-                className="px-6 py-4 rounded-xl bg-white/5 border border-white/15 text-[var(--text-muted)] hover:text-white font-mono text-sm cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-
           </div>
-        </div>
-      )}
+        )}
 
-      {/* =====================================================================
-          5. RULES MODAL
-      ====================================================================== */}
-      {showBriefingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/85 backdrop-blur-md">
-          <div className="game-card max-w-lg w-full p-8 border-white/20 bg-[var(--bg-surface)] space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-white/15">
-              <h3 className="font-orbitron font-black text-xl text-white">Round 3 Protocols</h3>
-              <button onClick={() => setShowBriefingModal(false)} className="text-[var(--text-muted)] hover:text-white cursor-pointer">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-sm text-[var(--text-body)] leading-relaxed font-space">
-              <p>
-                <strong className="text-white">1. Candidate Sectors:</strong> Evaluate Project Alpha, Project Beta, and Project Gamma using telemetry gathered throughout the event.
-              </p>
-              <p>
-                <strong className="text-white">2. Supporting Evidence:</strong> Cross-reference the Round 2 audit files shown on the right to corroborate your verdict.
-              </p>
-              <p>
-                <strong className="text-white">3. Untimed Protocol:</strong> Take as much time as required to verify timestamps and access tokens.
-              </p>
-              <p>
-                <strong className="text-white">4. Single Commitment:</strong> Once submitted, the decision is permanent. Results are announced at the closing ceremony.
-              </p>
-            </div>
-
-            <button
-              onClick={() => setShowBriefingModal(false)}
-              className="w-full py-3.5 rounded-xl font-orbitron font-bold text-sm text-white cursor-pointer"
-              style={{ background: 'var(--neon-gradient)' }}
-            >
-              ACKNOWLEDGE
-            </button>
-          </div>
-        </div>
-      )}
-
+      </div>
     </div>
   );
 }
-

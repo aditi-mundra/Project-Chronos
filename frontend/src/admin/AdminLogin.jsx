@@ -9,7 +9,8 @@ export default function AdminLogin({ onLoginSuccess }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (password === 'chronos2140' || password === 'admin') {
+    const p = (password || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+    if (p === 'chronos2140' || p === 'admin') {
       soundEngine.playPurgeConfirm();
       onLoginSuccess();
     } else {

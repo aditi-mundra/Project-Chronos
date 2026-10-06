@@ -1,29 +1,51 @@
-"""
-Project Chronos — Round 1 API Routes
-"""
+from fastapi import APIRouter
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
-from ..services.round1_service import Round1Service
+from ..services.round1_service import (
+    get_round1_items,
+    submit_answer,
+    finish_round1,
+    get_round1_status
+)
 
-router = APIRouter(prefix="/api/round1", tags=["Round 1: Timeline Fragmentation"])
+router = APIRouter()
 
-class Round1SubmitRequest(BaseModel):
-    team_id: int
-    item_id: int
-    selected_era: str = Field(..., description="PAST, PRESENT, or FUTURE")
 
 @router.get("/items")
-def get_items():
-    return {"items": Round1Service.get_items()}
+def get_items(team_id: int):
+    """
+    Get the 25 Round 1 images assigned to the team.
+    """
+    return get_round1_items(team_id)
+
 
 @router.post("/submit")
-def submit_classification(payload: Round1SubmitRequest):
-    result = Round1Service.submit_classification(
-        team_id=payload.team_id,
-        item_id=payload.item_id,
-        selected_era=payload.selected_era
+def submit(team_id: int, item_id: int, answer: str):
+    """
+    Submit a classification answer for one image.
+    """
+    return submit_answer(
+        team_id,
+        item_id,
+        answer
     )
-    if result.get("status") == "error":
-        raise HTTPException(status_code=400, detail=result.get("message"))
-    return result
+
+
+@router.post("/finish")
+def finish(team_id: int):
+    """
+    Finish/check Round 1.
+
+    The backend verifies that all assigned
+    items have been submitted before allowing
+    the team to proceed to Round 2.
+    """
+    return finish_round1(team_id)
+
+
+@router.get("/status")
+def status(team_id: int):
+    """
+    Round 1 progress for a team: whether it has started or completed, the
+    remaining time (server clock), and the result once completed.
+    """
+    return get_round1_status(team_id)

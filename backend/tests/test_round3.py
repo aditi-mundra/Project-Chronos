@@ -117,5 +117,9 @@ def run_all_tests():
     print(" 🎉 ALL 10 ROUND 3 TESTS PASSED PERFECTLY!")
     print("================================================================")
 
+def test_round3():
+    run_all_tests()
+
 if __name__ == "__main__":
     run_all_tests()
+

@@ -1,87 +1,120 @@
+import mimetypes
 import os
-from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
 
-from .database.schema import create_tables
-from .routes import auth, game, round3, admin
+from .database.schema import (
+    create_tables,
+    seed_round1_items_if_empty,
+    seed_round2_files_if_empty,
+)
+from .routes.auth import router as auth_router
+from .routes.round1 import router as round1_router
+from .routes.round2 import router as round2_router
+from .routes.round3 import router as round3_router
+from .routes.game import router as game_router
+from .routes.admin import router as admin_router
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
-ASSETS_DIR = FRONTEND_DIST / "assets"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize SQLite database schema on startup
     create_tables()
+    seed_round1_items_if_empty()  # no-op when items already exist
+    seed_round2_files_if_empty()  # no-op when files already exist
     yield
 
+
+# Some Windows Python installs do not know .webp (the Round 1 images); register it so the
+# static files are always served as image/webp.
+mimetypes.add_type("image/webp", ".webp")
+
 app = FastAPI(
-    title="Project Chronos — Unified Central Mainframe",
-    description="Unified single-server host for Project Chronos (Web App + REST API)",
-    version="1.0.0",
+    title="Project Chronos API",
     lifespan=lifespan
 )
 
-# Enable CORS
+
+# CORS: only needed when the frontend is served from a different origin than the API
+# (e.g. a separately hosted frontend). Set CORS_ORIGINS="https://a.com,https://b.com"
+# in production; defaults to allowing any origin.
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "*").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Register API route modules under /api
-app.include_router(auth.router)
-app.include_router(game.router)
-app.include_router(round3.router)
-app.include_router(admin.router)
 
-# Mount static asset directory if built
-if ASSETS_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=str(ASSETS_DIR)), name="assets")
+# Serve Round 1 images
+BASE_DIR = Path(__file__).resolve().parents[1]
 
-@app.get("/api/health")
-def health():
-    return {
-        "status": "online",
-        "system": "PROJECT CHRONOS CENTRAL MAINFRAME",
-        "protocol": 2140,
-        "single_server_mode": True
-    }
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "static"),
+    name="static"
+)
 
-# SPA Fallback: Serve React index.html for all non-API routes
+
+# Built frontend (frontend/dist, created by `npm run build`). When present, the
+# backend serves the whole app so one process hosts everything.
+FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
+FRONTEND_INDEX = FRONTEND_DIST / "index.html"
+
+
+@app.get("/")
+def home():
+    if FRONTEND_INDEX.is_file():
+        return FileResponse(FRONTEND_INDEX)
+    return {"message": "Project Chronos API is running"}
+
+
+app.include_router(
+    auth_router,
+    prefix="/api/auth"
+)
+
+app.include_router(
+    round1_router,
+    prefix="/api/round1"
+)
+
+app.include_router(
+    round2_router
+)
+
+app.include_router(
+    round3_router
+)
+
+app.include_router(
+    game_router
+)
+
+app.include_router(
+    admin_router,
+    prefix="/api/admin"
+)
+
+
+# Must stay LAST: catch-all for the frontend's files and client-side routes.
 @app.get("/{full_path:path}", include_in_schema=False)
-async def serve_spa(full_path: str):
-    # Do not intercept API or docs routes
-    if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
-        return HTMLResponse(content="Not Found", status_code=404)
-    
-    # Check if a specific static file in dist is requested (e.g. vite.svg, favicon.ico)
-    static_file = FRONTEND_DIST / full_path
-    if full_path and static_file.is_file():
-        return FileResponse(str(static_file))
-    
-    # Return index.html for SPA client-side routing
-    index_file = FRONTEND_DIST / "index.html"
-    if index_file.exists():
-        return FileResponse(str(index_file))
-    
-    return HTMLResponse(
-        content="""
-        <html>
-            <head><title>Project Chronos — Initializing</title></head>
-            <body style="background:#07060A; color:#E0D4FC; font-family:monospace; padding:40px; text-align:center;">
-                <h1 style="color:#A855F7;">PROJECT CHRONOS CENTRAL MAINFRAME</h1>
-                <p>Frontend assets are building. Run <code>npm run build</code> inside <code>frontend/</code> or use <code>python3 run.py</code>.</p>
-                <p><a href="/docs" style="color:#38BDF8;">Access Swagger API Docs</a></p>
-            </body>
-        </html>
-        """,
-        status_code=200
-    )
+def serve_frontend(full_path: str):
+    if not FRONTEND_INDEX.is_file() or full_path.startswith(("api/", "static/")):
+        raise HTTPException(status_code=404, detail="Not found")
 
+    requested = (FRONTEND_DIST / full_path).resolve()
+    if requested.is_file() and FRONTEND_DIST.resolve() in requested.parents:
+        return FileResponse(requested)
+
+    return FileResponse(FRONTEND_INDEX)

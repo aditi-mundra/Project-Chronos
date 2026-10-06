@@ -118,7 +118,8 @@ class Round3Service:
                 "round3_started_at": started_at,
                 "is_submitted": has_submitted,
                 "submission": submission_data,
-                "case": sanitized_client_case
+                "case": sanitized_client_case,
+                "scenario": sanitized_client_case
             }
         finally:
             connection.close()
@@ -185,9 +186,12 @@ class Round3Service:
                     "points_awarded": existing_submission["points_awarded"],
                     "is_correct": bool(existing_submission["is_correct"]),
                     "round3_score": team["round3_score"],
+                    "r3_score": team["round3_score"],
                     "total_score": team["total_score"],
                     "completed_at": team["round3_completed_at"],
-                    "next_state": team["current_state"]
+                    "round3_completed_at": team["round3_completed_at"],
+                    "next_state": team["current_state"],
+                    "current_state": team["current_state"]
                 }
             
             # Fetch team assigned case solution
@@ -260,22 +264,25 @@ class Round3Service:
             ))
             
             # Calculate updated total score
-            r1_score = team["round1_score"] or 0
-            r2_score = team["round2_score"] or 0
-            r3_score = points_awarded
+            team_dict = dict(team)
+            r1_score = team_dict.get("round1_score") or team_dict.get("r1_score") or 0.0
+            r2_score = team_dict.get("round2_score") or team_dict.get("r2_score") or 0.0
+            r3_score = float(points_awarded)
             total_score = r1_score + r2_score + r3_score
             
             # Update teams table
             cursor.execute("""
                 UPDATE teams
                 SET round3_score = ?,
+                    r3_score = ?,
                     total_score = ?,
                     round3_completed_at = ?,
-                    current_state = 'COMPLETED',
                     status = 'FINISHED',
+                    current_state = 'COMPLETED',
                     updated_at = ?
                 WHERE id = ?
             """, (
+                r3_score,
                 r3_score,
                 total_score,
                 now_iso,
@@ -313,9 +320,12 @@ class Round3Service:
                 "is_correct": is_correct,
                 "points_awarded": points_awarded,
                 "round3_score": r3_score,
+                "r3_score": r3_score,
                 "total_score": total_score,
                 "completed_at": now_iso,
+                "round3_completed_at": now_iso,
                 "next_state": "COMPLETED",
+                "current_state": "COMPLETED",
                 "matching_evidence_count": len(matching_evidence),
                 "narrative_summary": narrative_summary
             }
@@ -346,6 +356,7 @@ class Round3Service:
                 return {
                     "status": "pending",
                     "message": "No decision has been submitted for Round 3 yet.",
+                    "id": team_id,
                     "team_id": team_id,
                     "team_name": team["team_name"],
                     "current_state": team["current_state"]
@@ -355,19 +366,34 @@ class Round3Service:
             selected_cand = next((c for c in full_case["candidates"] if c["id"] == selected_cand_id), None)
             culprit_cand = next((c for c in full_case["candidates"] if c["id"] == full_case["culprit_candidate_id"]), None)
             
+            team_dict = dict(team)
+            m1_name = team_dict.get("member_1_name") or team_dict.get("member1_name") or ""
+            m2_name = team_dict.get("member_2_name") or team_dict.get("member2_name") or ""
+            m1_prn = team_dict.get("member_1_prn") or team_dict.get("member1_prn") or ""
+            m2_prn = team_dict.get("member_2_prn") or team_dict.get("member2_prn") or ""
+
             return {
                 "status": "success",
+                "id": team_id,
                 "team_id": team_id,
-                "team_name": team["team_name"],
-                "member_1_name": team["member_1_name"],
-                "member_2_name": team["member_2_name"],
-                "member_1_prn": team["member_1_prn"],
-                "member_2_prn": team["member_2_prn"],
-                "current_state": team["current_state"],
-                "round1_score": team["round1_score"],
-                "round2_score": team["round2_score"],
-                "round3_score": team["round3_score"],
-                "total_score": team["total_score"],
+                "team_name": team_dict.get("team_name", ""),
+                "member_1_name": m1_name,
+                "member_2_name": m2_name,
+                "member_1_prn": m1_prn,
+                "member_2_prn": m2_prn,
+                "member1_name": m1_name,
+                "member2_name": m2_name,
+                "member1_prn": m1_prn,
+                "member2_prn": m2_prn,
+                "current_state": team_dict.get("current_state", ""),
+                "team_status": team_dict.get("status") or "FINISHED",
+                "round1_score": team_dict.get("round1_score", 0.0),
+                "r1_score": team_dict.get("round1_score", 0.0),
+                "round2_score": team_dict.get("round2_score", 0.0),
+                "r2_score": team_dict.get("round2_score", 0.0),
+                "round3_score": team_dict.get("round3_score", 0.0),
+                "r3_score": team_dict.get("round3_score", 0.0),
+                "total_score": team_dict.get("total_score", 0.0),
                 "round3_started_at": team["round3_started_at"],
                 "round3_completed_at": team["round3_completed_at"],
                 "submission": {

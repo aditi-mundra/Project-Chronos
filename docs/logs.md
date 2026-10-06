@@ -35,4 +35,12 @@ Work execution needs to start and demonstration to be displayed by <b>3rd Octobe
 Finalised the theme by the Events Team and Samarth generated a .md file for documentation and easier access to the individual rounds by documenting it. Unified stack, database, theme established. Reference Palette also added therein.
 
 #  
-## Round 3 Implementation Complete - 2 October (Samarth and Adwaiy)
+### Round 3 Implementation Complete - 2 October (Samarth and Adwaiy)
+
+---
+
+# Meeting 2 - 3rd October 2026
+
+---
+
+- 

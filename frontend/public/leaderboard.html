@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROJECT CHRONOS — Master Host Leaderboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Super Sliced';
+      src: url('/fonts/SuperSliced.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #05070c;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    .font-tech {
+      font-family: 'Chakra Petch', sans-serif;
+    }
+
+    .font-title {
+      font-family: 'Super Sliced', 'Chakra Petch', sans-serif;
+    }
+
+    /* Subtle CRT Scanlines & Cyber Grid */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                  linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      z-index: 99;
+    }
+
+    .cyber-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      z-index: 1;
+    }
+
+    .glow-cyan {
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+
+    header {
+      background: rgba(7, 11, 20, 0.95);
+      border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+      padding: 16px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #06b6d4, #14b8a6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #030712;
+      font-family: 'Chakra Petch', sans-serif;
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.4);
+    }
+
+    .brand-title {
+      font-family: 'Super Sliced', 'Chakra Petch', sans-serif;
+      font-size: 20px;
+      font-weight: normal;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    .badge-host {
+      background: rgba(147, 51, 234, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.5);
+      color: #d8b4fe;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      background: rgba(8, 13, 26, 0.8);
+      color: #67e8f9;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: #06b6d4;
+    }
+
+    .btn-csv {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #022c22;
+      border: none;
+      font-weight: 700;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-csv:hover {
+      background: linear-gradient(135deg, #34d399, #10b981);
+      box-shadow: 0 0 24px rgba(16, 185, 129, 0.7);
+    }
+
+    .btn-lock {
+      background: rgba(225, 29, 72, 0.15);
+      border-color: rgba(225, 29, 72, 0.4);
+      color: #fda4af;
+    }
+
+    .btn-lock:hover {
+      background: rgba(225, 29, 72, 0.3);
+      border-color: #f43f5e;
+    }
+
+    main {
+      flex: 1;
+      padding: 28px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Top 3 Podium Stairs Banner */
+    .podium-section {
+      margin-bottom: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .podium-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .podium-title-bar .line {
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.6), transparent);
+    }
+
+    .podium-title-bar h2 {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #ffffff;
+      font-style: italic;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.7);
+    }
+
+    .podium-stairs-container {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      max-width: 820px;
+      padding: 0 10px;
+    }
+
+    .podium-card {
+      flex: 1;
+      min-width: 180px;
+      max-width: 250px;
+      border-radius: 14px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    }
+
+    .podium-card:hover {
+      transform: translateY(-4px);
+    }
+
+    /* Rank 1: Gold / Yellow - Tallest Center Stair */
+    .podium-rank-1 {
+      height: 240px;
+      background: linear-gradient(180deg, #facc15 0%, #eab308 30%, #ca8a04 80%, #a16207 100%);
+      color: #0f172a;
+      order: 2;
+      border: 2px solid rgba(254, 240, 138, 0.8);
+      box-shadow: 0 0 35px rgba(234, 179, 8, 0.5), 0 14px 30px rgba(0, 0, 0, 0.6);
+      z-index: 3;
+    }
+
+    /* Rank 2: Cyan / Blue - Medium Left Stair */
+    .podium-rank-2 {
+      height: 200px;
+      background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 35%, #0284c7 80%, #0369a1 100%);
+      color: #04101e;
+      order: 1;
+      border: 2px solid rgba(186, 230, 253, 0.8);
+      box-shadow: 0 0 25px rgba(14, 165, 233, 0.4), 0 10px 24px rgba(0, 0, 0, 0.5);
+      z-index: 2;
+    }
+
+    /* Rank 3: Orange / Bronze - Small Right Stair */
+    .podium-rank-3 {
+      height: 180px;
+      background: linear-gradient(180deg, #fb923c 0%, #f97316 35%, #ea580c 80%, #c2410c 100%);
+      color: #1a0802;
+      order: 3;
+      border: 2px solid rgba(254, 215, 170, 0.8);
+      box-shadow: 0 0 25px rgba(249, 115, 22, 0.4), 0 10px 24px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    .podium-crown {
+      font-size: 26px;
+      line-height: 1;
+      margin-bottom: 6px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    .podium-badge-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.85);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .podium-team-name {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .podium-score {
+      font-size: 24px;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .podium-rank-1 .podium-score {
+      font-size: 28px;
+    }
+
+    .podium-pill {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(0, 0, 0, 0.35);
+      color: inherit;
+    }
+
+    /* Modal / Auth Overlay */
+    #auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 5, 10, 0.95);
+      backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: #080d1a;
+      border: 1px solid rgba(168, 85, 247, 0.5);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 0 40px rgba(147, 51, 234, 0.25);
+      text-align: center;
+    }
+
+    .auth-input {
+      width: 100%;
+      background: #03060c;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #fff;
+      font-size: 14px;
+      margin: 16px 0;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: #06b6d4;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+    }
+
+    /* Table styling */
+    .table-container {
+      background: #080d1a;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      border-radius: 12px;
+      overflow-x: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12px;
+    }
+
+    thead th {
+      background: #04070e;
+      color: #67e8f9;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(6, 182, 212, 0.08);
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: rgba(6, 182, 212, 0.05);
+    }
+
+    tbody tr.top-1 {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    tbody tr.top-3 {
+      background: rgba(6, 182, 212, 0.04);
+    }
+
+    tbody td {
+      padding: 14px 16px;
+      vertical-align: middle;
+    }
+
+    .rank-cell {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .rank-1 { color: #f59e0b; }
+    .rank-2 { color: #cbd5e1; }
+    .rank-3 { color: #d97706; }
+
+    .team-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .member-prn {
+      color: #94a3b8;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .prn-code {
+      color: #38bdf8;
+      font-size: 10px;
+    }
+
+    .score-cell {
+      text-align: right;
+      font-weight: 500;
+    }
+
+    .total-score {
+      color: #22d3ee;
+      font-weight: 700;
+      font-size: 14px;
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    }
+
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }
+
+    .status-active {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: #67e8f9;
+    }
+
+    .status-finished {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+
+    .search-bar {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .search-input {
+      flex: 1;
+      max-width: 400px;
+      background: #080d1a;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #06b6d4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="scanlines"></div>
+  <div class="cyber-grid"></div>
+
+  <!-- Host Passkey Modal -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <div style="font-size: 32px; margin-bottom: 12px;">🛡️</div>
+      <h2 class="font-tech" style="font-size: 22px; color: #fff;">Supervisor Access Required</h2>
+      <p style="font-size: 11px; color: #94a3b8; margin-top: 6px;">
+        This isolated interface directly controls SQLite Master telemetry. Enter host passkey.
+      </p>
+
+      <form id="passkey-form" onsubmit="handleAuthSubmit(event)">
+        <input 
+          type="password" 
+          id="passkey-input" 
+          class="auth-input" 
+          placeholder="Enter passkey: admin or chronos2140" 
+          autocomplete="off"
+          autofocus
+        />
+        <div id="auth-err" style="color: #f43f5e; font-size: 11px; margin-bottom: 12px; display: none;">
+          Access Denied: Invalid temporal passkey (use 'admin' or 'chronos2140').
+        </div>
+        <button type="submit" style="width: 100%; justify-content: center; padding: 10px; font-weight: 700;">
+          AUTHENTICATE SUPERVISOR
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="brand-title font-title">PROJECT CHRONOS</span>
+          <span class="badge-host font-tech">HOST ONLY</span>
+        </div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
+          SQLite Master Connection: <span style="color: #10b981;">CONNECTED (WAL)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <span id="sync-counter" style="font-size: 11px; color: #94a3b8;">Syncing in 5s...</span>
+      <button onclick="fetchLeaderboard()">↻ Sync Now</button>
+      <button class="btn-csv" onclick="exportToCSV()">⤓ Export to CSV</button>
+      <button onclick="startClearDb()" style="background: rgba(225, 29, 72, 0.2); border-color: rgba(225, 29, 72, 0.6); color: #fda4af; font-weight: 700;">🗑️ Clear DB</button>
+      <a href="/api/download/project-zip" download="chronos_auth_leaderboard.zip" style="text-decoration: none;">
+        <button style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #6ee7b7; font-weight: 700;">
+          📦 Download Project ZIP
+        </button>
+      </a>
+      <button class="btn-lock" onclick="lockPortal()">🔒 Lock Portal</button>
+    </div>
+  </header>
+
+  <!-- Clear DB Warning 1 Modal -->
+  <div id="clear-warn-1" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="auth-card" style="border-color: #f59e0b; box-shadow: 0 0 50px rgba(245, 158, 11, 0.3); text-align: left;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span style="font-size: 28px;">⚠️</span>
+        <div>
+          <div style="font-size: 10px; color: #f59e0b; font-weight: bold; letter-spacing: 2px;">WARNING 1 OF 2 // PURGE CONFIRMATION</div>
+          <h2 class="font-tech" style="font-size: 20px; color: #fff; margin-top: 2px;">Clear Master Database?</h2>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #cbd5e1; line-height: 1.6; margin-bottom: 16px;">
+        Are you sure you want to clear the database? This action will permanently delete all registered teams, round submissions, scores, and telemetry logs.
+      </p>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button onclick="abortClearDb()" style="background: #1e293b; border-color: #475569; color: #cbd5e1;">Cancel</button>
+        <button onclick="proceedToClearStep2()" style="background: #f59e0b; border-color: #d97706; color: #000; font-weight: bold;">Proceed to Final Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clear DB Warning 2 Modal with Password 'admin' -->
+  <div id="clear-warn-2" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="auth-card" style="border-color: #e11d48; box-shadow: 0 0 60px rgba(225, 29, 72, 0.4); text-align: left;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span style="font-size: 28px;">🚨</span>
+        <div>
+          <div style="font-size: 10px; color: #f43f5e; font-weight: bold; letter-spacing: 2px;">WARNING 2 OF 2 // CRITICAL CLEARANCE</div>
+          <h2 class="font-tech" style="font-size: 20px; color: #fff; margin-top: 2px;">Final Destruction Authorization</h2>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: #fda4af; line-height: 1.6; margin-bottom: 14px;">
+        <strong>IRREVERSIBLE OPERATION:</strong> All competition data will be permanently wiped from the mainframe.
+      </p>
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">
+        To authorize, enter supervisor password (<code style="color: #67e8f9;">admin</code>):
+      </p>
+      <form onsubmit="submitClearDb(event)">
+        <input 
+          type="password" 
+          id="clear-db-pass" 
+          class="auth-input" 
+          placeholder='Enter password "admin"...' 
+          style="border-color: #e11d48;"
+          autocomplete="off"
+        />
+        <div id="clear-db-err" style="color: #f43f5e; font-size: 11px; margin-bottom: 12px; display: none;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" onclick="abortClearDb()" style="background: #1e293b; border-color: #475569; color: #cbd5e1;">Cancel</button>
+          <button type="submit" id="btn-confirm-purge" style="background: #e11d48; border-color: #be123c; color: #fff; font-weight: bold;">Confirm & Wipe Database</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Top 3 Podium Stairs Banner (As shown in screenshot) -->
+    <section class="podium-section">
+      <div class="podium-title-bar">
+        <div class="line"></div>
+        <h2 class="font-tech">LEADERBOARD</h2>
+        <div class="line"></div>
+      </div>
+
+      <div class="podium-stairs-container" id="podium-container">
+        <!-- Rendered dynamically from top 3 ranked teams -->
+      </div>
+    </section>
+
+    <div class="search-bar">
+      <input 
+        type="text" 
+        id="search-input" 
+        class="search-input" 
+        placeholder="Filter by Team Name, Operator, or PRN..." 
+        oninput="renderTable()"
+      />
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 70px;">Rank</th>
+            <th>Team Name</th>
+            <th>Operators (Name &amp; PRN)</th>
+            <th>R1 Time</th>
+            <th style="text-align: right;">R1 Score</th>
+            <th style="text-align: right;">R1 Scaled</th>
+            <th style="text-align: right;">R2</th>
+            <th style="text-align: right;">R3</th>
+            <th style="text-align: right; color: #67e8f9;">Total Score</th>
+            <th style="text-align: center;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">
+              Loading authoritative SQLite records...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const HOST_KEYS = ['admin', 'chronos2140'];
+    let rawLeaderboard = [];
+    let countdown = 5;
+    let pollTimer = null;
+
+    function isHostKey(str) {
+      if (!str) return false;
+      const cleaned = str.trim().replace(/^["']|["']$/g, '').toLowerCase();
+      return HOST_KEYS.includes(cleaned);
+    }
+
+    // Check existing auth
+    if (sessionStorage.getItem('chronos_host_authed') === 'true') {
+      document.getElementById('auth-overlay').style.display = 'none';
+      initLeaderboard();
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const val = document.getElementById('passkey-input').value;
+      if (isHostKey(val)) {
+        sessionStorage.setItem('chronos_host_authed', 'true');
+        document.getElementById('auth-overlay').style.display = 'none';
+        initLeaderboard();
+      } else {
+        document.getElementById('auth-err').style.display = 'block';
+      }
+    }
+
+    function lockPortal() {
+      sessionStorage.removeItem('chronos_host_authed');
+      window.location.reload();
+    }
+
+    function initLeaderboard() {
+      fetchLeaderboard();
+      if (!pollTimer) {
+        pollTimer = setInterval(() => {
+          countdown--;
+          if (countdown <= 0) {
+            fetchLeaderboard();
+            countdown = 5;
+          }
+          document.getElementById('sync-counter').textContent = `Syncing in ${countdown}s...`;
+        }, 1000);
+      }
+    }
+
+    function renderPodiumStairs() {
+      const container = document.getElementById('podium-container');
+      if (!container) return;
+
+      if (!rawLeaderboard || rawLeaderboard.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 12px; padding: 20px;">Awaiting tournament scores...</div>';
+        return;
+      }
+
+      const rank1 = rawLeaderboard[0] || null;
+      const rank2 = rawLeaderboard[1] || null;
+      const rank3 = rawLeaderboard[2] || null;
+
+      let html = '';
+
+      // Rank 2 (Left Stair - Cyan / Blue)
+      if (rank2) {
+        html += `
+          <div class="podium-card podium-rank-2">
+            <div class="podium-badge-circle">02</div>
+            <div class="podium-team-name" title="${escapeHtml(rank2.team_name)}">${escapeHtml(rank2.team_name)}</div>
+            <div class="podium-score">${Math.round(rank2.total_score || 0)}</div>
+            <div class="podium-pill">- 0</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="podium-card podium-rank-2" style="opacity: 0.4;">
+            <div class="podium-badge-circle">02</div>
+            <div class="podium-team-name">WAITING...</div>
+            <div class="podium-score">0</div>
+            <div class="podium-pill">- 0</div>
+          </div>
+        `;
+      }
+
+      // Rank 1 (Center Stair - Gold / Yellow with Crown, Tallest)
+      if (rank1) {
+        html += `
+          <div class="podium-card podium-rank-1">
+            <div class="podium-crown">👑</div>
+            <div class="podium-team-name" title="${escapeHtml(rank1.team_name)}">${escapeHtml(rank1.team_name)}</div>
+            <div class="podium-score">${Math.round(rank1.total_score || 0)}</div>
+            <div class="podium-pill">- 0</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="podium-card podium-rank-1" style="opacity: 0.4;">
+            <div class="podium-crown">👑</div>
+            <div class="podium-team-name">WAITING...</div>
+            <div class="podium-score">0</div>
+            <div class="podium-pill">- 0</div>
+          </div>
+        `;
+      }
+
+      // Rank 3 (Right Stair - Orange / Bronze)
+      if (rank3) {
+        html += `
+          <div class="podium-card podium-rank-3">
+            <div class="podium-badge-circle">03</div>
+            <div class="podium-team-name" title="${escapeHtml(rank3.team_name)}">${escapeHtml(rank3.team_name)}</div>
+            <div class="podium-score">${Math.round(rank3.total_score || 0)}</div>
+            <div class="podium-pill">- 0</div>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="podium-card podium-rank-3" style="opacity: 0.4;">
+            <div class="podium-badge-circle">03</div>
+            <div class="podium-team-name">WAITING...</div>
+            <div class="podium-score">0</div>
+            <div class="podium-pill">- 0</div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch('/api/admin/leaderboard');
+        if (!res.ok) throw new Error('Failed to fetch');
+        rawLeaderboard = await res.json();
+        renderPodiumStairs();
+        renderTable();
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    function renderTable() {
+      const q = (document.getElementById('search-input').value || '').toLowerCase();
+      const tbody = document.getElementById('leaderboard-body');
+
+      const filtered = rawLeaderboard.filter(t => {
+        return (
+          t.team_name.toLowerCase().includes(q) ||
+          t.member1_name.toLowerCase().includes(q) ||
+          t.member2_name.toLowerCase().includes(q) ||
+          t.member1_prn.toLowerCase().includes(q) ||
+          t.member2_prn.toLowerCase().includes(q)
+        );
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">No matching teams found in master table.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(t => {
+        const topClass = t.rank === 1 ? 'top-1' : t.rank <= 3 ? 'top-3' : '';
+        const rankColor = t.rank === 1 ? 'rank-1' : t.rank === 2 ? 'rank-2' : t.rank === 3 ? 'rank-3' : '';
+        const statusClass = t.status === 'FINISHED' ? 'status-finished' : 'status-active';
+
+        return `
+          <tr class="${topClass}">
+            <td class="rank-cell ${rankColor}">#${t.rank}</td>
+            <td>
+              <div class="team-title">${escapeHtml(t.team_name)}</div>
+            </td>
+            <td>
+              <div class="member-prn">
+                <strong>${escapeHtml(t.member1_name)}</strong> <span class="prn-code">[${escapeHtml(t.member1_prn)}]</span>
+              </div>
+              <div class="member-prn">
+                <strong>${escapeHtml(t.member2_name)}</strong> <span class="prn-code">[${escapeHtml(t.member2_prn)}]</span>
+              </div>
+            </td>
+            <td>${t.r1_time_formatted || '--:--'}</td>
+            <td class="score-cell">${(t.r1_score || 0).toFixed(1)}</td>
+            <td class="score-cell">${(t.r1_scaled || 0).toFixed(1)}</td>
+            <td class="score-cell">${(t.r2_score || 0).toFixed(1)}</td>
+            <td class="score-cell">${(t.r3_score || 0).toFixed(1)}</td>
+            <td class="score-cell total-score">${(t.total_score || 0).toFixed(1)}</td>
+            <td style="text-align: center;">
+              <span class="status-badge ${statusClass}">${escapeHtml(t.status)}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportToCSV() {
+      if (!rawLeaderboard.length) {
+        alert('No data available to export.');
+        return;
+      }
+
+      const headers = [
+        'Rank',
+        'Team Name',
+        'Member 1 Name',
+        'Member 1 PRN',
+        'Member 2 Name',
+        'Member 2 PRN',
+        'R1 Time Diff (s)',
+        'R1 Time Formatted',
+        'R1 Score',
+        'R1 Scaled',
+        'R2 Score',
+        'R3 Score',
+        'Total Score',
+        'Status'
+      ];
+
+      const rows = rawLeaderboard.map(t => [
+        t.rank,
+        `"${(t.team_name || '').replace(/"/g, '""')}"`,
+        `"${(t.member1_name || '').replace(/"/g, '""')}"`,
+        `"${(t.member1_prn || '').replace(/"/g, '""')}"`,
+        `"${(t.member2_name || '').replace(/"/g, '""')}"`,
+        `"${(t.member2_prn || '').replace(/"/g, '""')}"`,
+        t.r1_time_diff != null ? t.r1_time_diff : '',
+        `"${t.r1_time_formatted || '--:--'}"`,
+        t.r1_score || 0,
+        t.r1_scaled || 0,
+        t.r2_score || 0,
+        t.r3_score || 0,
+        t.total_score || 0,
+        `"${t.status || 'ACTIVE'}"`
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `chronos_master_leaderboard_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function startClearDb() {
+      document.getElementById('clear-warn-1').style.display = 'flex';
+      document.getElementById('clear-warn-2').style.display = 'none';
+      document.getElementById('clear-db-err').style.display = 'none';
+      document.getElementById('clear-db-pass').value = '';
+    }
+
+    function proceedToClearStep2() {
+      document.getElementById('clear-warn-1').style.display = 'none';
+      document.getElementById('clear-warn-2').style.display = 'flex';
+      document.getElementById('clear-db-err').style.display = 'none';
+      const input = document.getElementById('clear-db-pass');
+      input.value = '';
+      setTimeout(() => input.focus(), 50);
+    }
+
+    function abortClearDb() {
+      document.getElementById('clear-warn-1').style.display = 'none';
+      document.getElementById('clear-warn-2').style.display = 'none';
+      document.getElementById('clear-db-err').style.display = 'none';
+      document.getElementById('clear-db-pass').value = '';
+    }
+
+    async function submitClearDb(e) {
+      if (e) e.preventDefault();
+      const password = (document.getElementById('clear-db-pass').value || '').trim();
+      const errEl = document.getElementById('clear-db-err');
+      const btn = document.getElementById('btn-confirm-purge');
+
+      if (!password) {
+        errEl.innerText = 'Password is required.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Purging Database...';
+      errEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/clear-db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.detail || data.message || 'Clearance failed: Incorrect supervisor password.');
+        }
+
+        abortClearDb();
+        alert(data.message || 'Database successfully cleared. All team records have been purged.');
+        fetchLeaderboard();
+      } catch (err) {
+        errEl.innerText = err.message || 'Access Denied: Invalid admin password.';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Confirm & Wipe Database';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

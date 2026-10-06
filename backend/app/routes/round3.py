@@ -17,11 +17,11 @@ router = APIRouter(prefix="/api/round3", tags=["Round 3: Final Decision"])
 # =============================================================================
 
 class Round3StartRequest(BaseModel):
-    team_id: int = Field(..., description="Unique database ID of the investigating team", example=1)
+    team_id: int = Field(..., description="Unique database ID of the investigating team", examples=[1])
 
 class Round3SubmitRequest(BaseModel):
-    team_id: int = Field(..., description="Unique database ID of the team", example=1)
-    selected_candidate_id: str = Field(..., description="ID of the accused suspect (alpha, beta, or gamma)", example="alpha")
+    team_id: int = Field(..., description="Unique database ID of the team", examples=[1])
+    selected_candidate_id: str = Field(..., description="ID of the accused suspect (alpha, beta, or gamma)", examples=["alpha"])
     selected_evidence_ids: Optional[List[str]] = Field(default_factory=list, description="Optional supporting evidence IDs carried from Round 2")
 
 # =============================================================================
@@ -45,7 +45,7 @@ def start_round3(payload: Round3StartRequest):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to start Round 3: {str(ex)}")
 
 @router.get("/scenario", summary="Get Current Scenario for Team")
-def get_scenario(team_id: int = Query(..., description="Team ID to fetch scenario for", example=1)):
+def get_scenario(team_id: int = Query(..., description="Team ID to fetch scenario for", examples=[1])):
     """
     Fetches the team's assigned scenario and active state for page refresh recovery.
     """
@@ -88,7 +88,7 @@ def submit_decision(payload: Round3SubmitRequest):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Submission processing error: {str(ex)}")
 
 @router.get("/verdict", summary="Get Verdict and Narrative Debrief")
-def get_verdict(team_id: int = Query(..., description="Team ID to fetch verdict for", example=1)):
+def get_verdict(team_id: int = Query(..., description="Team ID to fetch verdict for", examples=[1])):
     """
     Retrieves the final decision outcome, forensic breakdown, and narrative resolution
     for the team's completion view.

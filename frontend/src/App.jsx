@@ -1,171 +1,228 @@
-import React, { useState, useEffect } from 'react';
-import Login from './pages/Login';
-import Round1 from './pages/Round1';
-import Round2 from './pages/Round2';
-import Round3 from './pages/Round3';
-import Completion from './pages/Completion';
-import AdminLogin from './admin/AdminLogin';
-import Dashboard from './admin/Dashboard';
-import { ThemeProvider } from './context/ThemeContext';
-import { api } from './services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
+import api from './services/api.js';
+import LandingGlitch from './pages/LandingGlitch.jsx';
+import CrtShutdown from './components/CrtShutdown.jsx';
+import ChronosIntro from './components/ChronosIntro.jsx';
+import Login from './pages/Login.jsx';
+import Round1PreLobby from './pages/Round1PreLobby.jsx';
+import Round1 from './pages/Round1.jsx';
+import Round2Lobby from './pages/Round2Lobby.jsx';
+import Round2 from './pages/Round2.jsx';
+import Round3 from './pages/Round3.jsx';
+import Completion from './pages/Completion.jsx';
+import Leaderboard from './admin/Leaderboard.jsx';
+import AdminControls from './components/AdminControls.jsx';
 
-/**
- * Project Chronos — Main Application Controller
- * Manages player authentication, current round lifecycle, admin console, and persistent session state.
- */
+// View order:
+//  'landing'  -> Glitch title page  (START MISSION button)
+//  'intro'    -> Full-screen GSAP HTML cinematic intro
+//  'login'    -> Team authentication form
+//  'prelobby' -> Post-login lobby: START ROUND 1 -> 5 second countdown -> Round 1
+//  'round1'   -> Round 1 (timeline classification)
+//  'round2lobby' -> Lobby after Round 1: PLAY ROUND 2 -> waiting state
+//  'round2'   -> Round 2 Terminal Investigation
+//  'round3'   -> Round 3 Final Accusation
+//  'completion' -> Mission Concluded Debrief
+//  'leaderboard' -> Master Host Leaderboard
+//
+// A logged-in team (session in localStorage) is routed by its server-side state on reload
+// ('resuming'): READY -> prelobby, ROUND1_ACTIVE -> round1, ROUND1_COMPLETED -> round2lobby.
+// It stays logged in until LOGOUT.
+
+const LOGGED_IN_VIEWS = ['resuming', 'prelobby', 'round1', 'round2lobby', 'round2', 'round3', 'completion', 'leaderboard'];
+const PRE_ROUND_STATES = ['READY', 'LOGGED_IN'];
+
 function AppContent() {
-  const [session, setSession] = useState(() => {
-    const saved = localStorage.getItem('chronos_session');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
+  const { team, logoutTeam } = useAuth();
+  const [currentView, setCurrentView] = useState(() => (team ? 'resuming' : 'landing'));
+  const [isCrtActive, setIsCrtActive] = useState(false);
+  const [round1Result, setRound1Result] = useState(null);
 
-  // Current Active Page: 'LOGIN' | 'ROUND_1' | 'ROUND_2' | 'ROUND_3' | 'COMPLETION' | 'ADMIN' | 'ADMIN_LOGIN'
-  const [currentPage, setCurrentPage] = useState(() => {
-    // If URL contains #admin or ?admin, open admin
-    if (window.location.hash === '#admin' || window.location.pathname.includes('/admin')) {
-      const isAuthed = localStorage.getItem('chronos_admin_auth') === 'true';
-      return isAuthed ? 'ADMIN' : 'ADMIN_LOGIN';
-    }
-    const saved = localStorage.getItem('chronos_page');
-    return saved || 'LOGIN';
-  });
-
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    return localStorage.getItem('chronos_admin_auth') === 'true';
-  });
-
-  // Secret Admin hotkey: Ctrl + Shift + A (or Cmd + Shift + A)
+  // Session ended (logout, or server says the team no longer exists) -> back to landing.
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        setCurrentPage(prev => {
-          if (prev === 'ADMIN' || prev === 'ADMIN_LOGIN') {
-            return 'ROUND_3';
-          }
-          return isAdminAuthenticated ? 'ADMIN' : 'ADMIN_LOGIN';
-        });
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAdminAuthenticated]);
-
-  // Persist session & page state
-  useEffect(() => {
-    if (session) {
-      localStorage.setItem('chronos_session', JSON.stringify(session));
-    } else {
-      localStorage.removeItem('chronos_session');
+    if (!team && LOGGED_IN_VIEWS.includes(currentView) && currentView !== 'leaderboard') {
+      setCurrentView('landing');
     }
-  }, [session]);
+  }, [team, currentView]);
+
+  // Put a team on the right screen for its server-side state (login and page reload).
+  const routeForState = useCallback(async (teamId, state) => {
+    if (state === 'ROUND1_ACTIVE') {
+      setCurrentView('round1');
+      return;
+    }
+    if (!state || PRE_ROUND_STATES.includes(state)) {
+      setCurrentView('prelobby');
+      return;
+    }
+    if (state === 'ROUND2_ACTIVE') {
+      setCurrentView('round2');
+      return;
+    }
+    if (state === 'ROUND3_ACTIVE' || state === 'ROUND2_COMPLETED') {
+      setCurrentView('round3');
+      return;
+    }
+    if (state === 'COMPLETED' || state === 'DECISION_SUBMITTED' || state === 'FINAL_REVEAL') {
+      setCurrentView('completion');
+      return;
+    }
+    // Round 1 is finished: the lobby shows its result.
+    try {
+      const status = await api.getRound1Status(teamId);
+      setRound1Result(status.result || null);
+    } catch {
+      setRound1Result(null);
+    }
+    setCurrentView('round2lobby');
+  }, []);
 
   useEffect(() => {
-    if (!currentPage.startsWith('ADMIN')) {
-      localStorage.setItem('chronos_page', currentPage);
-    }
-  }, [currentPage]);
+    if (currentView !== 'resuming' || !team) return undefined;
+    let cancelled = false;
 
-  // Handle Login Success
-  const handleLoginSuccess = (loginData) => {
-    setSession(loginData);
-    
-    // Direct player to appropriate stage
-    const state = loginData.current_state;
-    if (state === 'ROUND_1_ACTIVE') {
-      setCurrentPage('ROUND_1');
-    } else if (state === 'ROUND_2_ACTIVE' || state === 'OMEGA_DISCOVERED') {
-      setCurrentPage('ROUND_2');
-    } else if (state === 'ROUND_3_ACTIVE' || state === 'ROUND_2_COMPLETED') {
-      setCurrentPage('ROUND_3');
-    } else if (state === 'COMPLETED' || state === 'DECISION_SUBMITTED' || state === 'FINAL_REVEAL') {
-      setCurrentPage('COMPLETION');
-    } else {
-      setCurrentPage('ROUND_3');
-    }
+    (async () => {
+      const session = await api.getSession(team.team_id);
+      if (cancelled) return;
+      if (session?.notFound) return; // AuthContext ends the session; the effect above returns to landing
+      await routeForState(team.team_id, session?.current_state || team.current_state);
+    })();
+
+    return () => { cancelled = true; };
+  }, [currentView, team, routeForState]);
+
+  const handleRound1Complete = useCallback((result) => {
+    setRound1Result(result || null);
+    setCurrentView('round2lobby');
+  }, []);
+
+  const handleStartMission = () => {
+    if (isCrtActive) return;
+    setIsCrtActive(true);
   };
 
-  // Handle Logout / Reset
-  const handleReset = () => {
-    localStorage.removeItem('chronos_session');
-    localStorage.removeItem('chronos_page');
-    setSession(null);
-    setCurrentPage('LOGIN');
+  const handleCrtComplete = () => {
+    setIsCrtActive(false);
+    setCurrentView('intro');
   };
 
-  // Handle Admin Login Success
-  const handleAdminLoginSuccess = () => {
-    setIsAdminAuthenticated(true);
-    localStorage.setItem('chronos_admin_auth', 'true');
-    setCurrentPage('ADMIN');
+  const handleLogout = () => {
+    logoutTeam();
+    setRound1Result(null);
+    setCurrentView('landing');
   };
-
-  const handleAdminLogout = () => {
-    setIsAdminAuthenticated(false);
-    localStorage.removeItem('chronos_admin_auth');
-    setCurrentPage('LOGIN');
-  };
-
-  const currentTeamId = session?.team_id || 1;
-  const currentTeamName = session?.team_name || "Temporal Engineers";
 
   return (
-    <div className="min-h-screen bg-[#07060A] text-[#F5F0FF] selection:bg-purple-600 selection:text-white relative">
-      
-      {/* Page Routing */}
-      {currentPage === 'LOGIN' && (
-        <Login 
-          onLoginSuccess={handleLoginSuccess} 
-          onOpenAdmin={() => setCurrentPage(isAdminAuthenticated ? 'ADMIN' : 'ADMIN_LOGIN')}
-        />
-      )}
+    <div className="min-h-screen bg-[#05070c] text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+      <AdminControls currentView={currentView} onSelectView={(v) => setCurrentView(v)} />
+      <main className="flex-1 relative">
 
-      {currentPage === 'ROUND_1' && (
-        <Round1 
-          teamId={currentTeamId}
-          onAdvanceToRound2={() => setCurrentPage('ROUND_2')}
-          onDirectToRound3={() => setCurrentPage('ROUND_3')}
-        />
-      )}
+        {/* Black CRT chassis backdrop behind the collapsing screen */}
+        {isCrtActive && (
+          <div className="fixed inset-0 bg-black z-30 pointer-events-none" />
+        )}
 
-      {currentPage === 'ROUND_2' && (
-        <Round2 
-          teamId={currentTeamId}
-          onAdvanceToRound3={() => setCurrentPage('ROUND_3')}
-        />
-      )}
+        {/* Landing page — stays mounted during the intro so it keeps its state */}
+        <div
+          className={isCrtActive ? 'crt-screen-collapse' : ''}
+          style={{
+            display:       currentView === 'landing' || currentView === 'intro' ? 'block' : 'none',
+            pointerEvents: currentView === 'intro' || isCrtActive ? 'none' : 'auto',
+            opacity:       currentView === 'intro' ? 0 : 1,
+          }}
+        >
+          <LandingGlitch
+            onStart={handleStartMission}
+            isStarting={isCrtActive}
+          />
+        </div>
 
-      {currentPage === 'ROUND_3' && (
-        <Round3 
-          teamId={currentTeamId}
-          teamName={currentTeamName}
-          onNavigateToCompletion={() => setCurrentPage('COMPLETION')}
-        />
-      )}
+        {/* CRT TV shutdown transition overlay */}
+        {isCrtActive && (
+          <CrtShutdown onComplete={handleCrtComplete} />
+        )}
 
-      {currentPage === 'COMPLETION' && (
-        <Completion 
-          teamId={currentTeamId}
-          onRestart={handleReset}
-        />
-      )}
+        {/* GSAP cinematic intro (full-screen, fixed overlay) */}
+        {currentView === 'intro' && (
+          <ChronosIntro onComplete={() => setCurrentView('login')} />
+        )}
 
-      {currentPage === 'ADMIN_LOGIN' && (
-        <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />
-      )}
+        {/* Team authentication */}
+        {currentView === 'login' && (
+          <Login
+            onLoginSuccess={(res) => routeForState(res.team_id, res.current_state)}
+            onBackToLanding={() => setCurrentView('landing')}
+          />
+        )}
 
-      {currentPage === 'ADMIN' && (
-        <Dashboard onLogout={handleAdminLogout} />
-      )}
+        {/* Session sync after a page reload */}
+        {currentView === 'resuming' && team && (
+          <div className="min-h-[calc(100vh-2.5rem)] flex items-center justify-center font-mono text-sm tracking-widest text-cyan-400 animate-pulse">
+            SYNCHRONIZING SESSION...
+          </div>
+        )}
 
+        {/* Post-login pre-lobby (5 second countdown, then Round 1) */}
+        {currentView === 'prelobby' && team && (
+          <Round1PreLobby
+            onStartRound1={() => setCurrentView('round1')}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {/* Round 1 — full-screen; the backend owns the clock, scoring and completion */}
+        {currentView === 'round1' && team && (
+          <Round1 onComplete={handleRound1Complete} />
+        )}
+
+        {/* Lobby after Round 1: PLAY ROUND 2 -> advances to Round 2 Terminal */}
+        {currentView === 'round2lobby' && team && (
+          <Round2Lobby
+            result={round1Result}
+            onStartRound2={() => setCurrentView('round2')}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {/* Round 2 — Terminal Investigation & Audit Logs */}
+        {currentView === 'round2' && team && (
+          <Round2
+            team={team}
+            onAdvanceToRound3={() => setCurrentView('round3')}
+          />
+        )}
+
+        {/* Round 3 — Final Decision / Wisdom Round */}
+        {currentView === 'round3' && team && (
+          <Round3
+            teamId={team.team_id}
+            teamName={team.team_name}
+            onNavigateToCompletion={() => setCurrentView('completion')}
+          />
+        )}
+
+        {/* Final Completion & Forensic Debrief */}
+        {currentView === 'completion' && team && (
+          <Completion
+            teamId={team.team_id}
+            onRestart={() => setCurrentView('landing')}
+          />
+        )}
+
+        {/* Master Host Leaderboard */}
+        {currentView === 'leaderboard' && (
+          <Leaderboard
+            onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
+          />
+        )}
+
+      </main>
+
+      <footer className="border-t border-slate-900 bg-[#04060c] py-2 px-4 text-center font-mono text-[10px] text-slate-600">
+        PROJECT CHRONOS // THE GLITCH • TECH FEST EVENT 2140
+      </footer>
     </div>
   );
 }
@@ -173,7 +230,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
+      <AuthProvider>
       <AppContent />
+    </AuthProvider>
     </ThemeProvider>
   );
 }
