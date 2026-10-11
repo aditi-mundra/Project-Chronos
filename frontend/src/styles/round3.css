@@ -1,0 +1,56 @@
+/* ==========================================================================
+   Round 3 screen upgrades (.r3). Entry: the Lobby melts into binary (BinaryDissolve) and Round 3 is revealed.
+   Visual only. Palette: near-black navy, neon cyan primary, magenta / electric blue accents.
+   ========================================================================== */
+
+/* ------------------------------------------------------------- Round 3 screen */
+.r3 { isolation: isolate; }
+.r3-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(34, 211, 238, 0.09), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(244, 114, 182, 0.08), transparent 70%); }
+.r3-hud { position: relative; }
+.r3-hud::before, .r3-hud::after { content: ''; position: absolute; width: 16px; height: 16px; pointer-events: none; border: 2px solid rgba(34, 211, 238, 0.8); }
+.r3-hud::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.r3-hud::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+@keyframes r3-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.r3-in .r3-head { animation: r3-rise 0.55s ease both; }
+.r3-in .r3-card { animation: r3-rise 0.55s ease both; animation-delay: calc(var(--i, 0) * 90ms + 120ms); }
+
+.r3-cand { position: relative; outline: 0; }
+.r3-cand::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c-bar, rgba(34, 211, 238, 0.35)); transition: background 0.2s, box-shadow 0.2s; }
+.r3-cand:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(6, 182, 212, 0.18); }
+.r3-cand:hover::before { --c-bar: #22d3ee; background: #22d3ee; box-shadow: 0 0 12px #22d3ee; }
+.r3-cand:focus-visible { box-shadow: 0 0 0 2px #22d3ee; }
+.r3-cand.is-sel::before { background: #f472b6; box-shadow: 0 0 14px #f472b6; }
+.r3-cand.is-sel::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgba(244, 114, 182, 0.18) 50%, transparent 65%);
+  transform: translateX(-100%); animation: r3-sweep 0.9s ease-out;
+}
+@keyframes r3-sweep { to { transform: translateX(100%); } }
+.r3-disc { position: relative; padding-left: 10px; background: linear-gradient(90deg, rgba(244, 114, 182, 0.12), transparent 70%); border-left: 2px solid rgba(244, 114, 182, 0.7); }
+
+.r3-ev { position: relative; outline: 0; }
+.r3-ev:hover { transform: translateX(-2px); border-color: rgba(34, 211, 238, 0.7); }
+.r3-ev:focus-visible { box-shadow: 0 0 0 2px #22d3ee; }
+.r3-ev.is-on { border-left-width: 3px; }
+.r3-file-tag { display: inline-flex; align-items: center; gap: 4px; }
+
+.r3-count {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid rgba(100, 116, 139, 0.6); color: #94a3b8; font-size: 11px; letter-spacing: 0.08em; transition: all 0.25s;
+}
+.r3-count b { color: #e2e8f0; font-size: 14px; }
+.r3-count.ok { border-color: rgba(16, 185, 129, 0.8); color: #6ee7b7; box-shadow: 0 0 12px rgba(16, 185, 129, 0.3); }
+.r3-count.ok b { color: #a7f3d0; }
+
+.r3-cta { position: relative; overflow: hidden; }
+.r3-cta.ready { animation: r3-cta 2.2s ease-in-out infinite; }
+@keyframes r3-cta { 50% { box-shadow: 0 0 46px rgba(244, 63, 94, 0.8), 0 0 14px rgba(34, 211, 238, 0.5); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .r3-in .r3-head, .r3-in .r3-card, .r3-cand.is-sel::after, .r3-cta.ready { animation: none !important; }
+  .r3-cand:hover, .r3-ev:hover { transform: none; }
+}

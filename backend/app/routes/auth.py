@@ -1,9 +1,10 @@
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from ..services.auth_service import login_team, get_team_session
+from ..services.team_session import require_team
 
 router = APIRouter()
 
@@ -34,9 +35,10 @@ def login(request: LoginRequest):
     )
 
 
-@router.get("/session")
+@router.get("/session", dependencies=[Depends(require_team)])
 def session(team_id: int):
     """
-    Confirm a stored browser session still maps to an existing team (404 if not).
+    Confirm a stored browser session is still valid: 404 when the team no longer
+    exists, 401 when the session token is missing or wrong (the team logs in again).
     """
     return get_team_session(team_id)

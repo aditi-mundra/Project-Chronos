@@ -1,0 +1,42 @@
+CHRONOS // CHANGE AUDIT LOG // future_audit.log
+CASE R2-14
+WINDOW: 20:59:31 - 23:14:31
+
+Every applied configuration change is listed with the credential that applied it.
+Nodes are listed by terminal code; the TERMINAL REGISTRY is kept in access_history.log.
+A credential is a project's biometric token; the registry is kept in access_history.log.
+
+21:19:31 | CHG-1820 | NODE N-5534
+  SETTING: log verbosity | CHANGE: NORMAL -> VERBOSE
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+21:34:31 | CHG-9962 | NODE N-9564
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+21:39:31 | CHG-6790 | NODE N-5313
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+22:13:31 | CHG-6371 | NODE N-9020
+  SETTING: cache TTL | CHANGE: 300 -> 600
+  STATUS: REVERTED | CREDENTIAL: SIGMA-99-0x7F1A
+
+22:52:18 | CHG-8610 | NODE N-3190
+  SETTING: cache TTL | CHANGE: 300 -> 600
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+22:56:17 | CHG-7981 | NODE N-9020
+  SETTING: heartbeat timeout | CHANGE: 5 -> 8
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+22:59:31 | CHG-7436 | NODE N-3190
+  ACTION: paradox filter bypass
+  SETTING: paradox filter mode | CHANGE: ACTIVE -> BYPASS
+  STATUS: APPLIED | CREDENTIAL: delegated (scheduler task, initiating session not recorded)
+
+23:00:50 | CHG-7621 | NODE N-3190
+  SETTING: mitigation hold | CHANGE: NONE -> HOLD
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+END OF AUDIT WINDOW

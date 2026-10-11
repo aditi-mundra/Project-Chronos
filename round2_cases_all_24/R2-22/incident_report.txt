@@ -1,28 +1,23 @@
-CHRONOS // BETA // PRESENT INCIDENT REPORT
+CHRONOS // INCIDENT REPORT // incident_report.txt
 CASE R2-22
+INCIDENT: Paradox Filter Array Bypass
 
-INCIDENT: an archive export is edited after a damaging configuration change
+SUMMARY
+The paradox filter array was switched to bypass. The effect spread across the timeline network.
 
-21:14:02  FIRST INSTABILITY DETECTED
-21:15:18  prediction drift / synchronization variance begins
-21:16:04  automated recovery fails to restore expected state
-21:17:31  timeline synchronization drops below safe threshold
+INCIDENT TIMELINE
+22:16:16 | First abnormal reading: 84 unresolved causal loops detected
+22:16:34 | Monitoring reports a sustained inconsistency
+22:17:09 | Automatic reconciliation fails to restore the baseline
+22:18:15 | Cross-timeline results leave the normal operating range
 
-PRELIMINARY ANALYSIS
-- the first approved threshold change is NOT sufficient to explain the failure.
-- telemetry indicates that the recovery subsystem entered a non-default state shortly
-  before the first failed recovery.
-- the relevant state was present for approximately 4–6 minutes before instability
-  became visible.
-- a later approved change occurred after the failure had already begun and is therefore
-  unlikely to be the initiating event.
+ORIGIN ANALYSIS
+The first abnormal reading cannot be traced to a single source. Candidate nodes: Filter Array PF-5 and Filter Array PF-9.
+No change record could be matched to the reading with certainty.
 
-POSSIBLE SOURCES
-1. prediction configuration
-2. recovery configuration
-3. operator override / scheduled state
+OBSERVATIONS
+A mitigation hold was applied at Filter Array PF-5 at 22:17:17; it did not restore the baseline.
+Baseline checks before the incident were within their normal range.
+Operators on shift reported no scheduled maintenance for this subsystem.
 
-INVESTIGATION NOTE
-Do not treat an APPROVED label as proof that the change was harmless.
-Do not treat a READ event as proof of modification.
-The initiating state must be reconstructed from the timeline and access history.
+END OF REPORT

@@ -1,0 +1,42 @@
+CHRONOS // CHANGE AUDIT LOG // future_audit.log
+CASE R2-13
+WINDOW: 18:02:54 - 20:15:54
+
+Every applied configuration change is listed with the credential that applied it.
+Nodes are listed by terminal code; the TERMINAL REGISTRY is kept in access_history.log.
+A credential is a project's biometric token; the registry is kept in access_history.log.
+
+18:17:54 | CHG-2496 | NODE N-5044
+  SETTING: log verbosity | CHANGE: NORMAL -> VERBOSE
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+18:28:54 | CHG-4677 | NODE N-1454
+  SETTING: retry policy | CHANGE: STANDARD -> LIMITED
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+18:41:54 | CHG-5631 | NODE N-3436
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+19:12:54 | CHG-6254 | NODE N-8248
+  SETTING: heartbeat timeout | CHANGE: 5 -> 8
+  STATUS: REVERTED | CREDENTIAL: EPSILON-12-0x9C04
+
+19:54:12 | CHG-8253 | NODE N-7151
+  SETTING: health probe interval | CHANGE: 30 -> 15
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+20:00:10 | CHG-3205 | NODE N-8248
+  SETTING: retry policy | CHANGE: STANDARD -> LIMITED
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+20:02:54 | CHG-8808 | NODE N-7151
+  ACTION: recalibration of temporal anchor offsets
+  SETTING: anchor offset table | CHANGE: 0 -> 370 ms
+  STATUS: APPLIED | CREDENTIAL: delegated (scheduler task, initiating session not recorded)
+
+20:03:46 | CHG-6335 | NODE N-7151
+  SETTING: mitigation hold | CHANGE: NONE -> HOLD
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+END OF AUDIT WINDOW

@@ -1,0 +1,31 @@
+CHRONOS // ACCESS AND SESSION HISTORY // access_history.log
+CASE R2-04
+ARCHIVE WINDOW: 20:51:19 - 23:06:19
+
+REGISTERED PROJECT CREDENTIALS
+Project Alpha | Future Timeline | Lead: Dr. Aris Thorne | Credential: SIGMA-99-0x7F1A
+Project Beta | Present Timeline | Lead: Commander V. Reyes | Credential: DELTA-44-0x3B88
+Project Gamma | Past Timeline | Lead: Chief Eng. Sarah Chen | Credential: EPSILON-12-0x9C04
+
+TERMINAL REGISTRY (terminal code | terminal name)
+N-2300 | Maintenance Console MC-5
+N-2785 | Operator Desk OD-1
+N-4294 | Terminal Node Iota-8
+N-5915 | Archive Vault AV-7
+N-6175 | Archive Vault AV-3
+N-8727 | Diagnostics Bay DB-1
+
+SCOPES: READ_ONLY < DIAGNOSTIC < ROOT_WRITE
+
+SESSION RECORDS
+21:16:41 | SESSION s-3096 | DELTA-44-0x3B88 | Operator Desk OD-1 | AUTHENTICATED | DIAGNOSTIC
+21:42:19 | SESSION s-8120 | SIGMA-99-0x7F1A | Diagnostics Bay DB-1 | AUTHENTICATED | DIAGNOSTIC
+21:50:00 | SESSION s-2559 | DELTA-44-0x3B88 | Maintenance Console MC-5 | AUTHENTICATED | READ_ONLY
+22:02:22 | SESSION s-7674 | EPSILON-12-0x9C04 | Maintenance Console MC-5 | AUTHENTICATED | READ_ONLY
+22:42:05 | SESSION s-3223 | EPSILON-12-0x9C04 | Archive Vault AV-3 | AUTHENTICATED | ROOT_WRITE
+22:49:17 | SESSION s-1390 | DELTA-44-0x3B88 | Archive Vault AV-3 | DENIED | ROOT_WRITE (insufficient scope)
+22:50:23 | SESSION s-2839 | EPSILON-12-0x9C04 | Archive Vault AV-7 | AUTHENTICATED | ROOT_WRITE
+22:50:51 - 22:51:26 | LOG BUFFER OVERFLOW | records in this interval were not recovered
+22:52:27 | SESSION s-4377 | DELTA-44-0x3B88 | Archive Vault AV-3 | AUTHENTICATED | ROOT_WRITE
+
+END OF ARCHIVE

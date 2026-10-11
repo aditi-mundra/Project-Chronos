@@ -7,8 +7,9 @@ functions return. Everything below is decided here, never in the browser:
   * evidence access        (case files, is_locked, team must have started Round 2)
   * AI question limit      (max 3 per team)
   * AI point deductions    (5 / 5 / 10, from a 20 point AI budget)
-  * culprit validation     (+30 correct, +0 wrong, one submission per team)
-  * the Round 2 score      (culprit points + AI points kept, max 50)
+  * the end of the round   (POST /complete, or the clock; investigation-only,
+                            no culprit submission and no score is needed to leave)
+  * (legacy) culprit validation and Round 2 score: submit_culprit, no longer routed
   * the Round 2 timer
 
 Tables used: round2_cases / round2_case_files / round2_case_suspects /
@@ -34,14 +35,17 @@ from . import gemini_service, round2_cases
 MAX_AI_QUESTIONS = 3
 AI_DEDUCTIONS = (5, 5, 10)            # question 1, 2, 3
 AI_BUDGET = sum(AI_DEDUCTIONS)        # 20 points, 0 left after question 3
-CULPRIT_POINTS = 30
-MAX_ROUND2_SCORE = CULPRIT_POINTS + AI_BUDGET  # 50
+CULPRIT_POINTS = 0                    # Round 2 awards no culprit points (investigation only)
+MAX_ROUND2_SCORE = AI_BUDGET          # 20: the AI budget is the whole Round 2 score
 
 # The PRD does not give a Round 2 duration. 20 minutes is a placeholder until
 # the final event specification exists; override with ROUND2_DURATION_SECONDS.
 DURATION_SECONDS = int(os.environ.get("ROUND2_DURATION_SECONDS", "1200"))
 
 ACTIVE_STATE = "ROUND_2_ACTIVE"
+# States a team can be in once its Round 2 has ended (it may return to the Round 2 lobby
+# from Round 3, so a team that already moved on still reads as "Round 2 is over").
+_ROUND2_OVER_STATES = {"ROUND2COMPLETED", "TIMEOUT", "ROUND3ACTIVE", "DECISIONSUBMITTED", "FINALREVEAL", "COMPLETED"}
 COMPLETED_STATE = "ROUND_2_COMPLETED"
 TIMEOUT_STATE = "TIMEOUT"
 
@@ -100,6 +104,15 @@ def ensure_tables(connection) -> None:
             submitted_at         TEXT NOT NULL
         );
         """
+    )
+
+    # request_id: the browser's id for one question, so a retried request is recognised.
+    columns = {r["name"] for r in connection.execute("PRAGMA table_info(round2_chat_messages)")}
+    if "request_id" not in columns:
+        connection.execute("ALTER TABLE round2_chat_messages ADD COLUMN request_id TEXT")
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_round2_chat_request "
+        "ON round2_chat_messages(team_id, request_id) WHERE request_id IS NOT NULL"
     )
 
     # The 24 cases: create their tables and load the case folders (no-op once loaded).
@@ -186,9 +199,44 @@ def _case(connection, team):
     return round2_cases.assign_case(connection, team["id"])
 
 
+def _expire_if_due(connection, team):
+    """Round 2 time is up but no request has noticed yet: record the timeout now
+    (once), so the team is never left in ROUND_2_ACTIVE after the clock ran out.
+    round2_completed_at is the moment the round closed (its deadline), not "now".
+    Returns the up-to-date team row."""
+    started = team["round2_started_at"]
+    if (
+        started
+        and _norm(team["current_state"]) == _norm(ACTIVE_STATE)
+        and _seconds_left(started) <= 0
+    ):
+        closed_at = (_parse(started) + timedelta(seconds=DURATION_SECONDS)).isoformat(timespec="seconds")
+        connection.execute(
+            "UPDATE teams SET current_state = ?, round2_completed_at = COALESCE(round2_completed_at, ?), "
+            "updated_at = ? WHERE id = ?",
+            (TIMEOUT_STATE, closed_at, _now_iso(), team["id"]),
+        )
+        _log(connection, team["id"], "TIMEOUT", {"round": 2})
+        connection.commit()
+        return _team(connection, team["id"])
+    return team
+
+
+def round2_is_over(team) -> bool:
+    """True once this team's Round 2 has ended: completed, timed out, or the clock
+    has run out (even if no request has recorded the timeout yet). Round 3 uses
+    this as its entry gate; it reads the team row only and never needs a score."""
+    if not team["round2_started_at"]:
+        return False
+    state = _norm(team["current_state"])
+    if state in {_norm(COMPLETED_STATE), _norm(TIMEOUT_STATE)}:
+        return True
+    return state == _norm(ACTIVE_STATE) and _seconds_left(team["round2_started_at"]) <= 0
+
+
 def _require_open(connection, team_id):
-    """Team is inside Round 2, inside its deadline, and has not submitted yet."""
-    team = _require_started(connection, team_id)
+    """Team is inside Round 2 and inside its deadline."""
+    team = _expire_if_due(connection, _require_started(connection, team_id))
     state = _norm(team["current_state"])
 
     if state == _norm(COMPLETED_STATE):
@@ -196,24 +244,46 @@ def _require_open(connection, team_id):
     if state == _norm(TIMEOUT_STATE):
         raise HTTPException(status_code=403, detail="Round 2 time has expired.")
 
-    if _seconds_left(team["round2_started_at"]) <= 0:
-        connection.execute(
-            "UPDATE teams SET current_state = ?, updated_at = ? WHERE id = ?",
-            (TIMEOUT_STATE, _now_iso(), team["id"]),
-        )
-        _log(connection, team["id"], "TIMEOUT", {"round": 2})
-        connection.commit()  # keep the timeout even though we raise next
-        raise HTTPException(status_code=403, detail="Round 2 time has expired.")
-
     return team
+
+
+# --- scoring (isolated) -----------------------------------------------------
+# EVENT_SPECIFICATIONS.md "CHATBOT LIMIT": a team starts with 20 AI investigation
+# points; question 1 costs 5, question 2 costs 5, question 3 costs 10 (AI_DEDUCTIONS).
+# The only Round 2 scoring rule is that deduction. Each charge is one row in
+# round2_chat_messages (points_deducted), which is the ledger the admin leaderboard
+# reads. Opening files, reloading, progress polls and completing the investigation
+# never touch it.
+
+def _sync_round2_score(connection, team_id) -> None:
+    """Mirror the ledger into teams.round2_score (and total_score) so other readers
+    of the teams row agree. Does nothing for a team that has a legacy culprit
+    submission: that recorded score is left exactly as it was."""
+    tid = str(team_id)
+    legacy = connection.execute("SELECT 1 FROM round2_submissions WHERE team_id = ?", (tid,)).fetchone()
+    if legacy:
+        return
+    lost = connection.execute(
+        "SELECT COALESCE(SUM(points_deducted), 0) FROM round2_chat_messages WHERE team_id = ?", (tid,)
+    ).fetchone()[0]
+    score = AI_BUDGET - lost
+    connection.execute(
+        "UPDATE teams SET round2_score = ?, "
+        "total_score = COALESCE(round1_score, 0) + ? + COALESCE(round3_score, 0) WHERE id = ?",
+        (score, score, team_id),
+    )
+
+
+def _normalise_prompt(text: str) -> str:
+    return " ".join((text or "").lower().split())
 
 
 # --- progress ----------------------------------------------------------------
 
 WELCOME = (
-    "CHRONOS Analyst online. I can summarise the three evidence files, cross-reference "
-    "them and point out contradictions. I will not name a culprit: that decision is yours. "
-    "You may ask 3 questions (costs 5, 5 and 10 points)."
+    "CHRONOS Analyst online. I can summarise the four evidence files, cross-reference "
+    "them and point out contradictions. I will not name a responsible project: that decision "
+    "is yours. You may ask 3 questions (costs 5, 5 and 10 points)."
 )
 
 
@@ -245,6 +315,9 @@ def _progress(connection, team) -> dict:
         # endpoint returns it.
         "submitted": sub is not None,
         "suspect": None if sub is None else sub["suspect"],
+        # Round 2 is investigation-only: the team ends it with /complete (or the
+        # clock does). `completed` is true once it has ended either way.
+        "completed": _norm(team["current_state"]) in _ROUND2_OVER_STATES or sub is not None,
         "seconds_left": _seconds_left(started) if started else None,
         "deadline": (_parse(started) + timedelta(seconds=DURATION_SECONDS)).isoformat(timespec="seconds")
                     if started else None,
@@ -259,7 +332,7 @@ def start_round2(team_id):
 
         # Refresh / re-entry never restarts the timer.
         if team["round2_started_at"] or state in {_norm(ACTIVE_STATE), _norm(COMPLETED_STATE), _norm(TIMEOUT_STATE)}:
-            return _progress(connection, team)
+            return _progress(connection, _expire_if_due(connection, team))
 
         if state not in STARTABLE:
             raise HTTPException(
@@ -275,12 +348,43 @@ def start_round2(team_id):
             (ACTIVE_STATE, _now_iso(), _now_iso(), team["id"]),
         )
         _log(connection, team["id"], "ROUND_STARTED", {"round": 2, "case": case["case_id"]})
+        _sync_round2_score(connection, team["id"])
         return _progress(connection, _team(connection, team["id"]))
 
 
 def get_progress(team_id):
     with _Db() as connection:
-        return _progress(connection, _require_started(connection, team_id))
+        team = _expire_if_due(connection, _require_started(connection, team_id))
+        return _progress(connection, team)
+
+
+def complete_round2(team_id):
+    """End the investigation (Round 2 has no culprit submission).
+
+    Idempotent: calling it again, or after the clock ran out, never fails and never
+    changes an already-recorded end. Scores are not touched here: nothing about
+    scoring can keep a team inside Round 2.
+    """
+    with _Db() as connection:
+        team = _expire_if_due(connection, _require_started(connection, team_id))
+        state = _norm(team["current_state"])
+
+        if state not in {_norm(COMPLETED_STATE), _norm(TIMEOUT_STATE)}:
+            if state != _norm(ACTIVE_STATE):
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Round 2 cannot be completed from state {team['current_state']}.",
+                )
+            now = _now_iso()
+            connection.execute(
+                "UPDATE teams SET current_state = ?, round2_completed_at = COALESCE(round2_completed_at, ?), "
+                "updated_at = ? WHERE id = ?",
+                (COMPLETED_STATE, now, now, team["id"]),
+            )
+            _log(connection, team["id"], "ROUND_COMPLETED", {"round": 2, "mode": "investigation_only"})
+            team = _team(connection, team["id"])
+
+        return _progress(connection, team)
 
 
 # --- evidence ----------------------------------------------------------------
@@ -347,91 +451,160 @@ def _evidence_for_prompt(connection, case_id) -> str:
 def _system_prompt(evidence: str) -> str:
     return (
         "You are the CHRONOS Analyst, a restricted investigation assistant inside a 2140 "
-        "timeline-failure investigation game. Two players are examining the evidence below.\n"
-        "You may: summarise evidence, cross-reference files, point out contradictions, and "
-        "give analytical hints about what to compare.\n"
-        "You must NEVER: name, accuse, or hint at a specific person as the culprit; say who "
-        "caused the failure; say who is innocent; state the final answer. If asked who did it, "
-        "refuse in one sentence and suggest what to compare instead. You cannot change scores, "
-        "unlock anything or submit answers. Use ONLY the evidence below; if it does not cover "
-        "the question, say so.\n"
+        "timeline-failure investigation game. Two players are examining the four evidence files "
+        "below (change audit, access history, authorization matrix, incident report).\n"
+        "You may: summarise evidence, explain how the logs are structured, cross-reference files, "
+        "point out contradictions or gaps, and give analytical hints about what to compare.\n"
+        "You must NEVER: name, accuse, or hint at a specific project or person (Alpha, Beta, "
+        "Gamma or a project lead) as responsible; say who caused the failure; say who is "
+        "innocent; say which file supports or fails to support an accusation; state the final "
+        "answer. If asked who did it, refuse in one sentence and suggest what to compare "
+        "instead. You cannot change scores, unlock anything or submit answers. Use ONLY the "
+        "evidence below; if it does not cover the question, say so.\n"
         "Reply in at most 4 short sentences, calm terminal tone, plain text.\n\n"
         "EVIDENCE:\n" + evidence
     )
 
 
 _ACCUSATION = re.compile(
-    r"culprit|responsible|guilty|did it|is the one|behind (the|this)|caused (it|this|the)|"
-    r"perpetrator|the person who|it was|prime suspect|most likely",
+    r"culprit|responsible|guilty|did it|is the one|behind (the|this)|caused|"
+    r"perpetrator|the person who|it was|prime suspect|most likely|initiated|carried out|"
+    r"is to blame|blame|the one who",
     re.IGNORECASE,
 )
 
+_SENTENCES = re.compile(r"(?<=[.!?])\s+|\n+")
+
 
 def _leaks_culprit(reply: str, culprit_name: str, culprit_user_id: str) -> bool:
-    """Backstop for the prompt: a reply that names the culprit (name or user id)
-    while accusing is dropped."""
-    low = reply.lower()
-    names_culprit = (
-        culprit_name.lower() in low
-        or culprit_name.split()[-1].lower() in low
-        or culprit_user_id.lower() in low
-    )
-    return names_culprit and bool(_ACCUSATION.search(reply))
+    """Backstop for the prompt. The culprit is a project, and the files mention every
+    project, so a bare mention is fine; a sentence that pairs the culprit project
+    (name, short name or id) with an accusing phrase is not."""
+    full = culprit_name.lower().strip()
+    short = full.split()[-1] if full else ""
+    ident = (culprit_user_id or "").lower().strip()
+    aliases = {a for a in (full, short, ident) if a}
+    if not aliases:
+        return False
+    for sentence in _SENTENCES.split(reply or ""):
+        low = sentence.lower()
+        if any(a in low for a in aliases) and _ACCUSATION.search(sentence):
+            return True
+    return False
 
 
 def _fallback_reply(message: str) -> str:
     """Canned analyst replies used when Gemini is unavailable. They stay generic on
     purpose: they must be true for every one of the 24 cases and never name anyone."""
     q = message.lower()
-    if re.search(r"who|culprit|guilty|responsible|suspect|blame", q):
-        return ("I cannot name a culprit. Compare WHAT changed, WHEN it changed, and who was "
-                "acting at that exact moment, then decide for yourselves.")
-    if re.search(r"gamma|access|history|user|session|export|read|modify|approve", q):
-        return ("Gamma lists who acted, on which resource, in which session and when. Match those "
-                "entries to the changes in Alpha, and remember a READ is not a modification.")
-    if re.search(r"beta|incident|symptom|detect|report", q):
-        return ("Beta gives the detection time, the symptoms and the analysis notes. Use it to work "
-                "out when the problem really began, not just when it was noticed.")
-    if re.search(r"alpha|change|config|parameter|authori|approv|status|delta", q):
-        return ("Alpha records the configuration changes and their status. An approved change is not "
-                "automatically harmless, and a pending or reverted one may still matter.")
-    if re.search(r"time|when|:\d\d|before|after|order", q):
-        return ("Line the timestamps up: when each change was made, when the first symptom appeared, "
-                "and who was active in Gamma at those moments. Order matters.")
-    return ("Cross-reference the three files: what changed (Alpha), what was observed and when "
-            "(Beta), and who acted at that moment (Gamma).")
+    if re.search(r"who|culprit|guilty|responsible|suspect|blame|project", q):
+        return ("I cannot name a responsible project. Work out which change started the incident, "
+                "where and when it was applied, and which credential the records tie to that moment.")
+    if re.search(r"access|session|login|authenticat|denied|scope|terminal", q):
+        return ("access_history.log lists who authenticated, at which terminal and with what scope. "
+                "Only ROOT_WRITE can apply a change, and a denied attempt is not a change. The header also "
+                "holds the TERMINAL REGISTRY, which maps terminal codes to names. Check the terminal and "
+                "the time against the change you are investigating.")
+    if re.search(r"key|auth|arm|matrix|standing|authoriz", q):
+        return ("system_auth_matrix.log shows which keys were armed by which credential and when they "
+                "were used. A key that expired unused, or a standing authorization, does not identify a "
+                "credential. Check the CLOCK OFFSET in this log's header before comparing its times "
+                "with the other logs.")
+    if re.search(r"incident|symptom|report|origin|detect|first", q):
+        return ("incident_report.txt gives the first abnormal reading and where it originates. Use it to "
+                "anchor the time and the terminal, then look for the change that matches both.")
+    if re.search(r"audit|change|config|setting|applied|revert|chg", q):
+        return ("future_audit.log lists applied changes with node, setting and credential. Several are "
+                "unrelated; find the change that matches the incident's origin and time.")
+    if re.search(r"time|when|:\d\d|before|after|order|gap", q):
+        return ("Line the timestamps up: the change, the session that preceded it, the key arming, and "
+                "the first symptom. Correct any clock offset stated in a log header, and note any gap "
+                "in a log and what the other files say about it.")
+    return ("Cross-reference the four files: what changed and where (audit), who was present "
+            "(access), what authorised it (authorization matrix), and what it caused (incident report).")
 
 
-def chat(team_id, message):
+def chat(team_id, message, request_id=None):
+    """One analyst question. The charge (5 / 5 / 10) is recorded exactly once per
+    distinct question:
+
+      * the browser sends a request_id per question; a retry with the same id returns
+        the stored answer and charges nothing;
+      * the same question text asked again by the same team (retry, double click,
+        reload then re-submit) is answered from the stored reply, free;
+      * a question that was charged but never answered (server stopped mid-request)
+        is answered when it is asked again, without a second charge;
+      * only a question that is new for the team takes the next slot, so unrelated
+        actions can never cost points.
+    """
     message = (message or "").strip()[:300]
     if not message:
         raise HTTPException(status_code=400, detail="Message is empty.")
+    request_id = (request_id or "").strip()[:64] or None
 
-    # 1. Reserve the question slot BEFORE calling the AI. The limit, the point
-    #    deduction and the recorded row are all fixed here, server-side. The
-    #    UNIQUE (team_id, question_number) constraint makes two simultaneous
-    #    questions from one team safe.
     with _Db() as connection:
-        team = _require_open(connection, team_id)
+        team = _require_started(connection, team_id)
         tid = str(team["id"])
-        used = connection.execute(
-            "SELECT COUNT(*) FROM round2_chat_messages WHERE team_id = ?", (tid,)
-        ).fetchone()[0]
 
-        if used >= MAX_AI_QUESTIONS:
-            raise HTTPException(status_code=403, detail="No AI questions remaining.")
+        prior = None
+        if request_id:
+            prior = connection.execute(
+                "SELECT * FROM round2_chat_messages WHERE team_id = ? AND request_id = ?",
+                (tid, request_id),
+            ).fetchone()
+        if prior is None:
+            wanted = _normalise_prompt(message)
+            for row in connection.execute(
+                "SELECT * FROM round2_chat_messages WHERE team_id = ? ORDER BY question_number", (tid,)
+            ).fetchall():
+                if _normalise_prompt(row["user_prompt"]) == wanted:
+                    prior = row
+                    break
 
-        number = used + 1
-        deduction = AI_DEDUCTIONS[used]
-        try:
-            connection.execute(
-                "INSERT INTO round2_chat_messages "
-                "(team_id, question_number, user_prompt, ai_response, points_deducted, created_at) "
-                "VALUES (?, ?, ?, '', ?, ?)",
-                (tid, number, message, deduction, _now_iso()),
-            )
-        except sqlite3.IntegrityError:
-            raise HTTPException(status_code=409, detail="Another question is already being processed.")
+        if prior is not None and prior["ai_response"]:
+            return {
+                "reply": prior["ai_response"],
+                "source": "stored",
+                "question_number": prior["question_number"],
+                "points_deducted": prior["points_deducted"],
+                "charged_now": False,
+                "duplicate": True,
+                "progress": _progress(connection, _team(connection, tid)),
+            }
+
+        team = _require_open(connection, tid)
+
+        if prior is not None:
+            # Charged earlier, answer never stored: answer it now, no new charge.
+            number = prior["question_number"]
+            deduction = prior["points_deducted"]
+            charged_now = False
+        else:
+            # 1. Reserve the question slot BEFORE calling the AI. The limit, the point
+            #    deduction and the recorded row are all fixed here, server-side. The
+            #    UNIQUE (team_id, question_number) constraint makes two simultaneous
+            #    questions from one team safe.
+            used = connection.execute(
+                "SELECT COUNT(*) FROM round2_chat_messages WHERE team_id = ?", (tid,)
+            ).fetchone()[0]
+
+            if used >= MAX_AI_QUESTIONS:
+                raise HTTPException(status_code=403, detail="No AI questions remaining.")
+
+            number = used + 1
+            deduction = AI_DEDUCTIONS[used]
+            charged_now = True
+            try:
+                connection.execute(
+                    "INSERT INTO round2_chat_messages "
+                    "(team_id, question_number, user_prompt, ai_response, points_deducted, created_at, request_id) "
+                    "VALUES (?, ?, ?, '', ?, ?, ?)",
+                    (tid, number, message, deduction, _now_iso(), request_id),
+                )
+            except sqlite3.IntegrityError:
+                raise HTTPException(status_code=409, detail="Another question is already being processed.")
+            _sync_round2_score(connection, team["id"])
+            _log(connection, team["id"], "HINT_USED", {"round": 2, "question": number, "points_deducted": deduction})
 
         history_rows = connection.execute(
             "SELECT user_prompt, ai_response FROM round2_chat_messages "
@@ -448,7 +621,6 @@ def chat(team_id, message):
         culprit_user_id = next(
             (r["user_id"] for r in round2_cases.case_suspects(connection, case["case_id"])
              if r["suspect_name"].lower() == culprit_name.lower()), "")
-        _log(connection, team["id"], "HINT_USED", {"round": 2, "question": number, "points_deducted": deduction})
 
     # 2. Ask Gemini outside the transaction so a slow API never holds a DB lock.
     reply = gemini_service.ask(_system_prompt(evidence), history, message)
@@ -469,6 +641,8 @@ def chat(team_id, message):
         "source": source,
         "question_number": number,
         "points_deducted": deduction,
+        "charged_now": charged_now,
+        "duplicate": False,
         "progress": progress,
     }
 
@@ -484,7 +658,11 @@ def get_conversation(team_id):
     return [dict(r) for r in rows]
 
 
-# --- culprit submission ----------------------------------------------------------
+# --- culprit submission (legacy, NOT routed) ----------------------------------------
+# Round 2 is investigation-only: no route calls submit_culprit any more and the
+# frontend has no suspect picker. The function and its round2_submissions table are
+# kept untouched so any scores recorded by earlier builds stay readable and the
+# scoring decision can be made later without rewriting gameplay.
 
 def _match_suspect(connection, case_id, value: str):
     v = (value or "").strip().lower()

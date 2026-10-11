@@ -1,0 +1,42 @@
+CHRONOS // CHANGE AUDIT LOG // future_audit.log
+CASE R2-15
+WINDOW: 21:14:56 - 23:25:56
+
+Every applied configuration change is listed with the credential that applied it.
+Nodes are listed by terminal code; the TERMINAL REGISTRY is kept in access_history.log.
+A credential is a project's biometric token; the registry is kept in access_history.log.
+
+21:31:56 | CHG-8385 | NODE N-3867
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+21:41:56 | CHG-1060 | NODE N-6348
+  SETTING: cache TTL | CHANGE: 300 -> 600
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+21:55:56 | CHG-6478 | NODE N-6348
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+22:34:56 | CHG-5701 | NODE N-1670
+  SETTING: log verbosity | CHANGE: NORMAL -> VERBOSE
+  STATUS: REVERTED | CREDENTIAL: DELTA-44-0x3B88
+
+23:07:01 | CHG-8657 | NODE N-3305
+  SETTING: retry policy | CHANGE: STANDARD -> LIMITED
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+23:10:51 | CHG-4631 | NODE N-1670
+  SETTING: log verbosity | CHANGE: NORMAL -> VERBOSE
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+23:14:56 | CHG-5983 | NODE N-3305
+  ACTION: shutdown of the cross-timeline sync governor
+  SETTING: sync governor state | CHANGE: RUNNING -> HALTED
+  STATUS: APPLIED | CREDENTIAL: delegated (scheduler task, initiating session not recorded)
+
+23:15:48 | CHG-3529 | NODE N-3305
+  SETTING: mitigation hold | CHANGE: NONE -> HOLD
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+END OF AUDIT WINDOW

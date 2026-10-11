@@ -1,8 +1,10 @@
 """
 Round 2 cases: 24 different investigations, one assigned per team per game.
 
-Case data lives in `round2_cases_all_24/R2-01 ... R2-24/` (case.json plus the
-Alpha / Beta / Gamma text files). This module loads those folders into the
+Case data lives in `round2_cases_all_24/R2-01 ... R2-24/` (case.json plus the four
+evidence files Round 3 refers to: future_audit.log, access_history.log,
+system_auth_matrix.log, incident_report.txt). The culprit of every case is one of
+Project Alpha / Beta / Gamma. The files are produced by backend/tools/generate_cases.py. This module loads those folders into the
 database on first use and decides which case a team plays.
 
 Tables (names match the shared seed script `seed_round2_cases.py`):
@@ -28,8 +30,10 @@ from pathlib import Path
 CASES_DIR = Path(__file__).resolve().parents[3] / "round2_cases_all_24"
 
 _seeded = set()   # database files already loaded by this process
-_PROJECT_NAMES = {"alpha": "Alpha", "beta": "Beta", "gamma": "Gamma"}
-_TIMELINE_TAGS = {"alpha": "future", "beta": "present", "gamma": "past"}
+# file id (key of player_files in case.json) -> display name / tag
+_PROJECT_NAMES = {"audit": "Change audit", "access": "Access history",
+                  "auth": "Authorization matrix", "incident": "Incident report"}
+_TIMELINE_TAGS = {"audit": "audit", "access": "access", "auth": "authorization", "incident": "incident"}
 
 
 def ensure_case_tables(connection) -> None:
@@ -108,7 +112,7 @@ def _problems(case, folder) -> list:
 
     files = case["player_files"]
     if set(files) != set(_TIMELINE_TAGS):
-        problems.append(f"player_files must be exactly alpha, beta, gamma (got {sorted(files)})")
+        problems.append(f"player_files must be exactly {sorted(_TIMELINE_TAGS)} (got {sorted(files)})")
     for file_id, filename in files.items():
         if not (folder / filename).is_file():
             problems.append(f"file {filename} ({file_id}) not found")

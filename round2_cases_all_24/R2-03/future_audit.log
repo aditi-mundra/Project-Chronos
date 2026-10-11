@@ -1,0 +1,42 @@
+CHRONOS // CHANGE AUDIT LOG // future_audit.log
+CASE R2-03
+WINDOW: 21:05:11 - 23:19:11
+
+Every applied configuration change is listed with the credential that applied it.
+Nodes are listed by terminal code; the TERMINAL REGISTRY is kept in access_history.log.
+A credential is a project's biometric token; the registry is kept in access_history.log.
+
+21:42:11 | CHG-4195 | NODE N-6250
+  SETTING: archive compaction window | CHANGE: NIGHTLY -> WEEKLY
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+21:51:11 | CHG-5172 | NODE N-9020
+  SETTING: heartbeat timeout | CHANGE: 5 -> 8
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+22:08:11 | CHG-2207 | NODE N-9020
+  SETTING: cache TTL | CHANGE: 300 -> 600
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+22:27:11 | CHG-7944 | NODE N-5441
+  SETTING: log verbosity | CHANGE: NORMAL -> VERBOSE
+  STATUS: REVERTED | CREDENTIAL: DELTA-44-0x3B88
+
+22:58:01 | CHG-9410 | NODE N-4017
+  SETTING: heartbeat timeout | CHANGE: 5 -> 8
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+22:59:05 | CHG-2591 | NODE N-5441
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+23:05:11 | CHG-4435 | NODE N-4017
+  ACTION: resonance modulation script injection
+  SETTING: frequency matrix | CHANGE: BASELINE -> +535 MHz
+  STATUS: APPLIED | CREDENTIAL: delegated (scheduler task, initiating session not recorded)
+
+23:06:04 | CHG-5911 | NODE N-4017
+  SETTING: mitigation hold | CHANGE: NONE -> HOLD
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+END OF AUDIT WINDOW

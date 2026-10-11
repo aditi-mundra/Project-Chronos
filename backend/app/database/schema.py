@@ -136,7 +136,9 @@ def _migrate_teams_for_auth(connection):
         row["name"] for row in connection.execute("PRAGMA table_info(teams)")
     }
 
-    for column in ("member_1_prn", "member_2_prn"):
+    # session_token: random per-team secret issued at login; every Round 1/2/3 call
+    # must present it, so a team cannot act as another team (see team_session.py).
+    for column in ("member_1_prn", "member_2_prn", "session_token"):
         if column not in existing_columns:
             connection.execute(
                 f"ALTER TABLE teams ADD COLUMN {column} TEXT NOT NULL DEFAULT ''"

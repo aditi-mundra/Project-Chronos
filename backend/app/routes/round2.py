@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -12,10 +14,7 @@ class TeamBody(BaseModel):
 
 class ChatBody(TeamBody):
     message: str
-
-
-class SubmitBody(TeamBody):
-    suspect: str  # a suspect's name or user id
+    request_id: Optional[str] = None  # the browser's id for this question (retries reuse it)
 
 
 @router.post("/start")
@@ -39,14 +38,9 @@ def get_file(file_id: str, team_id: int):
     return svc.read_file(team_id, file_id)
 
 
-@router.get("/suspects")
-def get_suspects(team_id: int):
-    return svc.list_suspects(team_id)
-
-
 @router.post("/chat")
 def chat(body: ChatBody):
-    return svc.chat(body.team_id, body.message)
+    return svc.chat(body.team_id, body.message, body.request_id)
 
 
 @router.get("/conversation")
@@ -54,6 +48,8 @@ def conversation(team_id: int):
     return svc.get_conversation(team_id)
 
 
-@router.post("/submit")
-def submit(body: SubmitBody):
-    return svc.submit_culprit(body.team_id, body.suspect)
+@router.post("/complete")
+def complete(body: TeamBody):
+    """End the investigation. Round 2 is investigation-only: there is no culprit
+    submission. Idempotent, and also valid after the clock ran out."""
+    return svc.complete_round2(body.team_id)

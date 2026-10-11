@@ -6,6 +6,7 @@ from fastapi import HTTPException
 
 from ..database.connection import get_connection
 from .round2_cases import assign_case
+from .team_session import issue_token, new_token
 
 DEFAULT_STATE = "READY"
 
@@ -22,9 +23,10 @@ def _clean(value):
     return (value or "").strip()
 
 
-def _team_payload(row, message):
+def _team_payload(row, message, session_token=""):
     return {
         "team_id": row["id"],
+        "session_token": session_token,
         "team_name": row["team_name"],
         "member_1_name": row["member_1_name"],
         "member_2_name": row["member_2_name"],
@@ -77,9 +79,11 @@ def _login_returning_team(connection, row, prn_1, prn_2):
         "UPDATE teams SET updated_at = ? WHERE id = ?",
         (_now(), row["id"]),
     )
+    # Teams registered before session tokens existed receive theirs here.
+    token = issue_token(connection, row["id"])
     _log_event(connection, row["id"], "LOGIN", {"result": "RETURNING_TEAM"})
     connection.commit()
-    return _team_payload(row, "LOGIN_SUCCESS")
+    return _team_payload(row, "LOGIN_SUCCESS", token)
 
 
 def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_prn):
@@ -124,18 +128,19 @@ def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_p
         ).fetchone()[0]
         now = _now()
 
+        token = new_token()
         connection.execute(
             """
             INSERT INTO teams (
                 id, team_name, member_1_name, member_2_name,
                 member_1_prn, member_2_prn, current_state,
                 round1_score, round2_score, round3_score, total_score,
-                created_at, updated_at
+                created_at, updated_at, session_token
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, ?, ?, ?)
             """,
             (next_id, team_name, member_1_name, member_2_name,
-             prn_1, prn_2, DEFAULT_STATE, now, now),
+             prn_1, prn_2, DEFAULT_STATE, now, now, token),
         )
 
         # Keep AUTOINCREMENT in step so ids stay consecutive after deletions.
@@ -160,7 +165,7 @@ def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_p
         created = connection.execute(
             "SELECT * FROM teams WHERE id = ?", (next_id,)
         ).fetchone()
-        return _team_payload(created, "TEAM_REGISTERED")
+        return _team_payload(created, "TEAM_REGISTERED", token)
 
     except sqlite3.IntegrityError:
         # Lost a race on the unique team name: someone registered it a moment ago.

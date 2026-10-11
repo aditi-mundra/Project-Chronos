@@ -1,0 +1,42 @@
+CHRONOS // CHANGE AUDIT LOG // future_audit.log
+CASE R2-20
+WINDOW: 19:32:37 - 21:48:37
+
+Every applied configuration change is listed with the credential that applied it.
+Nodes are listed by terminal code; the TERMINAL REGISTRY is kept in access_history.log.
+A credential is a project's biometric token; the registry is kept in access_history.log.
+
+19:50:37 | CHG-2303 | NODE N-6376
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+20:05:37 | CHG-4102 | NODE N-7743
+  SETTING: snapshot retention | CHANGE: 7 -> 14
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+20:18:37 | CHG-5465 | NODE N-2020
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+20:51:37 | CHG-3028 | NODE N-9614
+  SETTING: heartbeat timeout | CHANGE: 5 -> 8
+  STATUS: REVERTED | CREDENTIAL: SIGMA-99-0x7F1A
+
+21:25:25 | CHG-4227 | NODE N-3721
+  SETTING: cache TTL | CHANGE: 300 -> 600
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+21:25:51 | CHG-4002 | NODE N-9614
+  SETTING: queue depth limit | CHANGE: 512 -> 1024
+  STATUS: APPLIED | CREDENTIAL: EPSILON-12-0x9C04
+
+21:32:37 | CHG-9110 | NODE N-3721
+  ACTION: bulk purge of timeline anchor records
+  SETTING: anchor record store | CHANGE: RETAINED -> PURGED (151 records)
+  STATUS: APPLIED | CREDENTIAL: DELTA-44-0x3B88
+
+21:33:54 | CHG-2839 | NODE N-3721
+  SETTING: mitigation hold | CHANGE: NONE -> HOLD
+  STATUS: APPLIED | CREDENTIAL: SIGMA-99-0x7F1A
+
+END OF AUDIT WINDOW

@@ -3,7 +3,7 @@ import { soundFx } from '../utils/audio.js';
 import { Shield, Zap, RefreshCw } from 'lucide-react';
 import ChronosTitle from '../components/ChronosTitle.jsx';
 
-export default function LandingGlitch({ onStart, isStarting = false }) {
+export default function LandingGlitch({ onStart, onAdminMode, isStarting = false }) {
   const canvasRef = useRef(null);
   const [entranceKey, setEntranceKey] = useState(0);
 
@@ -174,7 +174,9 @@ export default function LandingGlitch({ onStart, isStarting = false }) {
 
         {/* Technical Subtext */}
         <div className="text-[11px] font-mono text-slate-500 flex items-center justify-center gap-4">
-          <span>HOST: AUTHORITATIVE</span>
+          <button onClick={() => onAdminMode?.()} className="hover:text-cyan-400 cursor-pointer transition">
+            HOST: AUTHORITATIVE
+          </button>
           <span>•</span>
           <span>ROUNDS: 3 PHASES</span>
           <span>•</span>

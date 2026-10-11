@@ -90,6 +90,32 @@ export const soundFx = {
     } catch (_) {}
   },
 
+  // Rejected action (validation failure, refused request)
+  playError() {
+    this.playGlitch();
+  },
+
+  // Panel / modal transition swoosh
+  playWhoosh() {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.18);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch (_) {}
+  },
+
   // Leaderboard refresh / telemetry update
   playDataPing() {
     if (!soundEnabled) return;

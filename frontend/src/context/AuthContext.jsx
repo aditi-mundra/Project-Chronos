@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import api from '../services/api.js';
+import api, { SESSION_INVALID_EVENT } from '../services/api.js';
 import { soundFx } from '../utils/audio.js';
 
 const AuthContext = createContext(null);
@@ -64,9 +64,18 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [team?.team_id]);
 
+  // The server rejected this team's session token (an old browser session from before
+  // tokens existed, or a database reset): log in again.
+  useEffect(() => {
+    const onInvalid = () => setTeam(null);
+    window.addEventListener(SESSION_INVALID_EVENT, onInvalid);
+    return () => window.removeEventListener(SESSION_INVALID_EVENT, onInvalid);
+  }, []);
+
   const loginTeamSession = (teamData) => {
     setTeam({
       team_id: teamData.team_id,
+      session_token: teamData.session_token || '',
       team_name: teamData.team_name,
       member_1_name: teamData.member_1_name || '',
       member_2_name: teamData.member_2_name || '',

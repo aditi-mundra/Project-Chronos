@@ -1,30 +1,35 @@
 {
   "case_id": "R2-18",
-  "archetype": "Time-Window Manipulator",
-  "incident": "a preloaded failover mode activates after a delay and masks the original sequence",
-  "culprit": "Mira Kael",
+  "archetype": "bridge_decouple",
+  "incident": "Sector-4 Temporal Bridge Decoupling",
+  "culprit": "Project Gamma",
   "candidates": [
     {
-      "name": "Mira Kael",
-      "user_id": "MK-22",
-      "role": "security auditor"
+      "name": "Project Alpha",
+      "user_id": "ALPHA",
+      "role": "Future Timeline"
     },
     {
-      "name": "Aria Sen",
-      "user_id": "AS-17",
-      "role": "timeline analyst"
+      "name": "Project Beta",
+      "user_id": "BETA",
+      "role": "Present Timeline"
     },
     {
-      "name": "Noah Vale",
-      "user_id": "NV-09",
-      "role": "systems engineer"
+      "name": "Project Gamma",
+      "user_id": "GAMMA",
+      "role": "Past Timeline"
     }
   ],
   "player_files": {
-    "alpha": "future_failover_audit.log",
-    "beta": "incident_report.txt",
-    "gamma": "access_history.log"
+    "audit": "future_audit.log",
+    "access": "access_history.log",
+    "auth": "system_auth_matrix.log",
+    "incident": "incident_report.txt"
   },
-  "intended_deduction": "Requires correlating multiple plausible configuration changes, incident timing, and access/session history; no single file identifies the culprit.",
-  "difficulty_target": "5/5"
+  "supporting_files": [
+    "future_audit.log",
+    "system_auth_matrix.log",
+    "incident_report.txt"
+  ],
+  "intended_deduction": "Match the incident change to its terminal (codes in the audit log, names elsewhere) and time (correct the matrix clock offset), then find which credential applied or authorised it. Three files point at the responsible project; one does not."
 }

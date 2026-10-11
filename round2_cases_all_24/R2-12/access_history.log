@@ -1,82 +1,31 @@
-CHRONOS // GAMMA // PAST ACCESS HISTORY
+CHRONOS // ACCESS AND SESSION HISTORY // access_history.log
 CASE R2-12
+ARCHIVE WINDOW: 18:07:57 - 20:20:57
 
-ACCESS ARCHIVE — 20:40–21:20
+REGISTERED PROJECT CREDENTIALS
+Project Alpha | Future Timeline | Lead: Dr. Aris Thorne | Credential: SIGMA-99-0x7F1A
+Project Beta | Present Timeline | Lead: Commander V. Reyes | Credential: DELTA-44-0x3B88
+Project Gamma | Past Timeline | Lead: Chief Eng. Sarah Chen | Credential: EPSILON-12-0x9C04
 
-21:01:44
-USER: Mira Kael
-ID: MK-22
-ACTION: READ
-RESOURCE: T-22
-SESSION: S-88A
-AUTHORIZATION: VALID
+TERMINAL REGISTRY (terminal code | terminal name)
+N-1589 | Archive Vault AV-3
+N-2600 | Archive Vault AV-5
+N-2773 | Maintenance Console MC-9
+N-3653 | Diagnostics Bay DB-2
+N-4008 | Terminal Node Iota-2
+N-5500 | Operator Desk OD-9
 
-21:05:12
-USER: Aria Sen
-ID: AS-17
-ACTION: APPROVE
-RESOURCE: D-53
-SESSION: S-88B
-AUTHORIZATION: VALID
+SCOPES: READ_ONLY < DIAGNOSTIC < ROOT_WRITE
 
-21:07:31
-USER: Noah Vale
-ID: NV-09
-ACTION: READ
-RESOURCE: T-22
-SESSION: S-88C
-AUTHORIZATION: VALID
+SESSION RECORDS
+18:25:00 | SESSION s-8571 | EPSILON-12-0x9C04 | Maintenance Console MC-9 | AUTHENTICATED | READ_ONLY
+18:54:19 | SESSION s-6412 | SIGMA-99-0x7F1A | Diagnostics Bay DB-2 | AUTHENTICATED | READ_ONLY
+19:14:57 | SESSION s-2782 | DELTA-44-0x3B88 | Terminal Node Iota-2 | AUTHENTICATED | DIAGNOSTIC
+19:32:38 | SESSION s-9199 | SIGMA-99-0x7F1A | Terminal Node Iota-2 | AUTHENTICATED | DIAGNOSTIC
+20:00:24 | SESSION s-9173 | DELTA-44-0x3B88 | Archive Vault AV-3 | AUTHENTICATED | ROOT_WRITE
+20:06:24 | SESSION s-3221 | SIGMA-99-0x7F1A | Archive Vault AV-3 | DENIED | ROOT_WRITE (insufficient scope)
+20:06:57 | SESSION s-5069 | DELTA-44-0x3B88 | Archive Vault AV-5 | AUTHENTICATED | ROOT_WRITE
+20:07:48 | SESSION s-1130 | EPSILON-12-0x9C04 | Archive Vault AV-3 | AUTHENTICATED | ROOT_WRITE
+20:09:04 | SESSION s-3130 | SIGMA-99-0x7F1A | Archive Vault AV-3 | AUTHENTICATED | ROOT_WRITE
 
-21:08:02
-USER: Mira Kael
-ID: MK-22
-ACTION: MODIFY
-RESOURCE: D-54
-SESSION: S-812
-AUTHORIZATION: VALID
-
-21:08:02
-USER: Mira Kael
-ID: MK-22
-ACTION: MODIFY
-RESOURCE: D-54
-SESSION: S-812-UNREG
-AUTHORIZATION: VALID
-
-21:08:41
-USER: Elias Voss
-ID: EV-04
-ACTION: READ
-RESOURCE: RECOVERY
-SESSION: S-88D
-AUTHORIZATION: VALID
-
-21:10:19
-USER: Mira Kael
-ID: MK-22
-ACTION: MODIFY
-RESOURCE: D-55
-SESSION: S-812
-AUTHORIZATION: VALID
-
-21:12:03
-USER: Mira Kael
-ID: MK-22
-ACTION: REVERT
-RESOURCE: D-54
-SESSION: S-812
-AUTHORIZATION: VALID
-
-21:13:07
-USER: Mira Kael
-ID: MK-22
-ACTION: READ
-RESOURCE: AUDIT
-SESSION: S-88A
-AUTHORIZATION: VALID
-
-ARCHIVE INTERPRETATION
-READ and EXPORT events establish observation, not authorship. APPROVE establishes workflow authority, not execution. MODIFY/REVERT/SCHEDULE events must be matched against the state that existed when the incident began.
-
-IDENTITY WARNING
-A valid user ID can appear on a session originating from an unregistered console. Treat account ownership and physical/session authorship as separate questions.
+END OF ARCHIVE

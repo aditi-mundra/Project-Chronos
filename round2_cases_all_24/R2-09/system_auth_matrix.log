@@ -1,0 +1,24 @@
+CHRONOS // SYSTEM AUTHORIZATION MATRIX // system_auth_matrix.log
+CASE R2-09
+WINDOW: 21:14:23 - 23:23:23 (master clock)
+CLOCK OFFSET: +27 s (times in this log run ahead of the master clock; subtract the offset before comparing them with other logs)
+
+REGISTERED PROJECT CREDENTIALS
+Project Alpha | Future Timeline | Lead: Dr. Aris Thorne | Credential: SIGMA-99-0x7F1A
+Project Beta | Present Timeline | Lead: Commander V. Reyes | Credential: DELTA-44-0x3B88
+Project Gamma | Past Timeline | Lead: Chief Eng. Sarah Chen | Credential: EPSILON-12-0x9C04
+
+A key must be armed by a credential before it can be used. A key is valid for the stated
+period after arming; a standing authorization is not tied to one credential.
+Terminals are listed by terminal code (see TERMINAL REGISTRY in access_history.log).
+
+KEY EVENTS
+21:53:50 | KEY-ORION-6202 | ARMED | BY SIGMA-99-0x7F1A | VALID 120s | USED: maintenance window
+21:55:25 | KEY-ORION-6202 | DISARMED | after use
+23:11:20 | KEY-PULSAR-7617 | ARMED | BY DELTA-44-0x3B88 | VALID 120s | USED: none
+23:13:20 | KEY-PULSAR-7617 | EXPIRED | never used
+23:13:20 | KEY-QUASAR-6599 | STANDING AUTHORIZATION | maintenance window MW-19 | no individual arming recorded
+23:14:50 | KEY-QUASAR-6599 | USED | terminal N-3718 | CHG-1338
+23:15:38 | KEY-HOLD-3513 | ARMED | BY DELTA-44-0x3B88 | VALID 120s
+
+END OF MATRIX

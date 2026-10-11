@@ -1,30 +1,35 @@
 {
   "case_id": "R2-06",
-  "archetype": "authorized_insider",
-  "incident": "Temporal cache corruption",
-  "culprit": "Mira Kael",
+  "archetype": "paradox_filter",
+  "incident": "Paradox Filter Array Bypass",
+  "culprit": "Project Gamma",
   "candidates": [
     {
-      "name": "Mira Kael",
-      "user_id": "MK-22",
-      "role": "security auditor"
+      "name": "Project Alpha",
+      "user_id": "ALPHA",
+      "role": "Future Timeline"
     },
     {
-      "name": "Aria Sen",
-      "user_id": "AS-17",
-      "role": "timeline analyst"
+      "name": "Project Beta",
+      "user_id": "BETA",
+      "role": "Present Timeline"
     },
     {
-      "name": "Noah Vale",
-      "user_id": "NV-09",
-      "role": "systems engineer"
+      "name": "Project Gamma",
+      "user_id": "GAMMA",
+      "role": "Past Timeline"
     }
   ],
-  "intended_deduction": "Requires correlating multiple plausible configuration changes, incident timing, and access/session history; no single file identifies the culprit.",
-  "difficulty_target": "5/5",
   "player_files": {
-    "alpha": "alpha_future.txt",
-    "beta": "beta_present.txt",
-    "gamma": "gamma_past.txt"
-  }
+    "audit": "future_audit.log",
+    "access": "access_history.log",
+    "auth": "system_auth_matrix.log",
+    "incident": "incident_report.txt"
+  },
+  "supporting_files": [
+    "future_audit.log",
+    "system_auth_matrix.log",
+    "incident_report.txt"
+  ],
+  "intended_deduction": "Match the incident change to its terminal (codes in the audit log, names elsewhere) and time (correct the matrix clock offset), then find which credential applied or authorised it. Three files point at the responsible project; one does not."
 }
