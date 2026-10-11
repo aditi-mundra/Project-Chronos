@@ -34,9 +34,9 @@ def run_all_tests():
     cursor.execute("""
         INSERT INTO teams (id, team_name, member_1_name, member_2_name, current_state, round1_score, round2_score)
         VALUES 
-        (101, 'Unit Test Team Alpha', 'Samarth', 'Adwaiy', 'ROUND_2_COMPLETED', 40, 40),
-        (102, 'Unit Test Team Beta', 'Alice', 'Bob', 'ROUND_2_COMPLETED', 45, 35),
-        (103, 'Unit Test Team Gamma', 'Charlie', 'Dana', 'ROUND_2_COMPLETED', 30, 50)
+        (101, 'Unit Test Team Alpha', 'Samarth', 'Adwaiy', 'ROUND_2_COMPLETED', 40, 20),
+        (102, 'Unit Test Team Beta', 'Alice', 'Bob', 'ROUND_2_COMPLETED', 45, 15),
+        (103, 'Unit Test Team Gamma', 'Charlie', 'Dana', 'ROUND_2_COMPLETED', 30, 20)
     """)
     conn.commit()
     conn.close()
@@ -84,7 +84,7 @@ def run_all_tests():
     assert sub_correct["is_correct"] is True
     assert sub_correct["points_awarded"] == 30, f"Expected 30 points, got {sub_correct['points_awarded']}"
     assert sub_correct["round3_score"] == 30
-    assert sub_correct["total_score"] == 40 + 40 + 30 # R1 (40) + R2 (40) + R3 (30) = 110
+    assert sub_correct["total_score"] == 40 + 20 + 30 # R1 (40) + R2 (20) + R3 (30) = 90
     print("✔ 7. Correct decision scoring (+30 points & total score calculation) verified.")
 
     # 7. Test Scoring: Incorrect Culprit (0 Points)
@@ -95,7 +95,7 @@ def run_all_tests():
     assert sub_wrong["is_correct"] is False
     assert sub_wrong["points_awarded"] == 0
     assert sub_wrong["round3_score"] == 0
-    assert sub_wrong["total_score"] == 45 + 35 + 0 # R1 (45) + R2 (35) + R3 (0) = 80
+    assert sub_wrong["total_score"] == 45 + 15 + 0 # R1 (45) + R2 (15) + R3 (0) = 60
     print("✔ 8. Incorrect decision scoring (0 points awarded) verified.")
 
     # 8. Test Idempotency Lock (Submitting again returns existing record without altering score)
@@ -108,13 +108,19 @@ def run_all_tests():
     # 9. Test Verdict Retrieval & Debrief
     verdict = Round3Service.get_round3_verdict(101)
     assert verdict["status"] == "success"
-    assert verdict["total_score"] == 110
+    assert verdict["total_score"] == 90
     assert verdict["verdict_details"]["true_culprit_id"] == correct_cand_id
     assert verdict["verdict_details"]["narrative_summary"] != ""
     print("✔ 10. Verdict forensic narrative debrief retrieval verified.")
 
+    # 10. Test Post-Round 3 Login & Session Routing State
+    from backend.app.services.auth_service import get_team_session
+    sess = get_team_session(101)
+    assert sess["current_state"] == "COMPLETED", f"Expected COMPLETED state on session sync, got {sess['current_state']}"
+    print("✔ 11. Post-Round 3 session resolution directly resolves to COMPLETED state.")
+
     print("\n================================================================")
-    print(" 🎉 ALL 10 ROUND 3 TESTS PASSED PERFECTLY!")
+    print(" 🎉 ALL 11 ROUND 3 TESTS PASSED PERFECTLY!")
     print("================================================================")
 
 def test_round3():

@@ -11,9 +11,8 @@ export default function Teams() {
     try {
       setLoading(true);
       const res = await api.getAdminLeaderboard();
-      if (res.leaderboard) {
-        setTeams(res.leaderboard);
-      }
+      const list = Array.isArray(res) ? res : (res?.leaderboard || []);
+      setTeams(list);
     } catch (e) {
       console.error(e);
     } finally {

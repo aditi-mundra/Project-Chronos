@@ -38,8 +38,8 @@ def test_round1_full_lifecycle():
         "team_name": team_name,
         "member_1_name": "Explorer One",
         "member_2_name": "Explorer Two",
-        "member_1_prn": "PRN-R1-001",
-        "member_2_prn": "PRN-R1-002"
+        "member_1_prn": "23100000001",
+        "member_2_prn": "24100000002"
     })
     assert login_res.status_code == 200
     team_id = login_res.json()["team_id"]

@@ -18,19 +18,43 @@ def get_items(team_id: int):
     return get_round1_items(team_id)
 
 
+from typing import Optional
+from fastapi import HTTPException
+from pydantic import BaseModel
+
+
+class Round1SubmitPayload(BaseModel):
+    team_id: Optional[int] = None
+    item_id: Optional[int] = None
+    answer: Optional[str] = None
+
+
 @router.post("/submit")
-def submit(team_id: int, item_id: int, answer: str):
+def submit(
+    team_id: Optional[int] = None,
+    item_id: Optional[int] = None,
+    answer: Optional[str] = None,
+    payload: Optional[Round1SubmitPayload] = None
+):
     """
-    Submit a classification answer for one image.
+    Submit a classification answer for one image. Supports both query params and JSON body.
     """
+    tid = payload.team_id if (payload and payload.team_id is not None) else team_id
+    iid = payload.item_id if (payload and payload.item_id is not None) else item_id
+    ans = payload.answer if (payload and payload.answer is not None) else answer
+
+    if tid is None or iid is None or ans is None:
+        raise HTTPException(status_code=422, detail="team_id, item_id, and answer are required.")
+
     return submit_answer(
-        team_id,
-        item_id,
-        answer
+        tid,
+        iid,
+        ans
     )
 
 
 @router.post("/finish")
+@router.post("/complete")
 def finish(team_id: int):
     """
     Finish/check Round 1.

@@ -11,8 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from .database.schema import (
     create_tables,
     seed_round1_items_if_empty,
-    seed_round2_files_if_empty,
 )
+from .services.round2_service import init_round2
 from .routes.auth import router as auth_router
 from .routes.round1 import router as round1_router
 from .routes.round2 import router as round2_router
@@ -25,7 +25,7 @@ from .routes.admin import router as admin_router
 async def lifespan(app: FastAPI):
     create_tables()
     seed_round1_items_if_empty()  # no-op when items already exist
-    seed_round2_files_if_empty()  # no-op when files already exist
+    init_round2()  # Round 2 tables + the 24 cases (no-op when already loaded)
     yield
 
 
@@ -72,11 +72,23 @@ FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 FRONTEND_INDEX = FRONTEND_DIST / "index.html"
 
 
+@app.get("/api")
+@app.get("/api/health")
+def health_check():
+    return {
+        "status": "online",
+        "service": "Project Chronos Central Mainframe",
+        "timestamp": os.environ.get("SERVER_START_TIME", "2140"),
+        "mode": "LAN_PARTY_HOST",
+        "lan_ready": True
+    }
+
+
 @app.get("/")
 def home():
     if FRONTEND_INDEX.is_file():
         return FileResponse(FRONTEND_INDEX)
-    return {"message": "Project Chronos API is running"}
+    return {"message": "Project Chronos API is running", "lan_ready": True}
 
 
 app.include_router(

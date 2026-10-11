@@ -1,12 +1,29 @@
 import json
+import re
 import sqlite3
-from datetime import datetime, timezone
+from datetime import timezone, datetime
 
 from fastapi import HTTPException
 
 from ..database.connection import get_connection
+from .round2_cases import assign_case
 
 DEFAULT_STATE = "READY"
+
+PRN_REGEX = re.compile(r"^(23|24|25|26)\d{9}$")
+
+
+def validate_prn(prn: str, member_label: str = "PRN") -> None:
+    if not prn:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{member_label} is required."
+        )
+    if not PRN_REGEX.match(prn):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{member_label} must be strictly numeric, exactly 11 digits long, and start with 23, 24, 25, or 26."
+        )
 
 CALLSIGN_TAKEN_MESSAGE = (
     "Engineers have been already assigned with this Callsign name."
@@ -21,7 +38,25 @@ def _clean(value):
     return (value or "").strip()
 
 
-def _team_payload(row, message):
+def _resolve_team_state(row, connection=None):
+    current = (row["current_state"] or DEFAULT_STATE).upper()
+    status = (row["status"] or "").upper() if "status" in row.keys() else ""
+    if current in ("COMPLETED", "FINISHED") or status == "FINISHED":
+        return "COMPLETED"
+    if connection:
+        try:
+            sub = connection.execute(
+                "SELECT 1 FROM round3_submissions WHERE team_id = ? LIMIT 1",
+                (row["id"],)
+            ).fetchone()
+            if sub:
+                return "COMPLETED"
+        except Exception:
+            pass
+    return row["current_state"] or DEFAULT_STATE
+
+
+def _team_payload(row, message, connection=None):
     return {
         "team_id": row["id"],
         "team_name": row["team_name"],
@@ -29,7 +64,7 @@ def _team_payload(row, message):
         "member_2_name": row["member_2_name"],
         "member_1_prn": row["member_1_prn"],
         "member_2_prn": row["member_2_prn"],
-        "current_state": row["current_state"] or DEFAULT_STATE,
+        "current_state": _resolve_team_state(row, connection),
         "message": message,
     }
 
@@ -78,7 +113,7 @@ def _login_returning_team(connection, row, prn_1, prn_2):
     )
     _log_event(connection, row["id"], "LOGIN", {"result": "RETURNING_TEAM"})
     connection.commit()
-    return _team_payload(row, "LOGIN_SUCCESS")
+    return _team_payload(row, "LOGIN_SUCCESS", connection)
 
 
 def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_prn):
@@ -106,6 +141,15 @@ def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_p
         raise HTTPException(
             status_code=400,
             detail="PRN credentials for both Member 1 and Member 2 are required.",
+        )
+
+    validate_prn(prn_1, "Member 1 PRN")
+    validate_prn(prn_2, "Member 2 PRN")
+
+    if prn_1 == prn_2:
+        raise HTTPException(
+            status_code=400,
+            detail="Member 1 and Member 2 must have distinct PRNs.",
         )
 
     connection = get_connection()
@@ -143,6 +187,16 @@ def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_p
             "WHERE name = 'teams'"
         )
 
+        # Round 2: the team's case is decided the moment the team is created. The
+        # savepoint means login still succeeds if the Round 2 tables are unavailable
+        # (the case is then assigned when Round 2 starts).
+        connection.execute("SAVEPOINT round2_case")
+        try:
+            assign_case(connection, next_id)
+        except Exception:
+            connection.execute("ROLLBACK TO SAVEPOINT round2_case")
+        connection.execute("RELEASE SAVEPOINT round2_case")
+
         _log_event(connection, next_id, "LOGIN", {"result": "REGISTERED_NEW_TEAM"})
         connection.commit()
 
@@ -169,14 +223,14 @@ def get_team_session(team_id):
         row = connection.execute(
             "SELECT * FROM teams WHERE id = ?", (team_id,)
         ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Team not found.")
+        resolved_state = _resolve_team_state(row, connection)
     finally:
         connection.close()
-
-    if not row:
-        raise HTTPException(status_code=404, detail="Team not found.")
 
     return {
         "team_id": row["id"],
         "team_name": row["team_name"],
-        "current_state": row["current_state"] or DEFAULT_STATE,
+        "current_state": resolved_state,
     }

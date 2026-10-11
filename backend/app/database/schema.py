@@ -7,10 +7,6 @@ from .connection import get_connection
 ROUND1_MANIFEST = Path(__file__).resolve().parents[3] / "backend" / "round1_manifest.csv"
 ROUND1_IMAGE_FOLDER = "static/round1"
 
-DEFAULT_ROUND2_FILES = [
-    {"file_id": "L1", "project_name": "Project Chronos", "timeline_tag": "T1", "filename": "chrono_log_1.txt", "content_text": "Time loop detected...", "is_locked": 0},
-    {"file_id": "L2", "project_name": "Project Chronos", "timeline_tag": "T2", "filename": "chrono_log_2.txt", "content_text": "Anomaly in sector 7.", "is_locked": 0},
-]
 
 def create_tables():
     connection = get_connection()
@@ -261,34 +257,13 @@ def seed_round1_items_if_empty():
 
 
 def seed_round2_files_if_empty():
-    connection = get_connection()
+    """Initializes Round 2 cases and tables (safe no-op if already loaded)."""
     try:
-        count = connection.execute("SELECT COUNT(*) FROM round2_files").fetchone()[0]
-        if count > 0:
-            return 0
-
-        inserted = 0
-        for f in DEFAULT_ROUND2_FILES:
-            connection.execute(
-                """
-                INSERT OR IGNORE INTO round2_files
-                (file_id, project_name, timeline_tag, filename, content_text, is_locked)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    f["file_id"],
-                    f["project_name"],
-                    f["timeline_tag"],
-                    f["filename"],
-                    f["content_text"],
-                    f["is_locked"],
-                ),
-            )
-            inserted += 1
-        connection.commit()
-        return inserted
-    finally:
-        connection.close()
+        from ..services.round2_service import init_round2
+        init_round2()
+    except Exception:
+        pass
+    return 0
 
 
 if __name__ == "__main__":

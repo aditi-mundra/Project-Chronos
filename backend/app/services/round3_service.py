@@ -17,6 +17,75 @@ from ..utils.validation import validate_round3_evidence
 logger = logging.getLogger("project_chronos.round3_service")
 logging.basicConfig(level=logging.INFO)
 
+def _get_round2_investigation_data(cursor, team_id: int) -> Dict[str, Any]:
+    tid_str = str(team_id)
+    # Chat history from Round 2 AI Analyst
+    cursor.execute("""
+        SELECT question_number, user_prompt, ai_response, points_deducted, created_at
+        FROM round2_chat_messages
+        WHERE team_id = ?
+        ORDER BY question_number ASC
+    """, (tid_str,))
+    chat_rows = cursor.fetchall()
+    chat_messages = [
+        {
+            "question_number": r["question_number"],
+            "user_prompt": r["user_prompt"],
+            "ai_response": r["ai_response"],
+            "points_deducted": r["points_deducted"],
+            "created_at": r["created_at"]
+        }
+        for r in chat_rows
+    ]
+    points_lost = sum(m["points_deducted"] for m in chat_messages)
+    ai_points_remaining = max(0, 20 - points_lost)
+
+    # Assigned case info, files, and suspects
+    cursor.execute("SELECT case_id FROM round2_team_cases WHERE team_id = ?", (tid_str,))
+    tc_row = cursor.fetchone()
+    case_info = None
+    files = []
+    suspects = []
+
+    if tc_row:
+        c_id = tc_row["case_id"]
+        cursor.execute("SELECT * FROM round2_cases WHERE case_id = ?", (c_id,))
+        c_row = cursor.fetchone()
+        if c_row:
+            case_info = {
+                "case_id": c_row["case_id"],
+                "case_code": c_row["case_code"],
+                "archetype": c_row["archetype"],
+                "incident": c_row["incident"],
+                "culprit": c_row["culprit"]
+            }
+        cursor.execute("SELECT file_id, timeline_tag, filename, content_text FROM round2_case_files WHERE case_id = ? ORDER BY id ASC", (c_id,))
+        for fr in cursor.fetchall():
+            files.append({
+                "file_id": fr["file_id"],
+                "timeline_tag": fr["timeline_tag"],
+                "filename": fr["filename"],
+                "project_name": "Alpha" if fr["file_id"]=="alpha" else ("Beta" if fr["file_id"]=="beta" else "Gamma"),
+                "content_text": fr["content_text"]
+            })
+        cursor.execute("SELECT suspect_name, user_id, role FROM round2_case_suspects WHERE case_id = ? ORDER BY id ASC", (c_id,))
+        for sr in cursor.fetchall():
+            suspects.append({
+                "name": sr["suspect_name"],
+                "user_id": sr["user_id"],
+                "role": sr["role"]
+            })
+
+    return {
+        "case_info": case_info,
+        "chat_messages": chat_messages,
+        "questions_used": len(chat_messages),
+        "points_deducted_total": points_lost,
+        "ai_points_remaining": ai_points_remaining,
+        "files": files,
+        "suspects": suspects
+    }
+
 class Round3Service:
     @staticmethod
     def start_round3_for_team(team_id: int) -> Dict[str, Any]:
@@ -95,6 +164,43 @@ class Round3Service:
             
             sanitized_client_case = get_sanitized_case_for_client(full_case)
             
+            # Fetch Round 2 investigation telemetry & evidence
+            r2_investigation = _get_round2_investigation_data(cursor, team_id)
+
+            # Enrich candidates with Round 2 suspect details if present
+            if r2_investigation["suspects"]:
+                sanitized_cands = sanitized_client_case.get("candidates", [])
+                for idx, s in enumerate(r2_investigation["suspects"]):
+                    if idx < len(sanitized_cands):
+                        c = sanitized_cands[idx]
+                        c["name"] = s["name"]
+                        c["user_id"] = s["user_id"]
+                        c["role"] = s["role"]
+                        c["designation"] = s["role"].title()
+                        c["dossier"] = f"{s['name']} ({s['user_id']}) serves as {s['role']}. Interrogated in Round 2 terminal."
+                        c["discrepancy"] = f"Logged under credential {s['user_id']} in timeline telemetry."
+
+            # Enrich evidence_archive with Round 2 files if available
+            ev_archive = list(sanitized_client_case.get("evidence_pool", []))
+            if r2_investigation["files"]:
+                r2_file_evs = []
+                for f in r2_investigation["files"]:
+                    r2_file_evs.append({
+                        "id": f"ev_{f['file_id']}",
+                        "file_id": f["file_id"],
+                        "category": f"Timeline {f['timeline_tag'].title()}",
+                        "category_code": f"TIMELINE_{f['timeline_tag'].upper()}",
+                        "source_file": f["filename"],
+                        "label": f"Project {f['file_id'].title()} ({f['timeline_tag'].title()})",
+                        "title": f["filename"],
+                        "excerpt": f["content_text"][:240].strip() + ("..." if len(f["content_text"]) > 240 else ""),
+                        "full_text": f["content_text"],
+                        "source_tag": f"ROUND 2 // {f['timeline_tag'].upper()}"
+                    })
+                ev_archive = r2_file_evs + ev_archive
+            sanitized_client_case["evidence_archive"] = ev_archive
+            sanitized_client_case["round2_investigation"] = r2_investigation
+            
             # Check for existing submission
             cursor.execute("SELECT * FROM round3_submissions WHERE team_id = ? ORDER BY id DESC LIMIT 1", (team_id,))
             sub_row = cursor.fetchone()
@@ -119,7 +225,8 @@ class Round3Service:
                 "is_submitted": has_submitted,
                 "submission": submission_data,
                 "case": sanitized_client_case,
-                "scenario": sanitized_client_case
+                "scenario": sanitized_client_case,
+                "round2_investigation": r2_investigation
             }
         finally:
             connection.close()
@@ -211,7 +318,29 @@ class Round3Service:
                 narrative_summary = full_case.get("narrative_summary", "")
             
             # Evaluate correctness
-            is_correct = (selected_candidate_id.strip() == culprit_candidate_id.strip())
+            sel = selected_candidate_id.strip().lower()
+            is_correct = (sel == culprit_candidate_id.strip().lower())
+            
+            if not is_correct:
+                r2_data = _get_round2_investigation_data(cursor, team_id)
+                r2_culprit = (r2_data.get("case_info") or {}).get("culprit", "").strip().lower()
+                if r2_culprit:
+                    if sel == r2_culprit:
+                        is_correct = True
+                    else:
+                        for s in r2_data.get("suspects", []):
+                            if s["name"].strip().lower() == r2_culprit and sel == s["user_id"].strip().lower():
+                                is_correct = True
+                                break
+                if not is_correct:
+                    for cand in full_case.get("candidates", []):
+                        c_id = (cand.get("id") or "").lower()
+                        c_name = (cand.get("name") or "").lower()
+                        c_uid = (cand.get("user_id") or "").lower()
+                        if sel in (c_id, c_name, c_uid) and (c_id == culprit_candidate_id.strip().lower()):
+                            is_correct = True
+                            break
+
             points_awarded = 30 if is_correct else 0
             
             # Calculate evidence matches for forensic breakdown
@@ -263,12 +392,17 @@ class Round3Service:
                 now_iso
             ))
             
-            # Calculate updated total score
+            # Calculate updated total score preserving Round 1 penalties and enforcing authoritative bounds:
+            # Round 1: [-25.0, 50.0], Round 2: [0.0, 20.0], Round 3: [0.0, 30.0], Total: [-25.0, 100.0]
             team_dict = dict(team)
-            r1_score = team_dict.get("round1_score") or team_dict.get("r1_score") or 0.0
-            r2_score = team_dict.get("round2_score") or team_dict.get("r2_score") or 0.0
-            r3_score = float(points_awarded)
-            total_score = r1_score + r2_score + r3_score
+            r1_val = team_dict.get("round1_score") if team_dict.get("round1_score") is not None else team_dict.get("r1_score")
+            r1_score = max(-25.0, min(50.0, float(r1_val))) if r1_val is not None else 0.0
+
+            r2_val = team_dict.get("round2_score") if team_dict.get("round2_score") is not None else team_dict.get("r2_score")
+            r2_score = max(0.0, min(20.0, float(r2_val))) if r2_val is not None else 0.0
+
+            r3_score = max(0.0, min(30.0, float(points_awarded)))
+            total_score = max(-25.0, min(100.0, round(r1_score + r2_score + r3_score, 2)))
             
             # Update teams table
             cursor.execute("""
@@ -289,6 +423,9 @@ class Round3Service:
                 now_iso,
                 team_id
             ))
+            
+            from ..database.queries import update_team_scores
+            update_team_scores(connection, team_id)
             
             # Log telemetry event
             cursor.execute("""
@@ -410,7 +547,8 @@ class Round3Service:
                     "true_culprit_designation": culprit_cand["designation"] if culprit_cand else "",
                     "valid_evidence_ids": full_case["valid_evidence_ids"],
                     "narrative_summary": full_case.get("narrative_summary", "")
-                }
+                },
+                "round2_investigation": _get_round2_investigation_data(cursor, team_id)
             }
         finally:
             connection.close()

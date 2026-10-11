@@ -81,9 +81,12 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 member_2_prn,
                 current_state,
                 round1_score,
+                r1_score,
                 round1_auth_code,
                 round2_score,
+                r2_score,
                 round3_score,
+                r3_score,
                 total_score,
                 round1_started_at,
                 round1_completed_at,
@@ -101,10 +104,22 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
         entries = []
         for idx, r in enumerate(rows):
             r1_diff = calculate_r1_time_diff(r["round1_started_at"], r["round1_completed_at"])
-            r1_score_val = float(r["round1_score"] or 0.0)
-            r2_score_val = float(r["round2_score"] or 0.0)
-            r3_score_val = float(r["round3_score"] or 0.0)
-            calc_total = float(r["total_score"] or (r1_score_val + r2_score_val + r3_score_val))
+            
+            # Preserve negative Round 1 scores and enforce authoritative grading bounds:
+            # Round 1: 50.0 maximum, -25.0 minimum
+            # Round 2: 20.0 maximum, 0.0 minimum
+            # Round 3: 30.0 maximum, 0.0 minimum
+            r1_val = r["round1_score"] if r["round1_score"] is not None else r["r1_score"]
+            r1_score_val = max(-25.0, min(50.0, float(r1_val))) if r1_val is not None else 0.0
+
+            r2_val = r["round2_score"] if r["round2_score"] is not None else r["r2_score"]
+            r2_score_val = max(0.0, min(20.0, float(r2_val))) if r2_val is not None else 0.0
+
+            r3_val = r["round3_score"] if r["round3_score"] is not None else r["r3_score"]
+            r3_score_val = max(0.0, min(30.0, float(r3_val))) if r3_val is not None else 0.0
+
+            # Direct mathematical total of Round 1 + Round 2 + Round 3 scores (Max 100, Min -25)
+            calc_total = round(r1_score_val + r2_score_val + r3_score_val, 2)
 
             status_val = "FINISHED" if r["current_state"] in ("COMPLETED", "DECISION_SUBMITTED", "FINAL_REVEAL") else (r["current_state"] or "ACTIVE")
 
@@ -133,6 +148,14 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 "r3_score": r3_score_val,
                 "round3_score": r3_score_val,
                 "total_score": calc_total,
+                "r1_max": 50.0,
+                "r1_min": -25.0,
+                "r2_max": 20.0,
+                "r2_min": 0.0,
+                "r3_max": 30.0,
+                "r3_min": 0.0,
+                "total_max": 100.0,
+                "total_min": -25.0,
                 "current_state": r["current_state"] or "READY",
                 "status": status_val,
             })
@@ -174,13 +197,13 @@ def export_leaderboard_csv():
         "Operator 2 Name",
         "Operator 2 PRN",
         "Status / State",
-        "Round 1 Score",
+        "Round 1 Score (Max 50 / Min -25)",
         "Round 1 Time (s)",
         "Round 1 Time Formatted",
         "Round 1 Auth Code",
-        "Round 2 Score",
-        "Round 3 Score",
-        "Total Score"
+        "Round 2 Score (Max 20)",
+        "Round 3 Score (Max 30)",
+        "Total Score (Max 100)"
     ])
 
     for t in entries:

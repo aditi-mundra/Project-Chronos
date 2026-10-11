@@ -8,9 +8,9 @@ from ..database.connection import get_connection
 
 class ScoringService:
     @staticmethod
-    def recalculate_total_score(team_id: int) -> int:
+    def recalculate_total_score(team_id: int) -> float:
         """
-        Atomically aggregates round1_score, round2_score, and round3_score
+        Atomically aggregates round1_score (including negative scores), round2_score, and round3_score
         and persists total_score in the master teams table.
         """
         from ..database.queries import update_team_scores
@@ -20,6 +20,6 @@ class ScoringService:
             cursor = connection.cursor()
             cursor.execute("SELECT total_score FROM teams WHERE id = ?", (team_id,))
             row = cursor.fetchone()
-            return row["total_score"] if row else 0
+            return float(row["total_score"]) if row and row["total_score"] is not None else 0.0
         finally:
             connection.close()

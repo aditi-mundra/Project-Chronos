@@ -35,8 +35,8 @@ def test_full_chronos_pipeline():
         "team_name": team_name,
         "member_1_name": "Test Pilot Alpha",
         "member_2_name": "Test Pilot Beta",
-        "member_1_prn": "PRN-10101",
-        "member_2_prn": "PRN-20202"
+        "member_1_prn": "24101010101",
+        "member_2_prn": "25202020202"
     }
     res_login = client.post("/api/auth/login", json=login_payload)
     assert res_login.status_code == 200, f"Login failed: {res_login.text}"

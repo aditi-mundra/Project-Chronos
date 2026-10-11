@@ -91,13 +91,17 @@ export default function Leaderboard({ onBack }) {
       `"${(t.member_1_prn || t.member1_prn || '').replace(/"/g, '""')}"`,
       `"${(t.member_2_name || t.member2_name || '').replace(/"/g, '""')}"`,
       `"${(t.member_2_prn || t.member2_prn || '').replace(/"/g, '""')}"`,
-      t.round1_score ?? t.r1_score ?? 0,
+      Number(t.round1_score ?? t.r1_score ?? 0),
       t.r1_time_diff != null ? t.r1_time_diff : '',
       `"${t.r1_time_formatted || '--:--'}"`,
       `"${t.round1_auth_code || ''}"`,
-      t.round2_score ?? t.r2_score ?? 0,
-      t.round3_score ?? t.r3_score ?? 0,
-      t.total_score ?? 0,
+      Number(t.round2_score ?? t.r2_score ?? 0),
+      Number(t.round3_score ?? t.r3_score ?? 0),
+      t.total_score != null
+        ? Number(t.total_score)
+        : Number(t.round1_score ?? t.r1_score ?? 0) +
+          Number(t.round2_score ?? t.r2_score ?? 0) +
+          Number(t.round3_score ?? t.r3_score ?? 0),
       `"${t.status || 'ACTIVE'}"`
     ]);
 
@@ -172,7 +176,17 @@ export default function Leaderboard({ onBack }) {
   const totalRegistered = teams.length;
   const finishedTeams = teams.filter((t) => t.status === 'FINISHED' || t.current_state === 'COMPLETED').length;
   const activeTeams = totalRegistered - finishedTeams;
-  const topScore = teams.length ? Math.max(...teams.map((t) => t.total_score || 0)) : 0;
+  const topScore = teams.length
+    ? Math.max(
+        ...teams.map((t) =>
+          t.total_score != null
+            ? Number(t.total_score)
+            : Number(t.round1_score ?? t.r1_score ?? 0) +
+              Number(t.round2_score ?? t.r2_score ?? 0) +
+              Number(t.round3_score ?? t.r3_score ?? 0)
+        )
+      )
+    : 0;
 
   return (
     <div className="relative min-h-[calc(100vh-2.5rem)] flex flex-col p-4 sm:p-6 lg:p-8 space-y-6 font-mono">
@@ -296,7 +310,9 @@ export default function Leaderboard({ onBack }) {
         <div className="p-4 rounded-xl bg-[#070c18]/90 border border-pink-900/60 flex items-center justify-between">
           <div>
             <span className="text-[10px] text-slate-400 uppercase tracking-widest block">TOP SCORE</span>
-            <span className="text-2xl font-bold font-tech text-pink-300 block mt-0.5">{topScore.toFixed(1)}</span>
+            <span className="text-2xl font-bold font-tech text-pink-300 block mt-0.5">
+              {topScore.toFixed(1)}
+            </span>
           </div>
           <Award className="w-7 h-7 text-pink-400 opacity-80" />
         </div>
@@ -367,20 +383,28 @@ export default function Leaderboard({ onBack }) {
                         {t.r1_time_formatted || '--:--'}
                       </td>
 
-                      <td className="py-3 px-4 text-center font-bold text-slate-200">
-                        {(t.round1_score ?? t.r1_score ?? 0).toFixed(1)}
+                      <td className="py-3 px-4 text-center font-bold">
+                        <span className={Number(t.round1_score ?? t.r1_score ?? 0) < 0 ? 'text-rose-400' : 'text-slate-200'}>
+                          {Number(t.round1_score ?? t.r1_score ?? 0).toFixed(1)}
+                        </span>
                       </td>
 
                       <td className="py-3 px-4 text-center font-bold text-slate-200">
-                        {(t.round2_score ?? t.r2_score ?? 0).toFixed(1)}
+                        {Number(t.round2_score ?? t.r2_score ?? 0).toFixed(1)}
                       </td>
 
                       <td className="py-3 px-4 text-center font-bold text-slate-200">
-                        {(t.round3_score ?? t.r3_score ?? 0).toFixed(1)}
+                        {Number(t.round3_score ?? t.r3_score ?? 0).toFixed(1)}
                       </td>
 
                       <td className="py-3 px-4 text-center font-extrabold text-sm text-cyan-300 font-tech">
-                        {(t.total_score ?? 0).toFixed(1)}
+                        {Number(
+                          t.total_score != null
+                            ? t.total_score
+                            : Number(t.round1_score ?? t.r1_score ?? 0) +
+                                Number(t.round2_score ?? t.r2_score ?? 0) +
+                                Number(t.round3_score ?? t.r3_score ?? 0)
+                        ).toFixed(1)}
                       </td>
 
                       <td className="py-3 px-4 text-center">

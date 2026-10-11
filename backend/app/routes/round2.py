@@ -1,40 +1,66 @@
-"""
-Project Chronos — Round 2 API Routes
-FastAPI endpoints for Round 2: CHRONOS Terminal Investigation.
-"""
+from fastapi import APIRouter
+from pydantic import BaseModel
 
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
-from ..services.round2_service import Round2Service
+from ..services import round2_service as svc
 
-router = APIRouter(prefix="/api/round2", tags=["Round 2: CHRONOS Terminal"])
+router = APIRouter(prefix="/api/round2", tags=["Round 2"])
 
 
-class Round2ChatRequest(BaseModel):
+class TeamBody(BaseModel):
     team_id: int
-    user_prompt: str = Field(..., description="Participant investigation query")
+
+
+class ChatBody(TeamBody):
+    message: str
+
+
+class SubmitBody(TeamBody):
+    suspect: str = ""  # a suspect's name or user id (optional if concluding investigation)
+
+
+@router.post("/start")
+def start(body: TeamBody):
+    return svc.start_round2(body.team_id)
+
+
+@router.get("/progress")
+def progress(team_id: int):
+    return svc.get_progress(team_id)
 
 
 @router.get("/files")
-def get_files(team_id: Optional[int] = Query(None, description="Optional team ID for team-specific unlocks")):
-    return Round2Service.get_files(team_id=team_id)
+def get_files(team_id: int):
+    return svc.list_files(team_id)
 
 
 @router.get("/files/{file_id}")
-def get_file(file_id: str, team_id: Optional[int] = Query(None)):
-    file_item = Round2Service.get_file_by_id(file_id=file_id, team_id=team_id)
-    if file_item is None:
-        raise HTTPException(
-            status_code=404,
-            detail="File not found or access denied"
-        )
-    return file_item
+def get_file(file_id: str, team_id: int):
+    # 404 "File not found or access denied" for a locked or unknown file
+    return svc.read_file(team_id, file_id)
+
+
+@router.get("/suspects")
+def get_suspects(team_id: int):
+    return svc.list_suspects(team_id)
 
 
 @router.post("/chat")
-def ask_ai(payload: Round2ChatRequest):
-    result = Round2Service.ask_ai(team_id=payload.team_id, user_prompt=payload.user_prompt)
-    if result.get("status") == "error":
-        raise HTTPException(status_code=400, detail=result.get("message"))
-    return result
+def chat(body: ChatBody):
+    return svc.chat(body.team_id, body.message)
+
+
+@router.get("/conversation")
+def conversation(team_id: int):
+    return svc.get_conversation(team_id)
+
+
+@router.post("/conclude")
+def conclude(body: TeamBody):
+    return svc.conclude_investigation(body.team_id)
+
+
+@router.post("/submit")
+def submit(body: SubmitBody):
+    if not body.suspect or body.suspect.strip() == "INVESTIGATION_CONCLUDED":
+        return svc.conclude_investigation(body.team_id)
+    return svc.submit_culprit(body.team_id, body.suspect)

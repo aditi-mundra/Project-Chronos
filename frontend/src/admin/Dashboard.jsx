@@ -33,14 +33,20 @@ export default function Dashboard({ onLogout }) {
   const fetchStats = async () => {
     try {
       const res = await api.getAdminLeaderboard();
-      if (res.leaderboard) {
-        const list = res.leaderboard;
+      const list = Array.isArray(res) ? res : (res?.leaderboard || []);
+      if (list.length > 0 || Array.isArray(res)) {
         const total = list.length;
         const finished = list.filter(t => t.current_state === 'COMPLETED' || t.status === 'FINISHED').length;
         const active = total - finished;
-        const scores = list.map(t => t.total_score || 0);
+        const scores = list.map(t =>
+          t.total_score != null
+            ? Number(t.total_score)
+            : Number(t.round1_score ?? t.r1_score ?? 0) +
+              Number(t.round2_score ?? t.r2_score ?? 0) +
+              Number(t.round3_score ?? t.r3_score ?? 0)
+        );
         const top = scores.length ? Math.max(...scores) : 0;
-        const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / total) : 0;
+        const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / (total || 1)) : 0;
 
         setStats({
           totalTeams: total,
@@ -226,7 +232,7 @@ export default function Dashboard({ onLogout }) {
               <Trophy className="w-4 h-4 text-[var(--neon-primary)]" />
             </div>
             <div className="font-orbitron font-black text-3xl text-white">
-              {stats.topScore} <span className="text-xs text-[var(--text-dim)] font-normal">/ 130</span>
+              {stats.topScore}
             </div>
           </div>
 

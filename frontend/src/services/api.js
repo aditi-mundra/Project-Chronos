@@ -105,6 +105,17 @@ export const api = {
     });
   },
 
+  async concludeRound2(teamId) {
+    return apiRequest('/api/round2/conclude', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId }),
+    });
+  },
+
+  async getRound2Conversation(teamId) {
+    return apiRequest(`/api/round2/conversation?team_id=${encodeURIComponent(teamId)}`);
+  },
+
   // =========================================================================
   // Round 3 Subsystem (Final Accusation / Wisdom Round)
   // =========================================================================

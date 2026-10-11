@@ -11,9 +11,9 @@ ROUND1_CLUE = (
     "Find the system that changed first."
 )
 
-# Round 1 time limit. The clock starts when the team's items are first fetched
+# Round 1 time limit (5 minutes = 300 seconds). The clock starts when the team's items are first fetched
 # (round1_started_at) and is enforced here, not in the browser.
-ROUND1_DURATION_SECONDS = 10 * 60
+ROUND1_DURATION_SECONDS = 5 * 60
 # Answers sent shortly after the limit (the browser auto-submits when time runs out)
 # are still accepted.
 ROUND1_SUBMIT_GRACE_SECONDS = 30
@@ -230,11 +230,13 @@ def get_round1_items(team_id):
             cursor.execute("""
                 UPDATE teams
                 SET current_state = 'ROUND1_ACTIVE',
-                    round1_started_at = CURRENT_TIMESTAMP
+                    round1_started_at = CURRENT_TIMESTAMP,
+                    r1_start_time = CURRENT_TIMESTAMP,
+                    r1_time_diff = 0.0
                 WHERE id = ?
             """, (team_id,))
 
-            _log_event(cursor, team_id, "ROUND1_STARTED", {"items": 25})
+            _log_event(cursor, team_id, "ROUND1_STARTED", {"items": 25, "duration_seconds": ROUND1_DURATION_SECONDS})
 
             connection.commit()
 
@@ -249,7 +251,7 @@ def get_round1_items(team_id):
                 ON r.item_id = t.item_id
             WHERE t.team_id = ?
               AND r.is_active = 1
-            ORDER BY RANDOM()
+            ORDER BY t.id ASC
         """, (team_id,))
 
         rows = cursor.fetchall()
@@ -377,22 +379,18 @@ def submit_answer(team_id, item_id, answer):
             }
 
         # ---------------------------------------------------------
-        # PREVENT DUPLICATE SUBMISSION
+        # ---------------------------------------------------------
+        # SUBMISSION & UPDATE
         # ---------------------------------------------------------
 
         cursor.execute("""
-            SELECT id
+            SELECT id, points_awarded
             FROM round1_submissions
             WHERE team_id = ?
               AND item_id = ?
         """, (team_id, item_id))
 
         existing_submission = cursor.fetchone()
-
-        if existing_submission is not None:
-            return {
-                "error": "This item has already been submitted."
-            }
 
         # ---------------------------------------------------------
         # CHECK ANSWER
@@ -405,37 +403,49 @@ def submit_answer(team_id, item_id, answer):
         else:
             points = -item["points_negative"]
 
-        # ---------------------------------------------------------
-        # SAVE SUBMISSION
-        # ---------------------------------------------------------
+        if existing_submission is not None:
+            old_points = existing_submission["points_awarded"]
+            point_diff = points - old_points
 
-        cursor.execute("""
-            INSERT INTO round1_submissions
-            (
+            cursor.execute("""
+                UPDATE round1_submissions
+                SET selected_era = ?,
+                    is_correct = ?,
+                    points_awarded = ?
+                WHERE id = ?
+            """, (answer, int(is_correct), points, existing_submission["id"]))
+
+            cursor.execute("""
+                UPDATE teams
+                SET round1_score = round1_score + ?,
+                    r1_score = COALESCE(r1_score, 0.0) + ?
+                WHERE id = ?
+            """, (point_diff, point_diff, team_id))
+        else:
+            cursor.execute("""
+                INSERT INTO round1_submissions
+                (
+                    team_id,
+                    item_id,
+                    selected_era,
+                    is_correct,
+                    points_awarded
+                )
+                VALUES (?, ?, ?, ?, ?)
+            """, (
                 team_id,
                 item_id,
-                selected_era,
-                is_correct,
-                points_awarded
-            )
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            team_id,
-            item_id,
-            answer,
-            int(is_correct),
-            points
-        ))
+                answer,
+                int(is_correct),
+                points
+            ))
 
-        # ---------------------------------------------------------
-        # UPDATE SCORE
-        # ---------------------------------------------------------
-
-        cursor.execute("""
-            UPDATE teams
-            SET round1_score = round1_score + ?
-            WHERE id = ?
-        """, (points, team_id))
+            cursor.execute("""
+                UPDATE teams
+                SET round1_score = round1_score + ?,
+                    r1_score = COALESCE(r1_score, 0.0) + ?
+                WHERE id = ?
+            """, (points, points, team_id))
         
         # Calculate total score properly and sync aliases
         from ..database.queries import update_team_scores
@@ -483,6 +493,7 @@ def submit_answer(team_id, item_id, answer):
                 UPDATE teams
                 SET current_state = 'ROUND1_COMPLETED',
                     round1_completed_at = CURRENT_TIMESTAMP,
+                    r1_end_time = CURRENT_TIMESTAMP,
                     round1_auth_code = ?
                 WHERE id = ?
             """, (auth_code, team_id))
@@ -505,8 +516,22 @@ def submit_answer(team_id, item_id, answer):
 
             time_result = cursor.fetchone()
 
-            if time_result:
+            if time_result and time_result["elapsed_seconds"] is not None:
                 completion_time_seconds = time_result["elapsed_seconds"]
+                cursor.execute("""
+                    UPDATE teams
+                    SET r1_time_diff = ?
+                    WHERE id = ?
+                """, (float(completion_time_seconds), team_id))
+        else:
+            # Continuously persist elapsed timer into DB while round is active
+            elapsed = _elapsed_seconds(cursor, team_id)
+            if elapsed is not None:
+                cursor.execute("""
+                    UPDATE teams
+                    SET r1_time_diff = ?
+                    WHERE id = ?
+                """, (float(elapsed), team_id))
 
         connection.commit()
 
@@ -683,6 +708,7 @@ def finish_round1(team_id):
             UPDATE teams
             SET current_state = 'ROUND1_COMPLETED',
                 round1_completed_at = CURRENT_TIMESTAMP,
+                r1_end_time = CURRENT_TIMESTAMP,
                 round1_auth_code = ?
             WHERE id = ?
               AND COALESCE(current_state, '') != 'ROUND1_COMPLETED'
@@ -698,9 +724,7 @@ def finish_round1(team_id):
             "total_items": total_items
         })
 
-        connection.commit()
-
-        # Calculate completion time
+        # Calculate completion time and persist r1_time_diff
         cursor.execute("""
             SELECT CAST(
                 (
@@ -717,8 +741,19 @@ def finish_round1(team_id):
 
         completion_time_seconds = None
 
-        if result:
+        if result and result[0] is not None:
             completion_time_seconds = result[0]
+            cursor.execute("""
+                UPDATE teams
+                SET r1_time_diff = ?,
+                    r1_end_time = round1_completed_at
+                WHERE id = ?
+            """, (float(completion_time_seconds), team_id))
+
+        connection.commit()
+
+        from ..database.queries import update_team_scores
+        update_team_scores(connection, team_id)
 
         return {
             "round1_completed": True,
@@ -791,6 +826,14 @@ def get_round1_status(team_id):
 
         if elapsed is not None:
             remaining = max(0, ROUND1_DURATION_SECONDS - elapsed)
+            # Continuously update timer progress in DB while team is playing
+            if not completed:
+                cursor.execute("""
+                    UPDATE teams
+                    SET r1_time_diff = ?
+                    WHERE id = ?
+                """, (float(elapsed), team_id))
+                connection.commit()
 
         result = None
 
