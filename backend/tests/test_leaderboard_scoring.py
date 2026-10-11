@@ -9,7 +9,9 @@ from backend.app.main import app
 from backend.app.database.connection import get_connection
 from backend.app.database.schema import create_tables
 from backend.app.database.queries import update_team_scores, record_round1_completion
-from backend.app.routes.admin import fetch_leaderboard_data
+from backend.app.routes.admin import ADMIN_SECRET_TOKEN, fetch_leaderboard_data
+
+ADMIN_HEADERS = {"Authorization": f"Bearer {ADMIN_SECRET_TOKEN}"}
 
 
 def test_leaderboard_total_calculation_with_negative_round1():
@@ -58,7 +60,8 @@ def test_leaderboard_total_calculation_with_negative_round1():
             assert row["total_score"] == expected_total, f"Team {name} total_score expected {expected_total}, got {row['total_score']}"
 
         # Fetch leaderboard data via API endpoint
-        res = client.get("/api/admin/leaderboard")
+        assert client.get("/api/admin/leaderboard").status_code == 401
+        res = client.get("/api/admin/leaderboard", headers=ADMIN_HEADERS)
         assert res.status_code == 200
         lb = res.json()
         assert isinstance(lb, list)
@@ -86,7 +89,7 @@ def test_leaderboard_total_calculation_with_negative_round1():
         assert lb_subset == ["TEST_LB_POS1", "TEST_LB_NEG1", "TEST_LB_ZERO", "TEST_LB_NEG2"]
 
         # Validate CSV export endpoint
-        res_csv = client.get("/api/admin/export-csv")
+        res_csv = client.get("/api/admin/export-csv", headers=ADMIN_HEADERS)
         assert res_csv.status_code == 200
         assert "TEST_LB_NEG1" in res_csv.text
         assert "25.0" in res_csv.text
@@ -160,7 +163,7 @@ def test_authoritative_grading_bounds_enforcement():
         assert lo_row["total_score"] == -25.0
 
         # Verify API endpoint returns clamped data and limit metadata
-        res = client.get("/api/admin/leaderboard")
+        res = client.get("/api/admin/leaderboard", headers=ADMIN_HEADERS)
         assert res.status_code == 200
         lb = res.json()
         lookup = {t["team_name"]: t for t in lb if t["team_name"].startswith("TEST_BOUNDS_")}
@@ -184,7 +187,7 @@ def test_authoritative_grading_bounds_enforcement():
         assert lookup["TEST_BOUNDS_LOW"]["total_score"] == -25.0
 
         # Verify CSV export header limits
-        res_csv = client.get("/api/admin/export-csv")
+        res_csv = client.get("/api/admin/export-csv", headers=ADMIN_HEADERS)
         assert res_csv.status_code == 200
         assert "Round 1 Score (Max 50 / Min -25)" in res_csv.text
         assert "Round 2 Score (Max 20)" in res_csv.text

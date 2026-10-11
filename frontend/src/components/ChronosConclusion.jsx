@@ -17,7 +17,7 @@ export default function ChronosConclusion({ onComplete }) {
   const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
   const startTimeRef = useRef(null);
-  const audioInitializedRef = useRef(false);
+  const playedCuesRef = useRef(new Set());
   const doneRef = useRef(false);
 
   // Cinematic state stages
@@ -45,7 +45,8 @@ export default function ChronosConclusion({ onComplete }) {
       if (!AudioCtx) return;
       
       // Drone sweep at start of high warp (2.5s)
-      if (elapsed >= 2.5 && elapsed < 2.55) {
+      if (elapsed >= 2.5 && !playedCuesRef.current.has('warp')) {
+        playedCuesRef.current.add('warp');
         soundFx.playGlitch();
         const ctx = new AudioCtx();
         const osc = ctx.createOscillator();
@@ -63,12 +64,18 @@ export default function ChronosConclusion({ onComplete }) {
       }
 
       // Whoosh passes at 3.5s and 5.2s
-      if ((elapsed >= 3.4 && elapsed < 3.45) || (elapsed >= 5.1 && elapsed < 5.15)) {
+      if (elapsed >= 3.4 && !playedCuesRef.current.has('whoosh-1')) {
+        playedCuesRef.current.add('whoosh-1');
+        soundFx.playWhoosh();
+      }
+      if (elapsed >= 5.1 && !playedCuesRef.current.has('whoosh-2')) {
+        playedCuesRef.current.add('whoosh-2');
         soundFx.playWhoosh();
       }
 
       // Harmonic Convergence Chord at 6.8s (snapping into single timeline)
-      if (elapsed >= 6.8 && elapsed < 6.85) {
+      if (elapsed >= 6.8 && !playedCuesRef.current.has('merge')) {
+        playedCuesRef.current.add('merge');
         soundFx.playAccessGranted();
         const ctx = new AudioCtx();
         [220, 277.18, 329.63, 440, 554.37, 659.25].forEach((freq, idx) => {
@@ -153,7 +160,7 @@ export default function ChronosConclusion({ onComplete }) {
       if (elapsed >= 6.8 && elapsed < 7.4) {
         const flashP = 1 - (elapsed - 6.8) / 0.6;
         setFlashOpacity(Math.max(0, flashP));
-      } else if (elapsed >= 7.4 && flashOpacity > 0) {
+      } else if (elapsed >= 7.4) {
         setFlashOpacity(0);
       }
 
@@ -167,10 +174,10 @@ export default function ChronosConclusion({ onComplete }) {
       }
 
       // Reveal Titles and Actions
-      if (elapsed >= 7.4 && !showTitles) {
+      if (elapsed >= 7.4) {
         setShowTitles(true);
       }
-      if (elapsed >= 8.6 && !showActions) {
+      if (elapsed >= 8.6) {
         setShowActions(true);
       }
 
@@ -414,10 +421,11 @@ export default function ChronosConclusion({ onComplete }) {
       window.removeEventListener('keydown', handleKey);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [finish, playSynthesizedEffects, showTitles, showActions, flashOpacity]);
+  }, [finish, playSynthesizedEffects]);
 
   const replay = () => {
     startTimeRef.current = performance.now();
+    playedCuesRef.current.clear();
     setShowTitles(false);
     setShowActions(false);
     setBadgeText('TEMPORAL DIVERGENCE DETECTED');
@@ -435,7 +443,7 @@ export default function ChronosConclusion({ onComplete }) {
         className="absolute inset-0 pointer-events-none z-10"
         style={{
           background:
-            'repeating-linear-gradient(to bottom, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.85) 100%)',
+            'repeating-linear-gradient(to bottom, rgba(0,0,0,0.14) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,0.58) 100%)',
         }}
       />
 
@@ -464,7 +472,7 @@ export default function ChronosConclusion({ onComplete }) {
       </div>
 
       {/* Dynamic Status Badge */}
-      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-25 pointer-events-none">
+      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[25] pointer-events-none">
         <div
           className={`font-mono text-xs sm:text-sm font-bold tracking-[0.25em] uppercase px-6 py-2 rounded-lg bg-black/70 border backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-all duration-500 ${badgeColor}`}
         >
@@ -476,7 +484,7 @@ export default function ChronosConclusion({ onComplete }) {
       <button
         type="button"
         onClick={finish}
-        className="fixed top-5 right-5 z-60 px-4 py-2 rounded-lg bg-black/70 border border-cyan-500/50 hover:border-cyan-300 text-cyan-300 hover:text-white font-mono text-xs tracking-widest uppercase backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]"
+        className="fixed top-5 right-5 z-[60] px-4 py-2 rounded-lg bg-black/70 border border-cyan-500/50 hover:border-cyan-300 text-cyan-300 hover:text-white font-mono text-xs tracking-widest uppercase backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]"
       >
         <span>SKIP TO DEBRIEF</span>
         <FastForward className="w-3.5 h-3.5" />
@@ -484,7 +492,7 @@ export default function ChronosConclusion({ onComplete }) {
 
       {/* Center Kinetic Title & Metric Pills */}
       <div
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-25 pointer-events-none w-[90%] max-w-4xl transition-all duration-1000 ${
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-[25] pointer-events-none w-[90%] max-w-4xl transition-all duration-1000 ${
           showTitles ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
         }`}
       >
@@ -510,7 +518,7 @@ export default function ChronosConclusion({ onComplete }) {
 
       {/* Action Buttons (Appears after convergence) */}
       <div
-        className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-35 flex flex-col sm:flex-row items-center gap-4 transition-all duration-700 ${
+        className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-[35] flex flex-col sm:flex-row items-center gap-4 transition-all duration-700 ${
           showActions ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >

@@ -229,23 +229,41 @@ def _require_open(connection, team_id):
     return team
 
 
+def expire_if_needed(connection, team):
+    """Persist a Round 2 timeout and return the current team row."""
+    if (
+        _norm(team["current_state"]) == _norm(ACTIVE_STATE)
+        and team["round2_started_at"]
+        and _seconds_left(team["round2_started_at"]) <= 0
+    ):
+        now = _now_iso()
+        connection.execute(
+            "UPDATE teams SET current_state = ?, updated_at = ? WHERE id = ?",
+            (TIMEOUT_STATE, now, team["id"]),
+        )
+        _log(connection, team["id"], "TIMEOUT", {"round": 2})
+        connection.commit()
+        return _team(connection, team["id"])
+    return team
+
+
 # --- progress ----------------------------------------------------------------
 
 WELCOME = (
     "CHRONOS Analyst online. I can summarise the three evidence files, cross-reference "
     "them and point out contradictions. I will not name a culprit: that decision is yours. "
-    "You may ask 3 questions (costs 5, 5 and 10 points)."
+    "You may ask up to 3 questions."
 )
 
 
 def _progress(connection, team) -> dict:
     tid = str(team["id"])
     rows = connection.execute(
-        "SELECT COUNT(*) AS n, COALESCE(SUM(points_deducted), 0) AS lost "
+        "SELECT COUNT(*) AS n "
         "FROM round2_chat_messages WHERE team_id = ?",
         (tid,),
     ).fetchone()
-    used, lost = rows["n"], rows["lost"]
+    used = rows["n"]
     sub = connection.execute("SELECT * FROM round2_submissions WHERE team_id = ?", (tid,)).fetchone()
     started = team["round2_started_at"]
 
@@ -257,9 +275,6 @@ def _progress(connection, team) -> dict:
             "max_questions": MAX_AI_QUESTIONS,
             "used": used,
             "remaining": MAX_AI_QUESTIONS - used,
-            "points_remaining": AI_BUDGET - lost,
-            "next_cost": AI_DEDUCTIONS[used] if used < MAX_AI_QUESTIONS else 0,
-            "deductions": list(AI_DEDUCTIONS),
         },
         # Players never see whether they were right or what they scored. The score
         # is stored in the database for the admin leaderboard only; no player
@@ -280,7 +295,7 @@ def start_round2(team_id):
 
         # Refresh / re-entry never restarts the timer.
         if team["round2_started_at"] or state in {_norm(ACTIVE_STATE), _norm(COMPLETED_STATE), _norm(TIMEOUT_STATE)}:
-            return _progress(connection, team)
+            return _progress(connection, expire_if_needed(connection, team))
 
         if state not in STARTABLE:
             raise HTTPException(
@@ -301,7 +316,8 @@ def start_round2(team_id):
 
 def get_progress(team_id):
     with _Db() as connection:
-        return _progress(connection, _require_started(connection, team_id))
+        team = expire_if_needed(connection, _require_started(connection, team_id))
+        return _progress(connection, team)
 
 
 # --- evidence ----------------------------------------------------------------
@@ -489,7 +505,6 @@ def chat(team_id, message):
         "reply": reply,
         "source": source,
         "question_number": number,
-        "points_deducted": deduction,
         "progress": progress,
     }
 
@@ -498,7 +513,7 @@ def get_conversation(team_id):
     with _Db() as connection:
         team = _require_started(connection, team_id)
         rows = connection.execute(
-            "SELECT question_number, user_prompt, ai_response, points_deducted "
+            "SELECT question_number, user_prompt, ai_response "
             "FROM round2_chat_messages WHERE team_id = ? ORDER BY question_number",
             (str(team["id"]),),
         ).fetchall()

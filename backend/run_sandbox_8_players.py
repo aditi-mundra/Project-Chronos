@@ -260,7 +260,11 @@ def run_simulation():
     print(f"✔ {r3_cases_count} Case Verdicts Recorded in `round3_team_cases`")
 
     # Verify Leaderboard API
-    lb_res = client.get("/api/admin/leaderboard")
+    from backend.app.routes.admin import ADMIN_SECRET_TOKEN
+    lb_res = client.get(
+        "/api/admin/leaderboard",
+        headers={"Authorization": f"Bearer {ADMIN_SECRET_TOKEN}"},
+    )
     assert lb_res.status_code == 200
     lb_data = lb_res.json()
     sandbox_lb = [t for t in lb_data if t["team_name"].startswith("SANDBOX_")]

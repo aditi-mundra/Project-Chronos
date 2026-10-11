@@ -542,8 +542,6 @@ def submit_answer(team_id, item_id, answer):
         return {
             "item_id": item_id,
             "answer": answer,
-            "is_correct": bool(is_correct),
-            "points_awarded": points,
             "round1_completed": round1_completed,
             "submitted_items": submitted_items,
             "total_items": total_items,
@@ -689,7 +687,6 @@ def finish_round1(team_id):
                 "message": "Round 1 already completed.",
                 "submitted_items": submitted_items,
                 "total_items": total_items,
-                "score": team["round1_score"],
                 "auth_code": team["round1_auth_code"],
                 "clue": ROUND1_CLUE,
                 "completion_time_seconds": completion_time_seconds,
@@ -760,7 +757,6 @@ def finish_round1(team_id):
             "message": "Round 1 completed successfully.",
             "submitted_items": submitted_items,
             "total_items": total_items,
-            "score": team["round1_score"],
             "auth_code": auth_code,
             "clue": ROUND1_CLUE,
             "completion_time_seconds": completion_time_seconds,
@@ -856,7 +852,6 @@ def get_round1_status(team_id):
                 completion_time_seconds = cursor.fetchone()[0]
 
             result = {
-                "score": team["round1_score"],
                 "auth_code": team["round1_auth_code"],
                 "clue": ROUND1_CLUE,
                 "completion_time_seconds": completion_time_seconds,

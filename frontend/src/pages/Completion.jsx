@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RotateCcw, ShieldCheck, FileCheck2, Sparkles, Play, Award, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, ShieldCheck, FileCheck2, Sparkles, Play } from 'lucide-react';
 import api from '../services/api.js';
 import { soundFx } from '../utils/audio.js';
 import ThemeSelector from '../components/ThemeSelector';
@@ -65,11 +65,6 @@ export default function Completion({
   const verdictDetails = verdictData?.verdict_details || {};
   const r2Invest = verdictData?.round2_investigation || {};
 
-  const r1Score = verdictData?.round1_score ?? 0;
-  const r2Score = verdictData?.round2_score ?? 0;
-  const r3Score = verdictData?.round3_score ?? 0;
-  const totalScore = verdictData?.total_score ?? (r1Score + r2Score + r3Score);
-
   return (
     <div className="relative min-h-screen bg-[var(--bg-primary)] text-[var(--text-body)] flex flex-col items-center justify-center p-3 sm:p-5 lg:p-6 overflow-x-hidden font-space">
       <div className="absolute inset-0 cyber-grid opacity-30 pointer-events-none" />
@@ -129,26 +124,6 @@ export default function Completion({
               <div className="text-[11px] font-mono text-slate-400">
                 Entropy: 0.00% • 3 Fractured Strands Merged
               </div>
-            </div>
-          </div>
-
-          {/* Master Mission Score Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-            <div className="p-3.5 rounded-xl bg-[#03060f]/80 border border-slate-800 space-y-1">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">ROUND 1</span>
-              <div className="text-xl font-bold font-mono text-cyan-400">{r1Score}</div>
-            </div>
-            <div className="p-3.5 rounded-xl bg-[#03060f]/80 border border-slate-800 space-y-1">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">ROUND 2</span>
-              <div className="text-xl font-bold font-mono text-purple-400">{r2Score}</div>
-            </div>
-            <div className="p-3.5 rounded-xl bg-[#03060f]/80 border border-slate-800 space-y-1">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">ROUND 3</span>
-              <div className="text-xl font-bold font-mono text-pink-400">{r3Score}</div>
-            </div>
-            <div className="p-3.5 rounded-xl bg-[#03060f]/90 border border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)] space-y-1">
-              <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-widest block">TOTAL SCORE</span>
-              <div className="text-xl font-bold font-mono text-emerald-300">{totalScore}</div>
             </div>
           </div>
 

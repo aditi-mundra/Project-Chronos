@@ -67,9 +67,19 @@ export default function Dashboard({ onLogout }) {
     return () => clearInterval(interval);
   }, []);
 
-  const handleExportCsv = () => {
+  const handleExportCsv = async () => {
     soundEngine.playClick();
-    window.location.href = api.getExportCsvUrl();
+    try {
+      const blob = await api.downloadAdminCsv();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'chronos_leaderboard.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('CSV export failed', error);
+    }
   };
 
   return (

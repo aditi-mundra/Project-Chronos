@@ -84,8 +84,8 @@ def test_round1_full_lifecycle():
             })
         assert res.status_code == 200
         data = res.json()
-        assert data["is_correct"] is True
-        assert data["points_awarded"] == 2
+        assert "is_correct" not in data
+        assert "points_awarded" not in data
 
     # 6. Test in-flight answer update (repositioning fragment)
     test_item = items[0]
@@ -99,8 +99,8 @@ def test_round1_full_lifecycle():
     })
     assert update_res.status_code == 200
     update_data = update_res.json()
-    assert update_data["is_correct"] is False
-    assert update_data["points_awarded"] == -1
+    assert "is_correct" not in update_data
+    assert "points_awarded" not in update_data
 
     # Revert back to correct answer
     revert_res = client.post("/api/round1/submit", json={
@@ -109,7 +109,7 @@ def test_round1_full_lifecycle():
         "answer": era_map[test_item_id]
     })
     assert revert_res.status_code == 200
-    assert revert_res.json()["is_correct"] is True
+    assert "is_correct" not in revert_res.json()
 
     # 7. Submit remaining 15 items
     for item in items[10:]:
@@ -126,7 +126,7 @@ def test_round1_full_lifecycle():
     assert finish_res.status_code == 200
     finish_data = finish_res.json()
     assert finish_data["round1_completed"] is True
-    assert finish_data["score"] == 50  # 25 items * 2 pts each
+    assert "score" not in finish_data
     assert finish_data["auth_code"] is not None
     assert len(finish_data["auth_code"]) == 6
     assert finish_data["next_round"] == "ROUND2"
@@ -134,5 +134,5 @@ def test_round1_full_lifecycle():
     # 9. Verify final status
     status_final = client.get(f"/api/round1/status?team_id={team_id}").json()
     assert status_final["completed"] is True
-    assert status_final["result"]["score"] == 50
+    assert "score" not in status_final["result"]
     assert status_final["result"]["auth_code"] == finish_data["auth_code"]

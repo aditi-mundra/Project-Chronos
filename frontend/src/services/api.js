@@ -9,6 +9,11 @@
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
 
+function adminHeaders() {
+  const token = sessionStorage.getItem('chronos_admin_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function apiRequest(endpoint, options = {}) {
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
   const res = await fetch(url, {
@@ -101,7 +106,7 @@ export const api = {
   async askRound2Ai(teamId, userPrompt) {
     return apiRequest('/api/round2/chat', {
       method: 'POST',
-      body: JSON.stringify({ team_id: teamId, user_prompt: userPrompt }),
+      body: JSON.stringify({ team_id: teamId, message: userPrompt }),
     });
   },
 
@@ -152,23 +157,35 @@ export const api = {
     return apiRequest(`/api/game/state?team_id=${encodeURIComponent(teamId)}`);
   },
 
-  async getAdminLeaderboard() {
-    return apiRequest('/api/admin/leaderboard');
-  },
-
-  async getAdminLogs(limit = 100) {
-    return apiRequest(`/api/admin/logs?limit=${limit}`);
-  },
-
-  async clearDatabase(password) {
-    return apiRequest('/api/admin/clear-db', {
+  async adminLogin(password) {
+    return apiRequest('/api/admin/login', {
       method: 'POST',
       body: JSON.stringify({ password }),
     });
   },
 
-  getExportCsvUrl() {
-    return `${API_BASE}/api/admin/export-csv`;
+  async getAdminLeaderboard() {
+    return apiRequest('/api/admin/leaderboard', { headers: adminHeaders() });
+  },
+
+  async getAdminLogs(limit = 100) {
+    return apiRequest(`/api/admin/logs?limit=${limit}`, { headers: adminHeaders() });
+  },
+
+  async clearDatabase(password) {
+    return apiRequest('/api/admin/clear-db', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ password }),
+    });
+  },
+
+  async downloadAdminCsv() {
+    const response = await fetch(`${API_BASE}/api/admin/export-csv`, {
+      headers: adminHeaders(),
+    });
+    if (!response.ok) throw new Error('Host authorization required.');
+    return response.blob();
   },
 };
 

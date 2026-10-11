@@ -6,6 +6,7 @@ Provides host leaderboard, admin authentication, system logs, and CSV export.
 import io
 import csv
 import os
+import secrets
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
@@ -15,13 +16,9 @@ from ..database.connection import get_connection
 
 router = APIRouter(prefix="/api/admin", tags=["Admin & Host Leaderboard"])
 
-ADMIN_PASSWORD = os.getenv("CHRONOS_ADMIN_PASSWORD", "chronos2140")
-ADMIN_SECRET_TOKEN = "CHRONOS_SUPERVISOR_SESSION_SECURE_2140"
-VALID_ADMIN_PASSWORDS = {
-    "admin",
-    "chronos2140",
-    ADMIN_PASSWORD.strip().lower(),
-}
+ADMIN_PASSWORD = os.getenv("CHRONOS_ADMIN_PASSWORD", "").strip()
+ADMIN_SECRET_TOKEN = os.getenv("CHRONOS_ADMIN_TOKEN") or secrets.token_urlsafe(32)
+VALID_ADMIN_PASSWORDS = {ADMIN_PASSWORD.lower()} if ADMIN_PASSWORD else set()
 
 
 def is_valid_admin_password(pw: Optional[str]) -> bool:
@@ -29,6 +26,16 @@ def is_valid_admin_password(pw: Optional[str]) -> bool:
         return False
     cleaned = pw.strip().strip('"').strip("'").lower()
     return cleaned in VALID_ADMIN_PASSWORDS
+
+
+def require_admin(request: Request) -> None:
+    authorization = request.headers.get("authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not secrets.compare_digest(token, ADMIN_SECRET_TOKEN):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Host authorization required.",
+        )
 
 
 class AdminLoginRequest(BaseModel):
@@ -172,18 +179,20 @@ def admin_login(payload: AdminLoginRequest):
 
 
 @router.get("/leaderboard")
-def get_admin_leaderboard():
+def get_admin_leaderboard(request: Request):
     """
     Returns ranked leaderboard of all registered teams with real-time score calculation.
     """
+    require_admin(request)
     return fetch_leaderboard_data()
 
 
 @router.get("/export-csv")
-def export_leaderboard_csv():
+def export_leaderboard_csv(request: Request):
     """
     Generates and downloads a complete master CSV export of the leaderboard.
     """
+    require_admin(request)
     entries = fetch_leaderboard_data()
 
     output = io.StringIO()
@@ -237,8 +246,9 @@ def export_leaderboard_csv():
 from ..utils.csv_export import export_table_to_csv
 
 @router.get("/export/csv/{table_name}")
-def download_table_csv(table_name: str = "teams"):
+def download_table_csv(request: Request, table_name: str = "teams"):
     """Download live table data as a downloadable CSV file."""
+    require_admin(request)
     try:
         csv_data = export_table_to_csv(table_name)
         return Response(
@@ -251,10 +261,11 @@ def download_table_csv(table_name: str = "teams"):
 
 
 @router.get("/logs")
-def get_admin_logs(limit: int = Query(100, ge=1, le=1000)):
+def get_admin_logs(request: Request, limit: int = Query(100, ge=1, le=1000)):
     """
     Returns recent chronological audit trail events.
     """
+    require_admin(request)
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -282,7 +293,7 @@ async def clear_database(
     password: Optional[str] = Query(None)
 ):
     """
-    Clears all competition database records with password 'admin' authorization.
+    Clears all competition database records with the configured host passkey.
     Wipes all teams, submissions, round cases, and audit logs.
     Preserves and verifies seed data for subsequent games.
     """

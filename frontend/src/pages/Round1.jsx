@@ -19,7 +19,7 @@ const initialZones = { PAST: [], PRESENT: [], FUTURE: [] };
  *  - the first GET /items assigns this team's items and starts its Round 1 clock;
  *  - the remaining time shown here comes from GET /status, so a page reload cannot reset it;
  *  - on FINISH (or when time runs out) the answers are submitted and POST /finish returns
- *    the score, authentication code and clue, which are handed to `onComplete`.
+ *    the authentication code and clue, which are handed to `onComplete`.
  */
 export default function Round1({ onComplete }) {
   const { team, updateTeamState } = useAuth();
@@ -268,10 +268,9 @@ export default function Round1({ onComplete }) {
       if (!done.round1_completed) throw new Error(done.message || 'Round 1 is not complete yet.');
 
       setSystemState('AUTHENTICATED');
-      addLog('Final scan complete • score sealed', 'success');
+      addLog('Final scan complete • result stored in host ledger', 'success');
       updateTeamState('ROUND1_COMPLETED');
       onCompleteRef.current?.({
-        score: done.score,
         auth_code: done.auth_code,
         clue: done.clue,
         completion_time_seconds: done.completion_time_seconds,
@@ -336,7 +335,7 @@ export default function Round1({ onComplete }) {
           <Telemetry title="TIMELINE INTEGRITY" value={`${Math.round(integrity)}%`} progress={integrity} />
           <Telemetry title="FRAGMENTS RESTORED" value={`${placedIds.size} / ${fragments.length}`} progress={progress} />
           <Telemetry title="TEMPORAL DRIFT" value={integrity < 50 ? '+12.31ms' : '+08.72ms'} progress={Math.max(10, integrity - 18)} />
-          <div className="score-mask"><span>FINAL SCORE</span><b>•••</b><small>REVEALED ONLY AFTER FINISH</small></div>
+          <div className="score-mask"><span>HOST LEDGER</span><b>•••</b><small>CLASSIFIED</small></div>
         </section>
 
         <section className="workspace">
@@ -400,7 +399,7 @@ export default function Round1({ onComplete }) {
                 : timeUp
                   ? (submitError ? 'RETRY SUBMISSION' : 'SEALING TIMELINE...')
                   : completed
-                    ? 'FINISH ROUND • SEAL SCORE'
+                    ? 'FINISH ROUND • SEAL RESULT'
                     : 'ROUTE ALL FRAGMENTS TO CONTINUE'}
             </button>
           </div>

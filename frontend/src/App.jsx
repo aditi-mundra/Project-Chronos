@@ -40,7 +40,9 @@ function AppContent() {
   const { team, logoutTeam } = useAuth();
   const [currentView, setCurrentView] = useState(() => {
     const path = window.location.pathname;
-    if (path === '/leaderboard') return 'leaderboard';
+    if (path === '/leaderboard') {
+      return sessionStorage.getItem('chronos_admin_token') ? 'leaderboard' : 'adminLogin';
+    }
     if (path === '/admin') return 'adminLogin';
     return team ? 'resuming' : 'landing';
   });
@@ -267,11 +269,14 @@ function AppContent() {
         )}
 
         {currentView === 'adminLogin' && (
-          <AdminLogin onLoginSuccess={() => setCurrentView('adminDashboard')} />
+          <AdminLogin onLoginSuccess={() => setCurrentView(window.location.pathname === '/leaderboard' ? 'leaderboard' : 'adminDashboard')} />
         )}
         
         {currentView === 'adminDashboard' && (
-          <Dashboard onLogout={() => setCurrentView('landing')} />
+          <Dashboard onLogout={() => {
+            sessionStorage.removeItem('chronos_admin_token');
+            setCurrentView('landing');
+          }} />
         )}
 
       </main>

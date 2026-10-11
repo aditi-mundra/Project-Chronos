@@ -9,7 +9,6 @@ import {
   FileCheck2, 
   ArrowRight, 
   X, 
-  AlertTriangle,
   Bot,
   ExternalLink
 } from 'lucide-react';
@@ -36,9 +35,8 @@ export default function Round3({
   const [scenarioData, setScenarioData] = useState(null);
   const [teamInfo, setTeamInfo] = useState(null);
 
-  // User Candidate Selection (Alpha, Beta, or Gamma / Suspects)
+  // User Candidate Selection (Project Alpha, Beta, or Gamma)
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
-  const [selectedEvidenceIds, setSelectedEvidenceIds] = useState([]);
 
   // Right Panel Tabs: 'evidence_logs' | 'ai_inquiries'
   const [activeRightTab, setActiveRightTab] = useState('evidence_logs');
@@ -46,6 +44,7 @@ export default function Round3({
   // UI States
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState(null);
   const [showBriefingModal, setShowBriefingModal] = useState(false);
   const [viewingFileModal, setViewingFileModal] = useState(null);
 
@@ -80,11 +79,6 @@ export default function Round3({
           name: startRes.team_name || teamName
         });
         
-        const evList = scen.evidence_archive || scen.evidence_pool || [];
-        if (evList.length > 0) {
-          // Pre-select first 2 evidence items as starting context
-          setSelectedEvidenceIds(evList.slice(0, 2).map(e => e.id));
-        }
       } catch (err) {
         console.error("Failed to initialize Round 3:", err);
         setError(err.message || "Failed to establish secure connection to Round 3 Mainframe.");
@@ -101,25 +95,15 @@ export default function Round3({
   // Handle Candidate Selection
   const handleSelectCandidate = (candidateId) => {
     soundFx.playKeystroke();
+    setSubmissionError(null);
     setSelectedCandidateId(candidateId);
-  };
-
-  // Toggle Evidence Selection
-  const handleToggleEvidence = (evId) => {
-    soundFx.playKeystroke();
-    setSelectedEvidenceIds((prev) => {
-      if (prev.includes(evId)) {
-        return prev.filter((id) => id !== evId);
-      } else {
-        return [...prev, evId];
-      }
-    });
   };
 
   // Open Confirmation Modal
   const handleInitiateSubmission = () => {
     if (!selectedCandidateId) {
       soundFx.playError();
+      setSubmissionError('Choose Project Alpha, Project Beta, or Project Gamma.');
       return;
     }
     soundFx.playWhoosh();
@@ -130,14 +114,10 @@ export default function Round3({
   const handleFinalSubmit = async () => {
     try {
       setIsSubmitting(true);
-      soundFx.playAccessGranted();
+      setSubmissionError(null);
       
-      let res = {};
-      try {
-        res = await api.submitRound3Decision(teamId, selectedCandidateId, selectedEvidenceIds);
-      } catch (apiErr) {
-        console.warn("API Error, proceeding anyway:", apiErr);
-      }
+      const res = await api.submitRound3Decision(teamId, selectedCandidateId, []);
+      soundFx.playAccessGranted();
       
       setIsConfirmModalOpen(false);
       
@@ -151,7 +131,8 @@ export default function Round3({
     } catch (err) {
       console.error("Submission failed:", err);
       soundFx.playError();
-      alert(`Submission Error: ${err.message || "Could not record decision"}`);
+      setSubmissionError(err.message || "Could not record decision");
+      setIsConfirmModalOpen(false);
       setIsSubmitting(false);
     }
   };
@@ -205,20 +186,15 @@ export default function Round3({
             </div>
             <div>
               <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 block">
-                PHASE 3 // TIME-LOCK CRITICAL
+                PHASE 3 // FINAL REVIEW
               </span>
               <h1 className="text-2xl sm:text-3xl font-extrabold font-tech text-cyan-300 tracking-wide">
-                FINAL ACCUSATION // <span className="text-pink-400">CORRUPTED CORE IDENTIFICATION</span>
+                FINAL PROJECT SELECTION
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            {r2Invest.ai_points_remaining !== undefined && (
-              <span className="px-3 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-700/80 text-cyan-300 text-xs font-mono font-bold tracking-wider">
-                R2 AI BUDGET: {r2Invest.ai_points_remaining}/20 PTS
-              </span>
-            )}
             <button
               onClick={() => setShowBriefingModal(true)}
               className="px-3 py-1.5 rounded-lg border border-cyan-700/80 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 text-xs font-mono font-bold tracking-wider inline-flex items-center gap-1.5 transition cursor-pointer"
@@ -240,7 +216,7 @@ export default function Round3({
             <div className="flex items-center justify-between px-1">
               <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                SELECT CORRUPTED CORE CANDIDATE (CHOOSE 1)
+                SELECT ONE PROJECT
               </span>
               <span className="text-[11px] font-mono text-pink-400">
                 {selectedCandidateId ? '1 CANDIDATE DESIGNATED' : 'SELECTION REQUIRED'}
@@ -273,20 +249,11 @@ export default function Round3({
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-tech text-lg sm:text-xl font-bold text-white tracking-wide">
-                              {cand.name}
+                            <h3 className="font-tech text-xl sm:text-2xl font-bold text-cyan-300 tracking-wide">
+                              {cand.name || cand.label || `Project ${cand.id}`}
                             </h3>
-                            {cand.timeline_sector && (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 uppercase">
-                                {cand.timeline_sector}
-                              </span>
-                            )}
                           </div>
-                          <p className="text-xs font-mono text-slate-400 mt-0.5">
-                            {cand.role ? `Role: ${cand.role}` : `Lead: ${cand.lead_name || 'Classified'}`} 
-                            {cand.user_id ? ` • ID: ${cand.user_id}` : ''}
-                            {cand.clearance_level ? ` • Clearance: ${cand.clearance_level}` : ''}
-                          </p>
+                          <p className="text-xs font-mono text-slate-400 mt-1">Candidate project</p>
                         </div>
                       </div>
 
@@ -303,16 +270,6 @@ export default function Round3({
                       </div>
                     </div>
 
-                    {/* Dossier & Forensic Discrepancy */}
-                    <div className="mt-3 text-xs font-mono text-slate-300 bg-black/50 p-3 rounded-xl border border-cyan-950 space-y-1.5">
-                      <p className="leading-relaxed">{cand.dossier}</p>
-                      {cand.discrepancy && (
-                        <div className="text-[11px] text-pink-300/90 pt-1 border-t border-cyan-950 flex items-start gap-1.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-pink-400 shrink-0 mt-0.5" />
-                          <span><strong>Forensic Discrepancy:</strong> {cand.discrepancy}</span>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 );
               })}
@@ -360,28 +317,18 @@ export default function Round3({
               {/* TAB 1: Supporting Evidence Logs */}
               {activeRightTab === 'evidence_logs' && (
                 <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
-                    <span>CITE SUPPORTING EVIDENCE (MIN 2):</span>
-                    <span className="text-emerald-400 font-bold">{selectedEvidenceIds.length} SELECTED</span>
+                  <div className="text-[11px] font-mono text-slate-400 px-1">
+                    ROUND 2 EVIDENCE // REVIEW ONLY
                   </div>
 
-                  {evidenceList.map((ev) => {
-                    const isChecked = selectedEvidenceIds.includes(ev.id);
-                    return (
+                  {evidenceList.map((ev) => (
                       <div
                         key={ev.id}
-                        className={`p-3.5 rounded-xl border transition flex flex-col gap-2 ${
-                          isChecked
-                            ? 'bg-[#091523] border-emerald-500/80 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                            : 'bg-[#070c18]/80 border-cyan-900/40 hover:border-cyan-800'
-                        }`}
+                        className="p-3.5 rounded-xl border border-cyan-900/40 bg-[#070c18]/80 flex flex-col gap-2"
                       >
                         <div className="flex items-start justify-between gap-2.5">
-                          <div 
-                            onClick={() => handleToggleEvidence(ev.id)}
-                            className="flex items-start gap-2.5 cursor-pointer flex-1"
-                          >
-                            <FileText className={`w-4 h-4 mt-0.5 shrink-0 ${isChecked ? 'text-emerald-400' : 'text-slate-500'}`} />
+                          <div className="flex items-start gap-2.5 flex-1">
+                            <FileText className="w-4 h-4 mt-0.5 shrink-0 text-cyan-500" />
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-xs text-cyan-300">
@@ -397,14 +344,6 @@ export default function Round3({
                             </div>
                           </div>
 
-                          <div
-                            onClick={() => handleToggleEvidence(ev.id)}
-                            className={`w-4 h-4 rounded mt-1 border flex items-center justify-center shrink-0 cursor-pointer transition ${
-                              isChecked ? 'border-emerald-400 bg-emerald-500 text-slate-950' : 'border-slate-600'
-                            }`}
-                          >
-                            {isChecked && <CheckCircle2 className="w-3.5 h-3.5" />}
-                          </div>
                         </div>
 
                         {/* Full Text Expander if available */}
@@ -425,8 +364,7 @@ export default function Round3({
                           </div>
                         )}
                       </div>
-                    );
-                  })}
+                  ))}
                 </div>
               )}
 
@@ -443,7 +381,7 @@ export default function Round3({
                       <Bot className="w-8 h-8 text-cyan-400 mx-auto opacity-70" />
                       <div className="font-tech text-white font-bold text-sm">NO AI INQUIRIES FILED</div>
                       <p className="text-xs font-mono text-slate-400 leading-relaxed">
-                        Team asked 0 questions in Round 2. The entire 20-point AI investigation budget was preserved!
+                        Team asked no analyst questions in Round 2.
                       </p>
                     </div>
                   ) : (
@@ -455,9 +393,6 @@ export default function Round3({
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 uppercase font-bold">
                             INQUIRY #{msg.question_number || idx + 1}
-                          </span>
-                          <span className="text-[10px] font-mono text-pink-400">
-                            COST: -{msg.points_deducted} PTS
                           </span>
                         </div>
 
@@ -483,20 +418,28 @@ export default function Round3({
             {/* Submission CTA Block */}
             <div className="pt-3">
               <button
-                disabled={!selectedCandidateId || isSubmitting}
+                type="button"
+                disabled={isSubmitting}
                 onClick={handleInitiateSubmission}
                 className={`w-full py-4 px-6 rounded-xl font-tech font-bold text-base tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
                   selectedCandidateId && !isSubmitting
                     ? 'text-slate-950 bg-gradient-to-r from-pink-500 via-rose-400 to-cyan-300 hover:from-pink-400 hover:to-cyan-200 shadow-[0_0_30px_rgba(244,63,94,0.5)] hover:shadow-[0_0_45px_rgba(244,63,94,0.8)]'
-                    : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-60'
+                    : 'bg-slate-800 text-slate-300 border border-slate-600 hover:border-rose-500 hover:text-rose-300'
                 }`}
               >
                 <span>LOCK IN FINAL ACCUSATION</span>
                 <ArrowRight className="w-5 h-5 text-current" />
               </button>
               <p className="text-[11px] font-mono text-slate-500 text-center mt-2">
-                All decisions are permanent and recorded in the temporal ledger.
+                {!selectedCandidateId
+                  ? 'Choose Project Alpha, Project Beta, or Project Gamma to continue.'
+                  : 'Ready to lock. Evidence is available for review only.'}
               </p>
+              {submissionError && (
+                <p className="text-xs font-mono text-rose-400 text-center mt-2" role="alert">
+                  {submissionError}
+                </p>
+              )}
             </div>
           </div>
 
@@ -578,18 +521,18 @@ export default function Round3({
               <div className="space-y-1">
                 <h3 className="text-2xl font-bold font-tech text-white">CONFIRM FINAL ACCUSATION</h3>
                 <p className="text-xs font-mono text-pink-300">
-                  YOU ARE ACCUSING <span className="text-white font-bold">{activeCandidate?.name?.toUpperCase()}</span>
+                  YOU ARE SELECTING <span className="text-white font-bold">{activeCandidate?.name?.toUpperCase()}</span>
                 </p>
               </div>
 
               <div className="p-4 bg-black/60 rounded-xl border border-pink-900/60 text-left text-xs font-mono text-slate-300 space-y-1.5">
-                <div>• Selected Candidate: <strong className="text-pink-400">{activeCandidate?.name}</strong></div>
-                <div>• Role: {activeCandidate?.role || activeCandidate?.lead_name} ({activeCandidate?.timeline_sector || 'Temporal'})</div>
-                <div>• Cited Supporting Evidence: {selectedEvidenceIds.length} items</div>
+                <div>• Selected Project: <strong className="text-pink-400">{activeCandidate?.name}</strong></div>
+                <div>• Supporting evidence remains attached automatically.</div>
               </div>
 
               <div className="flex gap-3">
                 <button
+                  type="button"
                   disabled={isSubmitting}
                   onClick={() => setIsConfirmModalOpen(false)}
                   className="flex-1 py-3 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 font-mono font-bold text-xs uppercase cursor-pointer"
@@ -597,6 +540,7 @@ export default function Round3({
                   Cancel
                 </button>
                 <button
+                  type="button"
                   disabled={isSubmitting}
                   onClick={handleFinalSubmit}
                   className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-mono font-bold text-xs uppercase shadow-[0_0_20px_rgba(244,63,94,0.6)] cursor-pointer"
@@ -610,7 +554,7 @@ export default function Round3({
 
         {/* Full-Screen Transition HUD Overlay when transmitting */}
         {isSubmitting && (
-          <div className="fixed inset-0 z-60 bg-[#05070c]/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center space-y-5 animate-fadeIn">
+          <div className="fixed inset-0 z-[60] bg-[#05070c]/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center space-y-5 animate-fadeIn">
             <div className="w-16 h-16 rounded-full border-4 border-cyan-400 border-t-pink-500 animate-spin shadow-[0_0_40px_rgba(6,182,212,0.7)]" />
             <div className="space-y-2">
               <span className="px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-mono text-[10px] tracking-widest uppercase inline-block">

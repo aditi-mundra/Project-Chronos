@@ -60,8 +60,8 @@ canvas#cv {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px),
-              radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.85) 100%);
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.14) 0 1px, transparent 1px 3px),
+              radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,0.58) 100%);
   z-index: 10;
 }
 
@@ -804,18 +804,32 @@ if(document.fonts && document.fonts.ready){
   setTimeout(runCinematic, 50);
 }
 
-// Emergency safety fallback: ensure all conclusion UI is revealed and interactive
-setTimeout(() => {
-  if (bigTitle && bigTitle.style.opacity !== '1') {
-    state.mergeStrength = 1.0;
-    state.warpProgress = 1.0;
-    state.shake = 0;
-    bigTitle.style.opacity = '1';
-    subTitle.style.opacity = '1';
-    metrics.style.opacity = '1';
-    actions.style.opacity = '1';
-  }
-}, 10000);
+// Fail-safe final state. It also repairs pages resumed from a throttled/background tab.
+function forceFinalState(){
+  state.mergeStrength = 1.0;
+  state.warpProgress = 1.0;
+  state.shake = 0;
+  flash.style.opacity = '0';
+  badge.style.opacity = '1';
+  badge.textContent = 'TIMELINES UNIFIED // PRIME CONTINUUM SYNCHRONIZED';
+  badge.style.color = '#34d399';
+  badge.style.borderColor = '#34d399';
+  bigTitle.style.opacity = '1';
+  bigTitle.style.transform = 'scale(1)';
+  subTitle.style.opacity = '1';
+  subTitle.style.transform = 'translateY(0)';
+  metrics.style.opacity = '1';
+  actions.style.opacity = '1';
+  huds.forEach(hud => { hud.style.opacity = '1'; });
+}
+
+setTimeout(forceFinalState, 10000);
+window.addEventListener('pageshow', event => {
+  if (event.persisted) forceFinalState();
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && performance.now() > 10000) forceFinalState();
+});
 
 // Navigation & Actions
 function finishConclusion(){

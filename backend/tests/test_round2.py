@@ -71,8 +71,8 @@ def test_round2_full_lifecycle():
     assert start_data["state"] == "ROUND_2_ACTIVE"
     assert start_data["ai"]["max_questions"] == 3
     assert start_data["ai"]["remaining"] == 3
-    assert start_data["ai"]["points_remaining"] == 20
-    assert start_data["ai"]["next_cost"] == 5
+    assert "points_remaining" not in start_data["ai"]
+    assert "next_cost" not in start_data["ai"]
 
     # 5. Read unlocked file
     read_res = client.get(f"/api/round2/files/alpha?team_id={team_id}")
@@ -96,10 +96,10 @@ def test_round2_full_lifecycle():
     assert chat1_res.status_code == 200
     c1_data = chat1_res.json()
     assert c1_data["question_number"] == 1
-    assert c1_data["points_deducted"] == 5
+    assert "points_deducted" not in c1_data
     assert c1_data["progress"]["ai"]["remaining"] == 2
-    assert c1_data["progress"]["ai"]["points_remaining"] == 15
-    assert c1_data["progress"]["ai"]["next_cost"] == 5
+    assert "points_remaining" not in c1_data["progress"]["ai"]
+    assert "next_cost" not in c1_data["progress"]["ai"]
 
     # 8. Ask AI question 2 (-5 pts)
     chat2_res = client.post("/api/round2/chat", json={
@@ -109,10 +109,10 @@ def test_round2_full_lifecycle():
     assert chat2_res.status_code == 200
     c2_data = chat2_res.json()
     assert c2_data["question_number"] == 2
-    assert c2_data["points_deducted"] == 5
+    assert "points_deducted" not in c2_data
     assert c2_data["progress"]["ai"]["remaining"] == 1
-    assert c2_data["progress"]["ai"]["points_remaining"] == 10
-    assert c2_data["progress"]["ai"]["next_cost"] == 10
+    assert "points_remaining" not in c2_data["progress"]["ai"]
+    assert "next_cost" not in c2_data["progress"]["ai"]
 
     # 9. Ask AI question 3 (-10 pts)
     chat3_res = client.post("/api/round2/chat", json={
@@ -122,9 +122,9 @@ def test_round2_full_lifecycle():
     assert chat3_res.status_code == 200
     c3_data = chat3_res.json()
     assert c3_data["question_number"] == 3
-    assert c3_data["points_deducted"] == 10
+    assert "points_deducted" not in c3_data
     assert c3_data["progress"]["ai"]["remaining"] == 0
-    assert c3_data["progress"]["ai"]["points_remaining"] == 0
+    assert "points_remaining" not in c3_data["progress"]["ai"]
 
     # 10. Question 4 should fail (exceeded limit)
     chat4_res = client.post("/api/round2/chat", json={
@@ -138,6 +138,7 @@ def test_round2_full_lifecycle():
     assert convo_res.status_code == 200
     history = convo_res.json()
     assert len(history) == 3
+    assert all("points_deducted" not in item for item in history)
 
     # 12. Submit unknown suspect should fail (400)
     sub_fail = client.post("/api/round2/submit", json={

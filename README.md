@@ -12,8 +12,12 @@ Project Chronos is engineered for seamless **Local Area Network (LAN) hosting** 
 ### 🎮 Host the Game on LAN in 1 Command:
 
 ```bash
+# Required once per terminal session: choose a private host-only passkey.
+# Windows PowerShell: $env:CHRONOS_ADMIN_PASSWORD="your-private-passkey"
+export CHRONOS_ADMIN_PASSWORD="your-private-passkey"
+
 # Option 1: Python Launcher (Cross-platform: Windows, Mac, Linux)
-python3 run.py
+python run.py
 
 # Option 2: Shell Script (macOS / Linux)
 ./start.sh
@@ -21,6 +25,8 @@ python3 run.py
 # Option 3: Windows Batch File (Windows)
 start.bat
 ```
+
+The host dashboard remains disabled when `CHRONOS_ADMIN_PASSWORD` is not set. Never share this passkey with participant machines.
 
 ### 📡 What Happens Automatically:
 1. **Auto LAN IP Discovery**: Detects all active IPv4 network interfaces on the host (Ethernet, Wi-Fi) and prints the exact shareable player URLs.
@@ -77,8 +83,12 @@ For the actual event, it is recommended to build the frontend and serve everythi
    Run the backend using Uvicorn. FastAPI is configured to automatically serve the `frontend/dist` directory for all unmatched routes, meaning it will serve the React app on port `8000` alongside the API.
    ```bash
    pip install -r backend/requirements.txt
+   # Set this to a private host-only passkey before launching.
+   export CHRONOS_ADMIN_PASSWORD="replace-with-a-private-passkey"
    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
    ```
+
+   On Windows PowerShell, use `$env:CHRONOS_ADMIN_PASSWORD="replace-with-a-private-passkey"` instead of `export`.
 
 3. **Client Access**
    - Players: `http://<SERVER_IP>:8000`
@@ -89,10 +99,10 @@ For the actual event, it is recommended to build the frontend and serve everythi
 ## 🎮 Game Architecture & Rounds
 
 1. **Round 0**: Team Registration & Cinematic Briefing.
-2. **Round 1 (Timeline Fragmentation)**: Image-based classification puzzle (+2 / -1 points, Max 50).
-3. **Round 2 (CHRONOS Terminal)**: Physical token search + Digital audit log investigation with restricted Gemini Assistant (+30 culprit + max 20 AI balance, Max 50).
-4. **Round 3 (Final Decision / Wisdom Round)**: Deterministically seeded suspect matrix & evidence grid (+30 points, Max 30).
-5. **Completion**: Cumulative score reveal (Max 130 Points), time-based tie-breakers, and forensic narrative resolution.
+2. **Round 1 (Timeline Fragmentation)**: Image-based classification puzzle (+2 / -1 points, max 50).
+3. **Round 2 (CHRONOS Terminal)**: Timed audit-log investigation with a restricted AI analyst (max 20).
+4. **Round 3 (Final Decision)**: Untimed review of the same Round 2 case. Teams choose Alpha, Beta, or Gamma and cite at least two carried evidence files (+30 / 0).
+5. **Completion**: Participant-safe mission debrief. Scores and correctness remain private in SQLite and are available only through the authenticated host dashboard.
 
 ---
 
@@ -101,5 +111,6 @@ For the actual event, it is recommended to build the frontend and serve everythi
 Run the full automated test suite to verify case generation, anti-collusion permutations, evidence constraints, and scoring integrity:
 
 ```bash
-python3 backend/tests/test_round3.py
+python -m pip install pytest httpx2
+python -m pytest backend/tests/test_round3.py
 ```

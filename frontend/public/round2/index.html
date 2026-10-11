@@ -138,7 +138,7 @@ const AMB=[['info','CHRONOS self-check passed'],['info','Sync node 12 responding
 
 /* ---------- backend (FastAPI, Round 2 Backend PRD) ----------
    Open  http://<server>:<port>/round2/?team_id=<id>
-   Evidence, the AI question limit, point deductions, the culprit answer, the score
+   Evidence, the AI question limit, the culprit answer, the score
    and the timer all live on the server. This page only renders what the API returns. */
 const QS=new URLSearchParams(location.search);
 const API=(QS.get('api')||(location.protocol.startsWith('http')?location.origin:'http://localhost:8000')).replace(/\/$/,'');
@@ -171,13 +171,13 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#cin').onclick)$('#cin').
 /* ---------- apply a server progress snapshot (the server is the source of truth) ---------- */
 function sync(p){S.prog=p;S.state=p.state;S.welcome=p.welcome;S.dl=p.seconds_left!=null?Date.now()+p.seconds_left*1000:0;meter();aiUi();suspectUi();rf()}
 function meter(){const a=S.prog.ai;$('#ms').innerHTML='';for(let i=1;i<=a.max_questions;i++)$('#ms').append(el('span',i<=a.remaining?'on':''));
- $('#ml').textContent=`AI ${a.points_remaining} PTS · ${a.remaining} Q LEFT`}
+ $('#ml').textContent=`AI ANALYST · ${a.remaining} Q LEFT`}
 function aiUi(){const a=S.prog.ai,i=$('#qi'),qc=$('#qc');
  if(S.prog.submitted){i.disabled=true;i.placeholder='Investigation submitted';qc.textContent='ROUND 2 CLOSED';return}
  if(!live()){i.disabled=true;i.placeholder='Round 2 is closed';qc.textContent='ROUND 2 CLOSED';return}
- if(a.remaining<=0){i.disabled=true;i.placeholder='No AI questions remaining';qc.textContent='NO QUESTIONS LEFT · AI POINTS: '+a.points_remaining;return}
+ if(a.remaining<=0){i.disabled=true;i.placeholder='No AI questions remaining';qc.textContent='NO QUESTIONS LEFT';return}
  i.disabled=false;i.placeholder='Type your question...';
- qc.textContent=`QUESTION ${a.used+1}/${a.max_questions} · COSTS -${a.next_cost} PTS · ENTER`}
+ qc.textContent=`QUESTION ${a.used+1}/${a.max_questions} · PRESS ENTER`}
 
 /* ---------- evidence ---------- */
 async function loadFiles(casc){S.files=await api('/files');rf(casc)}
@@ -238,7 +238,7 @@ function say(t,kind){const s=addMsg(kind||'a');if(kind==='u'||kind==='sys'){s.te
  Promise.all([Promise.resolve(t).catch(e=>e.message||'CHRONOS link lost.'),new Promise(r=>setTimeout(r,600))]).then(([x])=>{$('#orb').classList.remove('th');$('#os').textContent='LISTENING';typeInto(s,x)})}
 $('#qi').onkeydown=e=>{if(e.key!=='Enter'||!e.target.value.trim()||e.target.disabled)return;
  const q=e.target.value.trim();e.target.value='';e.target.disabled=true;S.last=Date.now();say(q,'u');
- const p=api('/chat',{message:q}).then(r=>{sync(r.progress);notify({t:1,a:`AI QUESTION ${r.question_number}/3 · -${r.points_deducted} PTS`,b:`AI points left: ${r.progress.ai.points_remaining}`});return r.reply});
+ const p=api('/chat',{message:q}).then(r=>{sync(r.progress);notify({t:1,a:`AI QUESTION ${r.question_number}/3 RECORDED`,b:`${r.progress.ai.remaining} questions remaining`});return r.reply});
  p.catch(()=>{aiUi()});
  $('#orb').classList.add('th');$('#os').textContent='PROCESSING…';
  const s=addMsg('a');p.then(x=>{$('#orb').classList.remove('th');$('#os').textContent='LISTENING';typeInto(s,x)})
