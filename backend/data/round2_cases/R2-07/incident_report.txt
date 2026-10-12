@@ -4,9 +4,16 @@ CASE R2-07
 INCIDENT: credentialed maintenance session used to alter a timeline gate
 
 21:14:02  FIRST INSTABILITY DETECTED
+TELEMETRY: Instability detected but could have been resolved. Initial oscillation within damping buffer; Chronos diagnostic routine logged potential baseline recovery.
 21:15:18  prediction drift / synchronization variance begins
+TELEMETRY: Timeline synchronisation drop detected. Projection drift widening across active baseline nodes; automated damping failing.
 21:16:04  automated recovery fails to restore expected state
+TELEMETRY: Automated recovery fails to restore expected state. Timeline synchronisation drop detected continuing. Chronos - Panic.
 21:17:31  timeline synchronization drops below safe threshold
+TELEMETRY: Critical barrier breach. Timeline synchronisation drop detected below safe threshold. Chronos - Panic escalated. Full timeline de-synchronization imminent.
+
+DIAGNOSTIC STATUS NOTE
+Instability detected but could have been resolved through standard buffer damping. Timeline synchronisation drop detected across primary projection. Chronos - Panic: manual recovery bypass prevented automatic state restoration.
 
 PRELIMINARY ANALYSIS
 - the first approved threshold change is NOT sufficient to explain the failure.

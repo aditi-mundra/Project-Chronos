@@ -4,39 +4,59 @@ INCIDENT: a failed configuration is followed by deletion of the only diagnostic 
 
 CONFIGURATION DELTAS — T-31
 
+OPERATIONAL TELEMETRY & PREDICTIVE DRIFT LOG:
+For given user: Aria Sen
+Resource: Timeline synchronisation could be normal but not sure,
+Change was predicted to be from 0.68 -> 0.74
+Status of this was approved by chronos.
+
 20:58:14  D-61
 RESOURCE: T-31
 CHANGE: observation window 90s -> 120s
 STATUS: APPROVED
+CONTEXT: Resource baseline monitor; timeline synchronisation could be normal but not sure.
+TELEMETRY: Variance predicted within baseline drift buffer. Status of this was approved by Chronos.
 
 21:03:27  D-62
 RESOURCE: T-31
 CHANGE: prediction threshold 0.72 -> 0.68
 STATUS: APPROVED
+CONTEXT: For given user: Aria Sen
+TELEMETRY: Timeline synchronisation could be normal but not sure; change was predicted to be from 0.68 -> 0.74. Status of this was approved by Chronos.
 
 21:07:46  D-63
 RESOURCE: T-31
 CHANGE: recovery mode AUTO -> MANUAL
 STATUS: PENDING
+CONTEXT: Subsystem state transition queued; execution parameter unverified.
+TELEMETRY: Variance index shift recorded; automated recovery inhibited.
 
 21:09:11  D-64
 RESOURCE: T-31
 CHANGE: recovery window 30s -> 10s
 STATUS: APPROVED
+CONTEXT: Window compression applied; failover latency reduced.
+TELEMETRY: Buffer response adjusted under operational profile. Status of this was approved by Chronos.
 
 21:12:03  D-63
 RESOURCE: T-31
 ACTION: REVERTED
+CONTEXT: Rollback attempt registered; manual bypass state cleared.
+TELEMETRY: Telemetry state did not restore automated baseline in time.
 
 21:13:19  D-65
 RESOURCE: T-31
 CHANGE: safety threshold 0.68 -> 0.71
 STATUS: APPROVED
+CONTEXT: Threshold increment; timeline synchronisation monitoring active.
+TELEMETRY: Predicted stability adjustment recorded after variance onset. Status of this was approved by Chronos.
 
 21:16:02  D-66
 RESOURCE: T-31
 CHANGE: archive verbosity LOW -> HIGH
 STATUS: APPROVED
+CONTEXT: Diagnostic telemetry logging level escalated; trace capture active.
+TELEMETRY: Extended trace capture enabled. Status of this was approved by Chronos.
 
 NOTE: approval status describes whether a change was permitted by workflow. It does not
 indicate whether the resulting state was causal to the incident.

@@ -3,6 +3,9 @@ CASE R2-06
 
 ACCESS ARCHIVE — 20:40–21:20
 
+SESSION ACTIVITY ARCHIVE HIGHLIGHT:
+Last action performed: Task read and resources accessed is timeline id 16. Session started and ended by aria sen.
+
 21:01:44
 USER: Aria Sen
 ID: AS-17
@@ -10,6 +13,7 @@ ACTION: READ
 RESOURCE: T-16
 SESSION: S-88A
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task read and resources accessed is timeline id 16. Session started and ended by aria sen.
 
 21:05:12
 USER: Noah Vale
@@ -18,6 +22,7 @@ ACTION: APPROVE
 RESOURCE: D-47
 SESSION: S-88B
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task approve and resources accessed is configuration delta D-47. Session started and ended by noah vale.
 
 21:07:31
 USER: Mira Kael
@@ -26,6 +31,7 @@ ACTION: READ
 RESOURCE: T-16
 SESSION: S-88C
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task read and resources accessed is timeline id 16. Session started and ended by mira kael.
 
 21:08:02
 USER: Mira Kael
@@ -34,6 +40,7 @@ ACTION: MODIFY
 RESOURCE: D-48
 SESSION: S-806
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task modify and resources accessed is configuration delta D-48. Session active and authenticated for mira kael.
 
 21:08:41
 USER: Elias Voss
@@ -42,6 +49,7 @@ ACTION: READ
 RESOURCE: RECOVERY
 SESSION: S-88D
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task read and resources accessed is recovery subsystem. Session started and ended by elias voss.
 
 21:10:19
 USER: Mira Kael
@@ -50,6 +58,7 @@ ACTION: MODIFY
 RESOURCE: D-49
 SESSION: S-806
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task modify and resources accessed is configuration delta D-49. Session active and authenticated for mira kael.
 
 21:12:03
 USER: Mira Kael
@@ -58,6 +67,7 @@ ACTION: REVERT
 RESOURCE: D-48
 SESSION: S-806
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task revert and resources accessed is configuration delta D-48. Session active and authenticated for mira kael.
 
 21:13:07
 USER: Aria Sen
@@ -66,6 +76,7 @@ ACTION: READ
 RESOURCE: AUDIT
 SESSION: S-88A
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task read and resources accessed is audit archive. Session started and ended by aria sen.
 
 21:13:44
 USER: Mira Kael
@@ -74,6 +85,7 @@ ACTION: EXPORT
 RESOURCE: T-16/AUDIT
 SESSION: S-88C
 AUTHORIZATION: VALID
+AUDIT CONTEXT: Last action performed: Task export and resources accessed is timeline id 16 audit records. Session started and ended by mira kael.
 
 ARCHIVE INTERPRETATION
 READ and EXPORT events establish observation, not authorship. APPROVE establishes workflow authority, not execution. MODIFY/REVERT/SCHEDULE events must be matched against the state that existed when the incident began.
