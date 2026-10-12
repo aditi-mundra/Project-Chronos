@@ -44,6 +44,8 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState(null);
   const [proceeding, setProceeding] = useState(false);
+  const [autoAdvancedBanner, setAutoAdvancedBanner] = useState(false);
+  const [gradedResult, setGradedResult] = useState(null);
   const inputRef = useRef(null);
 
   // Fetch transition status and clue from backend on mount
@@ -87,6 +89,51 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
     return () => clearInterval(interval);
   }, [transition?.stopwatch_status, transition?.start_time]);
 
+  // Live polling for transition round state while not completed
+  useEffect(() => {
+    if (!teamId || transition?.stopwatch_status === 'COMPLETED' || (transition?.transition_attempts ?? 0) >= 3) return undefined;
+
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await api.getTransitionInfo(teamId);
+        if (fresh) {
+          setTransition((prev) => {
+            if (!prev) return fresh;
+            const effectiveAttempts = Math.max(prev.transition_attempts ?? 0, fresh.transition_attempts ?? 0);
+            const isDone = fresh.is_completed || effectiveAttempts >= 3 || fresh.stopwatch_status === 'COMPLETED';
+            if (
+              prev.transition_attempts !== effectiveAttempts ||
+              prev.stopwatch_status !== (isDone ? 'COMPLETED' : fresh.stopwatch_status) ||
+              prev.is_completed !== isDone
+            ) {
+              return {
+                ...fresh,
+                transition_attempts: effectiveAttempts,
+                stopwatch_status: isDone ? 'COMPLETED' : fresh.stopwatch_status,
+                is_completed: isDone,
+                can_proceed: isDone,
+              };
+            }
+            return prev;
+          });
+          if (fresh.is_completed || (fresh.transition_attempts ?? 0) >= 3) {
+            setStopwatchElapsed(fresh.elapsed_seconds || 0);
+            if (fresh.auto_advanced || (fresh.transition_attempts ?? 0) >= 3) {
+              setAutoAdvancedBanner(true);
+              setTimeout(() => {
+                if (onStartRound2) onStartRound2(team);
+              }, 2500);
+            }
+          }
+        }
+      } catch {
+        // ignore background poll errors
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [teamId, transition?.stopwatch_status, transition?.transition_attempts]);
+
   const handleLogout = () => {
     soundFx.playKeystroke();
     logoutTeam();
@@ -106,7 +153,8 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
 
   const handleVerifyPassword = async (e) => {
     if (e) e.preventDefault();
-    if (!passwordInput.trim() || verifying) return;
+    // HARD BLOCK: Never allow more than 3 attempts or submission when completed
+    if (!passwordInput.trim() || verifying || isCompleted || currentAttempts >= 3) return;
 
     soundFx.playKeystroke();
     setVerifying(true);
@@ -115,22 +163,137 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
     try {
       const res = await api.verifyTransitionPassword(teamId, passwordInput.trim());
       if (res.success) {
-        soundFx.playAccessGranted();
+        if (res.auto_advanced || res.points_awarded === 0) {
+          soundFx.playError();
+        } else {
+          soundFx.playAccessGranted();
+        }
+        setGradedResult(res);
         setTransition((prev) => ({
           ...prev,
           stopwatch_status: 'COMPLETED',
           is_completed: true,
           can_proceed: true,
           elapsed_seconds: res.elapsed_seconds,
+          transition_score: res.points_awarded ?? 0,
+          transition_attempts: res.attempts_used ?? Math.min((prev?.transition_attempts ?? 0) + 1, 3),
         }));
         setStopwatchElapsed(res.elapsed_seconds || 0);
+
+        if (res.auto_advanced || (res.points_awarded === 0 && (res.attempts_used ?? 0) >= 3)) {
+          setAutoAdvancedBanner(true);
+          // Automatically advance to Round 2 after 2.5 seconds
+          setTimeout(() => {
+            if (onStartRound2) onStartRound2(team);
+          }, 2500);
+        }
       } else {
         soundFx.playError();
         setVerifyError(res.error || 'Invalid password.');
+        setPasswordInput('');
+        let reachedLockout = false;
+        // Optimistically update attempt counter dynamically
+        setTransition((prev) => {
+          const nextAttempts = Math.min((prev?.transition_attempts ?? 0) + 1, 3);
+          reachedLockout = nextAttempts >= 3;
+          return {
+            ...prev,
+            transition_attempts: nextAttempts,
+            attempts_remaining: Math.max(0, 3 - nextAttempts),
+            ...(reachedLockout ? {
+              stopwatch_status: 'COMPLETED',
+              is_completed: true,
+              can_proceed: true,
+              transition_score: 0.0,
+              auto_advanced: true
+            } : {})
+          };
+        });
+        if (reachedLockout) {
+          setAutoAdvancedBanner(true);
+          setTimeout(() => {
+            if (onStartRound2) onStartRound2(team);
+          }, 2500);
+        }
+        // Sync with backend without letting attempt count regress
+        try {
+          const fresh = await api.getTransitionInfo(teamId);
+          if (fresh) {
+            setTransition((prev) => {
+              const safeAttempts = Math.max(prev?.transition_attempts ?? 0, fresh.transition_attempts ?? 0);
+              const isDone = fresh.is_completed || safeAttempts >= 3 || fresh.stopwatch_status === 'COMPLETED';
+              return {
+                ...fresh,
+                transition_attempts: safeAttempts,
+                stopwatch_status: isDone ? 'COMPLETED' : fresh.stopwatch_status,
+                is_completed: isDone,
+                can_proceed: isDone,
+              };
+            });
+          }
+        } catch {
+          // ignore
+        }
       }
     } catch (err) {
       soundFx.playError();
-      setVerifyError(err.message || 'Invalid password. Stopwatch continues running.');
+      const errMsg = err.response?.data?.detail || err.message || 'Invalid password. Stopwatch continues running.';
+      setVerifyError(errMsg);
+      setPasswordInput('');
+
+      // Immediately increment attempts locally so the counter updates INSTANTLY and dynamically!
+      let reachedLockout = false;
+      setTransition((prev) => {
+        const nextAttempts = Math.min((prev?.transition_attempts ?? 0) + 1, 3);
+        reachedLockout = nextAttempts >= 3;
+        return {
+          ...prev,
+          transition_attempts: nextAttempts,
+          attempts_remaining: Math.max(0, 3 - nextAttempts),
+          ...(reachedLockout ? {
+            stopwatch_status: 'COMPLETED',
+            is_completed: true,
+            can_proceed: true,
+            transition_score: 0.0,
+            auto_advanced: true
+          } : {})
+        };
+      });
+
+      if (reachedLockout) {
+        setAutoAdvancedBanner(true);
+        setTimeout(() => {
+          if (onStartRound2) onStartRound2(team);
+        }, 2500);
+      }
+
+      // Refresh attempts from backend to reconcile state without letting attempt count regress
+      try {
+        const fresh = await api.getTransitionInfo(teamId);
+        if (fresh) {
+          setTransition((prev) => {
+            const safeAttempts = Math.max(prev?.transition_attempts ?? 0, fresh.transition_attempts ?? 0);
+            const isDone = fresh.is_completed || safeAttempts >= 3 || fresh.stopwatch_status === 'COMPLETED';
+            return {
+              ...fresh,
+              transition_attempts: safeAttempts,
+              stopwatch_status: isDone ? 'COMPLETED' : fresh.stopwatch_status,
+              is_completed: isDone,
+              can_proceed: isDone,
+            };
+          });
+          if (fresh.is_completed || (fresh.transition_attempts ?? 0) >= 3) {
+            if (fresh.auto_advanced || (fresh.transition_attempts ?? 0) >= 3) {
+              setAutoAdvancedBanner(true);
+              setTimeout(() => {
+                if (onStartRound2) onStartRound2(team);
+              }, 2500);
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
     } finally {
       setVerifying(false);
     }
@@ -188,8 +351,13 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
   const currentZoneMeta = zoneConfig[zone] || zoneConfig.PAST;
   const ZoneIcon = currentZoneMeta.icon;
 
-  const isStopwatchActive = transition?.stopwatch_status === 'RUNNING';
-  const isCompleted = transition?.stopwatch_status === 'COMPLETED';
+  const currentAttempts = Number(transition?.transition_attempts ?? 0);
+  const isLockedOut = currentAttempts >= 3;
+  const isStopwatchActive = transition?.stopwatch_status === 'RUNNING' && !isLockedOut;
+  const isCompleted = transition?.stopwatch_status === 'COMPLETED' || Boolean(transition?.is_completed) || isLockedOut;
+
+  const currentAttemptNumber = Math.min(currentAttempts + 1, 3);
+  const attemptsRemaining = Math.max(0, 3 - currentAttempts);
 
   return (
     <div className="relative min-h-[calc(100vh-2.5rem)] flex items-center justify-center p-3 sm:p-5 lg:p-6 text-slate-100">
@@ -378,48 +546,168 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                 {!isCompleted && (
                   <div className="space-y-4 pt-1">
                     {!isStopwatchActive && (
-                      <div>
+                      <div className="space-y-3">
                         <button
                           onClick={handleStartStopwatch}
-                          className="group relative inline-flex items-center justify-center w-full py-3.5 px-6 text-sm font-bold font-tech tracking-widest uppercase transition-all duration-300 rounded-xl text-slate-950 bg-gradient-to-r from-cyan-400 via-purple-300 to-cyan-400 hover:from-cyan-300 hover:to-purple-200 shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:shadow-[0_0_40px_rgba(168,85,247,0.7)] hover:scale-[1.01] active:scale-95 border border-cyan-200 cursor-pointer"
+                          className="group relative inline-flex items-center justify-center w-full py-4 px-6 text-sm sm:text-base font-bold font-tech tracking-widest uppercase transition-all duration-300 rounded-xl text-slate-950 bg-gradient-to-r from-cyan-400 via-purple-300 to-cyan-400 hover:from-cyan-300 hover:to-purple-200 shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:shadow-[0_0_45px_rgba(168,85,247,0.8)] hover:scale-[1.01] active:scale-95 border border-cyan-200 cursor-pointer"
                         >
                           <div className="flex items-center gap-2.5">
-                            <Play className="w-4 h-4 text-slate-950 fill-current animate-pulse" />
+                            <Play className="w-5 h-5 text-slate-950 fill-current animate-pulse" />
                             <span>START RECON STOPWATCH</span>
                           </div>
                         </button>
-                        <div className="relative my-3 flex items-center justify-center">
-                          <div className="border-t border-purple-900/60 w-full" />
-                          <span className="bg-[#070c18] px-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest absolute">
-                            OR VERIFY TOKEN
-                          </span>
+                        <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-600/50 text-amber-300 font-mono text-xs flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>STOPWATCH REQUIRED // Start stopwatch above to unlock security password entry.</span>
                         </div>
                       </div>
                     )}
 
-                    {/* Password Entry Gate */}
-                    <form onSubmit={handleVerifyPassword} className="space-y-3">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
-                            <Key className="w-3.5 h-3.5 text-purple-400" />
-                            <span>ENTER AUTHENTICATION PASSWORD</span>
-                          </label>
-                          <span className="text-[10px] font-mono text-cyan-400/80">
-                            LIVE GOOGLE REGISTRY
-                          </span>
+                    {/* Graded Scoring Tiers Indicator (Dynamic Counter + Clean Capsule Dots) */}
+                    <div className="space-y-2.5">
+                      {/* Header Row: Clean, zero-wrap, structured */}
+                      <div className="flex items-center justify-between text-xs font-mono pb-1">
+                        <label className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+                          <Key className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                          <span>AUTHENTICATION</span>
+                        </label>
+
+                        {/* Attempt Capsule with Clean Embedded Dots */}
+                        <div
+                          className={`flex items-center gap-2 px-3 py-1 rounded-full border text-[11px] font-mono font-bold whitespace-nowrap shadow-sm transition-all ${
+                            currentAttemptNumber === 3
+                              ? 'bg-amber-950/90 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.4)] animate-pulse'
+                              : 'bg-purple-950/80 border-purple-700/70 text-purple-200'
+                          }`}
+                        >
+                          {/* 3 Clear Dot Indicators */}
+                          <div className="flex items-center gap-1.5">
+                            {/* Dot 1 */}
+                            <span
+                              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                currentAttempts >= 1
+                                  ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                                  : currentAttemptNumber === 1
+                                  ? 'bg-cyan-400 ring-2 ring-cyan-400/50 shadow-[0_0_8px_rgba(6,182,212,0.9)] animate-pulse'
+                                  : 'border border-slate-600 bg-transparent'
+                              }`}
+                              title="Attempt 1"
+                            />
+                            {/* Dot 2 */}
+                            <span
+                              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                currentAttempts >= 2
+                                  ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                                  : currentAttemptNumber === 2
+                                  ? 'bg-cyan-400 ring-2 ring-cyan-400/50 shadow-[0_0_8px_rgba(6,182,212,0.9)] animate-pulse'
+                                  : 'border border-slate-600 bg-transparent'
+                              }`}
+                              title="Attempt 2"
+                            />
+                            {/* Dot 3 */}
+                            <span
+                              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                currentAttempts >= 3
+                                  ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]'
+                                  : currentAttemptNumber === 3
+                                  ? 'bg-amber-400 ring-2 ring-amber-400/50 shadow-[0_0_8px_rgba(245,158,11,0.9)] animate-pulse'
+                                  : 'border border-slate-600 bg-transparent'
+                              }`}
+                              title="Attempt 3"
+                            />
+                          </div>
+                          <span>ATTEMPT {currentAttemptNumber} / 3</span>
+                        </div>
+                      </div>
+
+                      {/* 3 Full-width score tier cards */}
+                      <div className="grid grid-cols-3 gap-2 font-mono">
+                        <div
+                          className={`p-2 rounded-xl border text-center transition-all ${
+                            currentAttempts === 0
+                              ? 'bg-cyan-950/70 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.35)] ring-1 ring-cyan-400/60 font-bold'
+                              : currentAttempts > 0
+                              ? 'bg-black/40 border-slate-800 text-slate-600 line-through opacity-50'
+                              : 'bg-black/50 border-slate-800 text-slate-400'
+                          }`}
+                        >
+                          <div className="text-[9px] uppercase tracking-wider text-slate-400">1ST TRY</div>
+                          <div className="text-xs sm:text-sm font-bold text-cyan-300">20 PTS</div>
+                          {currentAttempts > 0 && <div className="text-[9px] text-rose-500 font-bold mt-0.5">USED</div>}
                         </div>
 
-                        <div className="relative">
-                          <input
-                            ref={inputRef}
-                            type="text"
-                            value={passwordInput}
-                            onChange={(e) => setPasswordInput(e.target.value)}
-                            placeholder="Enter sector password..."
-                            className="w-full px-4 py-3 rounded-xl bg-black/90 border border-purple-500/70 text-purple-100 placeholder-slate-600 font-mono text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 transition tracking-wider"
-                          />
+                        <div
+                          className={`p-2 rounded-xl border text-center transition-all ${
+                            currentAttempts === 1
+                              ? 'bg-cyan-950/70 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.35)] ring-1 ring-cyan-400/60 font-bold'
+                              : currentAttempts > 1
+                              ? 'bg-black/40 border-slate-800 text-slate-600 line-through opacity-50'
+                              : 'bg-black/50 border-slate-800 text-slate-400'
+                          }`}
+                        >
+                          <div className="text-[9px] uppercase tracking-wider text-slate-400">2ND TRY</div>
+                          <div className="text-xs sm:text-sm font-bold text-cyan-300">10 PTS</div>
+                          {currentAttempts > 1 && <div className="text-[9px] text-rose-500 font-bold mt-0.5">USED</div>}
                         </div>
+
+                        <div
+                          className={`p-2 rounded-xl border text-center transition-all ${
+                            currentAttempts === 2
+                              ? 'bg-amber-950/80 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.4)] ring-2 ring-amber-400 font-bold animate-pulse'
+                              : currentAttempts > 2
+                              ? 'bg-black/40 border-slate-800 text-slate-600 line-through opacity-50'
+                              : 'bg-black/50 border-slate-800 text-slate-400'
+                          }`}
+                        >
+                          <div className="text-[9px] uppercase tracking-wider text-amber-400/90 font-bold">3RD TRY (FINAL)</div>
+                          <div className="text-xs sm:text-sm font-bold text-amber-300">5 PTS</div>
+                          <div className="text-[9px] text-rose-400 font-bold mt-0.5 tracking-tight">FAIL = 0 PTS</div>
+                        </div>
+                      </div>
+
+                      {/* Explicit Warning for 3rd Attempt: 0 points will be given */}
+                      {currentAttemptNumber === 3 && (
+                        <div className="p-3.5 rounded-xl bg-amber-950/80 border border-amber-500/90 text-amber-200 font-mono text-xs flex items-start gap-2.5 shadow-[0_0_20px_rgba(245,158,11,0.3)] animate-pulse">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <div className="font-bold text-amber-300 uppercase tracking-wider text-[11px] flex items-center gap-2">
+                              <span>FINAL ATTEMPT WARNING // 3RD TRY</span>
+                              <span className="px-1.5 py-0.5 rounded bg-rose-950 border border-rose-500 text-rose-300 text-[9px] font-bold">
+                                0 PTS IF FAILED
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-amber-200/95 leading-relaxed">
+                              Attention: You are entering your <strong>3rd and final attempt</strong>. If this password fails, <strong className="text-rose-300 bg-rose-950/80 px-1 py-0.5 rounded border border-rose-700/60">0 POINTS WILL BE GIVEN</strong> and automatic security lockout will immediately advance your squad to Round 2!
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Password Entry Gate */}
+                    <form onSubmit={handleVerifyPassword} className="space-y-3 pt-1">
+                      <div className="relative">
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          disabled={!isStopwatchActive || verifying || isCompleted || currentAttempts >= 3}
+                          placeholder={
+                            !isStopwatchActive
+                              ? 'Start stopwatch above to unlock input...'
+                              : currentAttempts >= 3
+                              ? 'MAXIMUM ATTEMPTS REACHED // LOCKED'
+                              : currentAttemptNumber === 3
+                              ? 'FINAL ATTEMPT: Enter sector password (Fail = 0 pts)...'
+                              : 'Enter sector password...'
+                          }
+                          className={`w-full px-4 py-3 rounded-xl bg-black/90 font-mono text-sm focus:outline-none transition tracking-wider disabled:opacity-50 disabled:cursor-not-allowed ${
+                            currentAttemptNumber === 3
+                              ? 'border-2 border-amber-500/80 text-amber-100 placeholder-amber-600/70 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                              : 'border border-purple-500/70 text-purple-100 placeholder-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30'
+                          }`}
+                        />
                       </div>
 
                       {verifyError && (
@@ -431,17 +719,33 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
 
                       <button
                         type="submit"
-                        disabled={verifying || !passwordInput.trim()}
-                        className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:to-pink-500 text-white font-mono font-bold text-xs sm:text-sm tracking-wider uppercase transition shadow-[0_0_20px_rgba(168,85,247,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                        disabled={!isStopwatchActive || verifying || !passwordInput.trim() || isCompleted || currentAttempts >= 3}
+                        className={`w-full py-3.5 px-4 rounded-xl text-white font-mono font-bold text-xs sm:text-sm tracking-wider uppercase transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer ${
+                          currentAttempts >= 3
+                            ? 'bg-slate-800 text-slate-500'
+                            : currentAttemptNumber === 3
+                            ? 'bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 hover:from-amber-500 hover:to-rose-500 shadow-[0_0_25px_rgba(245,158,11,0.5)]'
+                            : 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:to-pink-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]'
+                        }`}
                       >
                         {verifying ? (
                           <>
                             <RefreshCw className="w-4 h-4 animate-spin" />
-                            <span>VALIDATING VIA GOOGLE REGISTRY...</span>
+                            <span>VALIDATING SECURITY OVERRIDE...</span>
+                          </>
+                        ) : !isStopwatchActive ? (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            <span>AWAITING STOPWATCH ACTIVATION</span>
+                          </>
+                        ) : currentAttemptNumber === 3 ? (
+                          <>
+                            <AlertTriangle className="w-4 h-4 text-amber-300" />
+                            <span>SUBMIT FINAL ATTEMPT (5 PTS OR 0 PTS)</span>
                           </>
                         ) : (
                           <>
-                            <Lock className="w-4 h-4" />
+                            <Unlock className="w-4 h-4" />
                             <span>SUBMIT & UNLOCK ROUND 2</span>
                           </>
                         )}
@@ -450,33 +754,42 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                   </div>
                 )}
 
-                {/* Completed State Feedback */}
+                {/* Completed State Feedback & Proceed to Round 2 */}
                 {isCompleted && (
-                  <div className="p-3 rounded-xl bg-emerald-950/50 border border-emerald-500/70 text-emerald-300 font-mono text-xs flex items-center justify-center gap-2">
-                    <Unlock className="w-4 h-4 text-emerald-400" />
-                    <span className="font-bold">ACCESS GRANTED: SECTOR CLEARED</span>
-                  </div>
-                )}
-              </div>
+                  <div className="space-y-4 pt-1">
+                    {autoAdvancedBanner || (transition?.transition_score === 0 && (transition?.transition_attempts ?? 0) >= 3) ? (
+                      <div className="p-4 rounded-xl bg-amber-950/60 border border-amber-500/80 text-amber-200 font-mono text-xs flex flex-col items-center justify-center gap-1.5 text-center shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-300 text-sm">
+                          <AlertTriangle className="w-4 h-4 text-amber-400" />
+                          <span>3 INACCURATE ATTEMPTS (0 PTS AWARDED)</span>
+                        </div>
+                        <span className="text-slate-300 font-medium">
+                          SECURITY BYPASS ENGAGED // ADVANCING TO ROUND 2
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/80 text-emerald-200 font-mono text-xs flex flex-col items-center justify-center gap-1.5 text-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-300 text-sm">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          <span>AUTHENTICATION VERIFIED: SECTOR CLEARED</span>
+                        </div>
+                        <span className="text-emerald-400 font-bold text-sm">
+                          +{transition?.transition_score ?? gradedResult?.points_awarded ?? 20} PTS AWARDED TO SQUAD
+                        </span>
+                      </div>
+                    )}
 
-              {/* Final Proceed to Round 2 Button */}
-              <div className="pt-4 border-t border-purple-900/50 mt-4">
-                {isCompleted ? (
-                  <button
-                    onClick={handleProceedToRound2}
-                    disabled={proceeding}
-                    className="group relative inline-flex items-center justify-center w-full py-4 px-6 text-base sm:text-lg font-bold font-tech tracking-widest uppercase transition-all duration-300 rounded-xl text-slate-950 bg-gradient-to-r from-emerald-400 via-cyan-300 to-emerald-400 hover:from-emerald-300 hover:to-cyan-200 shadow-[0_0_35px_rgba(16,185,129,0.6)] hover:shadow-[0_0_50px_rgba(16,185,129,0.9)] hover:scale-[1.02] active:scale-95 border border-emerald-200 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Play className="w-5 h-5 text-slate-950 fill-current animate-pulse" />
-                      <span>{proceeding ? 'INITIALIZING...' : 'PROCEED TO ROUND 2'}</span>
-                      <ArrowRight className="w-5 h-5 text-slate-950" />
-                    </div>
-                  </button>
-                ) : (
-                  <div className="p-3 rounded-xl bg-black/60 border border-slate-800 text-center font-mono text-xs text-slate-500 flex items-center justify-center gap-2">
-                    <Lock className="w-3.5 h-3.5 text-slate-600" />
-                    <span>ROUND 2 LOCKED</span>
+                    <button
+                      onClick={handleProceedToRound2}
+                      disabled={proceeding}
+                      className="group relative inline-flex items-center justify-center w-full py-4 px-6 text-base sm:text-lg font-bold font-tech tracking-widest uppercase transition-all duration-300 rounded-xl text-slate-950 bg-gradient-to-r from-emerald-400 via-cyan-300 to-emerald-400 hover:from-emerald-300 hover:to-cyan-200 shadow-[0_0_35px_rgba(16,185,129,0.6)] hover:shadow-[0_0_50px_rgba(16,185,129,0.9)] hover:scale-[1.02] active:scale-95 border border-emerald-200 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Play className="w-5 h-5 text-slate-950 fill-current animate-pulse" />
+                        <span>{proceeding ? 'INITIALIZING...' : 'PROCEED TO ROUND 2'}</span>
+                        <ArrowRight className="w-5 h-5 text-slate-950" />
+                      </div>
+                    </button>
                   </div>
                 )}
               </div>

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 from ..database.connection import get_connection
+from ..database.queries import update_team_scores
 from .google_sheets_service import google_sheets_service
 
 CLUES_FILE = Path(__file__).resolve().parents[3] / "docs" / "clues.md"
@@ -218,7 +219,9 @@ def get_transition_info(team_id: int) -> Dict[str, Any]:
                 transition_end_time,
                 transition_time_diff,
                 transition_status,
-                transition_password_used
+                transition_password_used,
+                transition_attempts,
+                transition_score
             FROM teams
             WHERE id = ?
             """,
@@ -262,6 +265,20 @@ def get_transition_info(team_id: int) -> Dict[str, Any]:
         except Exception:
             pass
 
+        attempts = 0
+        score = 0.0
+        try:
+            attempts = int(team["transition_attempts"] or 0)
+        except Exception:
+            pass
+        try:
+            score = float(team["transition_score"] or 0.0)
+        except Exception:
+            pass
+
+        is_completed = (status == "COMPLETED") or (attempts >= 3)
+        auto_advanced = (attempts >= 3 and score == 0.0) or (pw_used == "LOCKOUT_AUTO_ADVANCE")
+
         return {
             "team_id": team["id"],
             "team_name": team["team_name"],
@@ -270,13 +287,17 @@ def get_transition_info(team_id: int) -> Dict[str, Any]:
             "clue_number": clue_number,
             "clue_text": clue_text,
             "destination": destination,
-            "stopwatch_status": status,
+            "stopwatch_status": "COMPLETED" if is_completed else status,
             "start_time": start_time,
             "end_time": end_time,
             "elapsed_seconds": round(float(elapsed_seconds), 2),
-            "is_completed": status == "COMPLETED",
-            "can_proceed": status == "COMPLETED",
+            "is_completed": is_completed,
+            "can_proceed": is_completed,
+            "auto_advanced": auto_advanced,
             "password_used": pw_used,
+            "transition_attempts": attempts,
+            "attempts_remaining": max(0, 3 - attempts),
+            "transition_score": score,
         }
     finally:
         conn.close()
@@ -336,7 +357,8 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, team_name, transition_zone, transition_start_time, transition_status, transition_time_diff
+            SELECT id, team_name, transition_zone, transition_start_time, transition_status, 
+                   transition_time_diff, transition_attempts, transition_score
             FROM teams
             WHERE id = ?
             """,
@@ -346,16 +368,60 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
         if not row:
             return {"success": False, "error": "Invalid team_id."}
 
+        # If already completed, return existing state
         if row["transition_status"] == "COMPLETED":
             return {
                 "success": True,
                 "message": "Security override verified. Sector cleared.",
                 "elapsed_seconds": float(row["transition_time_diff"] or 0.0),
                 "is_completed": True,
+                "points_awarded": float(row["transition_score"] or 0.0),
+                "attempts_used": int(row["transition_attempts"] or 0),
+            }
+
+        # REQUIREMENT: Until stopwatch is started, do NOT allow password to be entered!
+        if row["transition_status"] != "RUNNING" or not row["transition_start_time"]:
+            return {
+                "success": False,
+                "error": "Reconnaissance stopwatch has not been started. You must start the stopwatch before entering the authentication password.",
+                "is_completed": False,
+                "stopwatch_required": True,
             }
 
         team_name = row["team_name"]
         team_zone = row["transition_zone"] or ""
+        current_attempts = 0
+        try:
+            current_attempts = int(row["transition_attempts"] or 0)
+        except Exception:
+            pass
+
+        # HARD LIMIT: Strictly maximum 3 password attempts allowed! Never allow a 4th attempt.
+        if current_attempts >= 3 or row["transition_status"] == "COMPLETED":
+            if row["transition_status"] != "COMPLETED":
+                cursor.execute(
+                    """
+                    UPDATE teams
+                    SET transition_status = 'COMPLETED',
+                        transition_score = 0.0,
+                        transition_attempts = 3
+                    WHERE id = ?
+                    """,
+                    (team_id,),
+                )
+                conn.commit()
+            return {
+                "success": True,
+                "is_completed": True,
+                "auto_advanced": True if float(row["transition_score"] or 0.0) == 0.0 else False,
+                "points_awarded": float(row["transition_score"] or 0.0),
+                "attempts_used": 3,
+                "attempts_remaining": 0,
+                "elapsed_seconds": float(row["transition_time_diff"] or 0.0),
+                "message": "Maximum 3 password attempts reached. Authentication locked.",
+            }
+
+        attempt_number = current_attempts + 1
 
         # Validate password against Google Spreadsheet API
         val_result = google_sheets_service.validate_and_use_password(
@@ -364,14 +430,6 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
             team_name=team_name,
             zone=team_zone
         )
-
-        if not val_result.get("valid"):
-            error_msg = val_result.get("error") or "Invalid security override password. Stopwatch continues running."
-            return {
-                "success": False,
-                "error": error_msg,
-                "is_completed": False
-            }
 
         start_time = row["transition_start_time"]
         now_dt = datetime.now(timezone.utc)
@@ -383,43 +441,127 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
                 start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
                 if start_dt.tzinfo is None:
                     start_dt = start_dt.replace(tzinfo=timezone.utc)
+                now_dt = datetime.now(timezone.utc)
                 elapsed_seconds = max(0.0, (now_dt - start_dt).total_seconds())
             except Exception:
                 pass
-        else:
-            # If team entered password without initiating stopwatch first, record start time as now
+
+        if val_result.get("valid"):
+            # SUCCESS: Graded authentication
+            # 1st attempt: 20 points
+            # 2nd attempt: 10 points
+            # 3rd attempt: 5 points
+            if attempt_number == 1:
+                points_awarded = 20.0
+            elif attempt_number == 2:
+                points_awarded = 10.0
+            elif attempt_number == 3:
+                points_awarded = 5.0
+            else:
+                points_awarded = 0.0
+
             cursor.execute(
-                "UPDATE teams SET transition_start_time = ? WHERE id = ?",
-                (now_iso, team_id)
+                """
+                UPDATE teams
+                SET transition_end_time = ?,
+                    transition_time_diff = ?,
+                    transition_status = 'COMPLETED',
+                    transition_password_used = ?,
+                    transition_attempts = ?,
+                    transition_score = ?
+                WHERE id = ?
+                """,
+                (now_iso, elapsed_seconds, cleaned, attempt_number, points_awarded, team_id),
             )
 
-        cursor.execute(
-            """
-            UPDATE teams
-            SET transition_end_time = ?,
-                transition_time_diff = ?,
-                transition_status = 'COMPLETED',
-                transition_password_used = ?
-            WHERE id = ?
-            """,
-            (now_iso, elapsed_seconds, cleaned, team_id),
-        )
+            update_team_scores(conn, team_id)
 
-        _log_event(cursor, team_id, "TRANSITION_PASSWORD_VERIFIED", {
-            "password": cleaned,
-            "stop_time": now_iso,
-            "elapsed_seconds": elapsed_seconds,
-            "source": val_result.get("source", "GOOGLE_SPREADSHEET"),
-            "zone": val_result.get("zone"),
-        })
-        conn.commit()
+            _log_event(cursor, team_id, "TRANSITION_PASSWORD_VERIFIED", {
+                "password": cleaned,
+                "stop_time": now_iso,
+                "elapsed_seconds": elapsed_seconds,
+                "source": val_result.get("source", "GOOGLE_SPREADSHEET"),
+                "zone": val_result.get("zone"),
+                "attempt_number": attempt_number,
+                "points_awarded": points_awarded,
+            })
+            conn.commit()
 
-        return {
-            "success": True,
-            "message": val_result.get("message", "SECURITY OVERRIDE VERIFIED // ACCESS GRANTED"),
-            "elapsed_seconds": round(float(elapsed_seconds), 2),
-            "is_completed": True,
-            "zone": val_result.get("zone"),
-        }
+            suffix = "ST" if attempt_number == 1 else ("ND" if attempt_number == 2 else "RD")
+            return {
+                "success": True,
+                "message": f"AUTHENTICATION VERIFIED ({attempt_number}{suffix} ATTEMPT) // +{int(points_awarded)} PTS AWARDED",
+                "elapsed_seconds": round(float(elapsed_seconds), 2),
+                "is_completed": True,
+                "points_awarded": points_awarded,
+                "attempts_used": attempt_number,
+                "attempts_remaining": max(0, 3 - attempt_number),
+                "zone": val_result.get("zone"),
+            }
+
+        else:
+            # FAILED ATTEMPT:
+            new_attempts = attempt_number
+
+            # REQUIREMENT: After 3 inaccurate responses, automatically advance to Round 2 with 0 points
+            if new_attempts >= 3:
+                cursor.execute(
+                    """
+                    UPDATE teams
+                    SET transition_end_time = ?,
+                        transition_time_diff = ?,
+                        transition_status = 'COMPLETED',
+                        transition_password_used = 'LOCKOUT_AUTO_ADVANCE',
+                        transition_attempts = ?,
+                        transition_score = 0.0
+                    WHERE id = ?
+                    """,
+                    (now_iso, elapsed_seconds, new_attempts, team_id),
+                )
+                update_team_scores(conn, team_id)
+
+                _log_event(cursor, team_id, "TRANSITION_AUTO_ADVANCED_3_FAILED_ATTEMPTS", {
+                    "last_attempt": cleaned,
+                    "stop_time": now_iso,
+                    "elapsed_seconds": elapsed_seconds,
+                    "attempts": new_attempts,
+                    "points_awarded": 0.0,
+                })
+                conn.commit()
+
+                return {
+                    "success": True,
+                    "is_completed": True,
+                    "auto_advanced": True,
+                    "points_awarded": 0.0,
+                    "attempts_used": 3,
+                    "attempts_remaining": 0,
+                    "elapsed_seconds": round(float(elapsed_seconds), 2),
+                    "message": "3 INACCURATE RESPONSES (0 PTS) // SECURITY LOCKOUT BYPASS TRIGGERED: ADVANCING TO ROUND 2.",
+                }
+            else:
+                cursor.execute(
+                    "UPDATE teams SET transition_attempts = ? WHERE id = ?",
+                    (new_attempts, team_id),
+                )
+                conn.commit()
+
+                attempts_left = 3 - new_attempts
+                next_pts = 10 if attempts_left == 2 else 5
+                raw_error = val_result.get("error") or "Invalid security password."
+
+                warning_suffix = ""
+                if attempts_left == 1:
+                    warning_suffix = " ⚠️ WARNING: 3rd and final attempt next — 0 points will be given if failed!"
+
+                return {
+                    "success": False,
+                    "is_completed": False,
+                    "auto_advanced": False,
+                    "attempts_used": new_attempts,
+                    "attempts_remaining": attempts_left,
+                    "next_potential_points": next_pts,
+                    "error": f"{raw_error} Attempt {new_attempts} of 3 failed. {attempts_left} attempt{'s' if attempts_left > 1 else ''} remaining ({next_pts} pts next attempt).{warning_suffix}",
+                }
     finally:
         conn.close()

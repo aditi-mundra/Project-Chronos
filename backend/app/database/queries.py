@@ -19,7 +19,8 @@ def update_team_scores(connection: sqlite3.Connection, team_id: int):
         SELECT 
             round1_score, r1_score,
             round2_score, r2_score,
-            round3_score, r3_score
+            round3_score, r3_score,
+            transition_score
         FROM teams
         WHERE id = ?
     """, (team_id,))
@@ -43,6 +44,11 @@ def update_team_scores(connection: sqlite3.Connection, team_id: int):
     s1 = resolve_score(row["round1_score"], row["r1_score"])
     s2 = resolve_score(row["round2_score"], row["r2_score"])
     s3 = resolve_score(row["round3_score"], row["r3_score"])
+    s_trans = 0.0
+    try:
+        s_trans = float(row["transition_score"]) if row["transition_score"] is not None else 0.0
+    except Exception:
+        pass
 
     # Enforce authoritative grading system:
     # Round 1: 50 maximum, -25 minimum
@@ -51,7 +57,7 @@ def update_team_scores(connection: sqlite3.Connection, team_id: int):
     s1 = max(-25.0, min(50.0, s1))
     s2 = max(0.0, min(20.0, s2))
     s3 = max(0.0, min(30.0, s3))
-    total = round(s1 + s2 + s3, 2)
+    total = round(s1 + s2 + s3 + s_trans, 2)
 
     cursor.execute("""
         UPDATE teams
