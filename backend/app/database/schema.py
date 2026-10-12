@@ -227,18 +227,37 @@ def _migrate_teams_schema(connection):
 
 def _migrate_round3_schema(connection):
     """Bring older Round 3 databases up to the schema used by the service."""
+    connection.execute("""
+        CREATE TABLE IF NOT EXISTS round3_team_cases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_id INTEGER NOT NULL UNIQUE,
+            case_id TEXT NOT NULL,
+            status TEXT DEFAULT 'PENDING',
+            case_data TEXT NOT NULL DEFAULT '{}',
+            culprit_candidate_id TEXT NOT NULL DEFAULT '',
+            valid_evidence_ids TEXT NOT NULL DEFAULT '[]',
+            assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+        );
+    """)
     team_case_columns = {
         row["name"] for row in connection.execute("PRAGMA table_info(round3_team_cases)")
     }
     additions = {
+        "status": "TEXT DEFAULT 'PENDING'",
         "case_data": "TEXT NOT NULL DEFAULT '{}'",
         "culprit_candidate_id": "TEXT NOT NULL DEFAULT ''",
+        "valid_evidence_ids": "TEXT NOT NULL DEFAULT '[]'",
+        "assigned_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
     }
     for column, definition in additions.items():
         if column not in team_case_columns:
-            connection.execute(
-                f"ALTER TABLE round3_team_cases ADD COLUMN {column} {definition}"
-            )
+            try:
+                connection.execute(
+                    f"ALTER TABLE round3_team_cases ADD COLUMN {column} {definition}"
+                )
+            except Exception:
+                pass
 
     # One active Round 3 case and one final decision per team. Existing
     # installations may contain duplicates from the old implementation, so
@@ -259,6 +278,7 @@ def _migrate_round3_schema(connection):
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_round3_submissions_team_id "
         "ON round3_submissions(team_id)"
     )
+    connection.commit()
 
 
 def seed_round1_items_if_empty():

@@ -688,25 +688,38 @@
     }
 
     // Check existing auth
-    if (sessionStorage.getItem('chronos_host_authed') === 'true') {
+    if (sessionStorage.getItem('chronos_admin_token')) {
       document.getElementById('auth-overlay').style.display = 'none';
       initLeaderboard();
+    } else {
+      document.getElementById('auth-overlay').style.display = 'flex';
     }
 
-    function handleAuthSubmit(e) {
+    async function handleAuthSubmit(e) {
       e.preventDefault();
       const val = document.getElementById('passkey-input').value;
-      if (isHostKey(val)) {
+      const errEl = document.getElementById('auth-err');
+      errEl.style.display = 'none';
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: val }),
+        });
+        if (!res.ok) throw new Error('Invalid passkey');
+        const data = await res.json();
+        sessionStorage.setItem('chronos_admin_token', data.token);
         sessionStorage.setItem('chronos_host_authed', 'true');
         document.getElementById('auth-overlay').style.display = 'none';
         initLeaderboard();
-      } else {
-        document.getElementById('auth-err').style.display = 'block';
+      } catch {
+        errEl.style.display = 'block';
       }
     }
 
     function lockPortal() {
       sessionStorage.removeItem('chronos_host_authed');
+      sessionStorage.removeItem('chronos_admin_token');
       window.location.reload();
     }
 
@@ -819,7 +832,20 @@
 
     async function fetchLeaderboard() {
       try {
-        const res = await fetch('/api/admin/leaderboard');
+        const token = sessionStorage.getItem('chronos_admin_token');
+        if (!token) {
+          document.getElementById('auth-overlay').style.display = 'flex';
+          return;
+        }
+        const res = await fetch('/api/admin/leaderboard', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) {
+          sessionStorage.removeItem('chronos_admin_token');
+          sessionStorage.removeItem('chronos_host_authed');
+          document.getElementById('auth-overlay').style.display = 'flex';
+          return;
+        }
         if (!res.ok) throw new Error('Failed to fetch');
         rawLeaderboard = await res.json();
         renderPodiumStairs();

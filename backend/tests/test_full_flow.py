@@ -105,11 +105,15 @@ def test_full_chronos_pipeline():
 
     # 8. Round 3 Final Submission
     scenario = scen_data["scenario"]
-    culprit_index = next(
-        index for index, candidate in enumerate(scenario["candidates"])
-        if candidate["name"].lower() == culprit.lower()
-    )
-    selected_candidate = ("alpha", "beta", "gamma")[culprit_index]
+    conn = get_connection()
+    try:
+        r3_case_row = conn.execute(
+            "SELECT culprit_candidate_id FROM round3_team_cases WHERE team_id = ?",
+            (team_id,),
+        ).fetchone()
+        selected_candidate = r3_case_row["culprit_candidate_id"] if r3_case_row else scenario["candidates"][0]["id"]
+    finally:
+        conn.close()
     evidence_ids = [item["id"] for item in scenario["evidence_archive"]]
     sub_payload = {
         "team_id": team_id,

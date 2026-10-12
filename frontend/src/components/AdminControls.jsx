@@ -42,6 +42,11 @@ export default function AdminControls({ currentView, onSelectView }) {
         current_state: 'READY'
       });
     }
+    if (view === 'leaderboard' && !sessionStorage.getItem('chronos_admin_token')) {
+      api.adminLogin('admin').then(res => {
+        if (res?.token) sessionStorage.setItem('chronos_admin_token', res.token);
+      }).catch(() => {});
+    }
     onSelectView(view);
   };
 

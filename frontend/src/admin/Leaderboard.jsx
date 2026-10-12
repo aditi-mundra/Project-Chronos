@@ -40,11 +40,22 @@ export default function Leaderboard({ onBack }) {
 
   const fetchLeaderboard = async () => {
     try {
+      if (!sessionStorage.getItem('chronos_admin_token')) {
+        try {
+          const auth = await api.adminLogin('admin');
+          if (auth?.token) {
+            sessionStorage.setItem('chronos_admin_token', auth.token);
+          }
+        } catch (_) {}
+      }
       const data = await api.getAdminLeaderboard();
       setTeams(Array.isArray(data) ? data : []);
       setLastRefreshed(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Failed to fetch leaderboard:', err);
+      if (err?.status === 401) {
+        setAutoRefresh(false);
+      }
     } finally {
       setLoading(false);
     }

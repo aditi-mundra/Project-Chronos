@@ -8,6 +8,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from ..database.connection import get_connection
+from ..database.schema import _migrate_round3_schema
 from ..utils.timers import get_utc_now_iso
 from . import round2_service
 
@@ -238,6 +239,7 @@ class Round3Service:
         connection = get_connection()
         try:
             round2_service.ensure_tables(connection)
+            _migrate_round3_schema(connection)
             cursor = connection.cursor()
             team = cursor.execute("SELECT * FROM teams WHERE id = ?", (team_id,)).fetchone()
             if not team:
@@ -280,6 +282,7 @@ class Round3Service:
                 VALUES (?, ?, 'ACTIVE', ?, ?, ?, ?)
                 ON CONFLICT(team_id) DO UPDATE SET
                     case_id = excluded.case_id,
+                    status = excluded.status,
                     case_data = excluded.case_data,
                     culprit_candidate_id = excluded.culprit_candidate_id,
                     valid_evidence_ids = excluded.valid_evidence_ids
@@ -337,7 +340,13 @@ class Round3Service:
         connection = get_connection()
         try:
             round2_service.ensure_tables(connection)
-            connection.execute("BEGIN IMMEDIATE")
+            _migrate_round3_schema(connection)
+            if connection.in_transaction:
+                connection.commit()
+            try:
+                connection.execute("BEGIN IMMEDIATE")
+            except Exception:
+                pass
             cursor = connection.cursor()
             team = cursor.execute("SELECT * FROM teams WHERE id = ?", (team_id,)).fetchone()
             if not team:
@@ -425,6 +434,7 @@ class Round3Service:
         connection = get_connection()
         try:
             round2_service.ensure_tables(connection)
+            _migrate_round3_schema(connection)
             cursor = connection.cursor()
             team = cursor.execute("SELECT * FROM teams WHERE id = ?", (team_id,)).fetchone()
             if not team:
