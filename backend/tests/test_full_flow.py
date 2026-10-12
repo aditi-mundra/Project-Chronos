@@ -68,6 +68,21 @@ def test_full_chronos_pipeline():
     finish_r1 = client.post(f"/api/round1/finish?team_id={team_id}")
     assert finish_r1.status_code == 200, finish_r1.text
 
+    # 4b. Transition Round (Between Round 1 & Round 2): Clue, Stopwatch & Password
+    res_trans_info = client.get(f"/api/transition/info?team_id={team_id}")
+    assert res_trans_info.status_code == 200
+    trans_data = res_trans_info.json()
+    assert trans_data["zone"] in ("PAST", "PRESENT", "FUTURE")
+    assert len(trans_data["clue_text"]) > 0
+
+    res_trans_start = client.post("/api/transition/start", json={"team_id": team_id})
+    assert res_trans_start.status_code == 200
+    assert res_trans_start.json()["stopwatch_status"] == "RUNNING"
+
+    res_trans_verify = client.post("/api/transition/verify", json={"team_id": team_id, "password": "Chronos@123"})
+    assert res_trans_verify.status_code == 200
+    assert res_trans_verify.json()["is_completed"] is True
+
     # 5. Start and complete the team's assigned Round 2 case.
     start_r2 = client.post("/api/round2/start", json={"team_id": team_id})
     assert start_r2.status_code == 200, start_r2.text

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { FastForward, Play, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
+import { FastForward, Play, RotateCcw } from 'lucide-react';
 import { soundFx } from '../utils/audio.js';
 
 /**
@@ -21,8 +21,6 @@ export default function ChronosConclusion({ onComplete }) {
   const doneRef = useRef(false);
 
   // Cinematic state stages
-  const [badgeText, setBadgeText] = useState('TEMPORAL DIVERGENCE DETECTED');
-  const [badgeColor, setBadgeColor] = useState('text-amber-400 border-amber-500/50');
   const [showTitles, setShowTitles] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [flashOpacity, setFlashOpacity] = useState(0);
@@ -162,15 +160,6 @@ export default function ChronosConclusion({ onComplete }) {
         setFlashOpacity(Math.max(0, flashP));
       } else if (elapsed >= 7.4) {
         setFlashOpacity(0);
-      }
-
-      // Status Badge Updates
-      if (elapsed >= 6.8) {
-        setBadgeText('TIMELINES UNIFIED // PRIME CONTINUUM SYNCHRONIZED');
-        setBadgeColor('text-emerald-400 border-emerald-500/60');
-      } else if (elapsed >= 2.5) {
-        setBadgeText('TEMPORAL RESONANCE COLLAPSE // GRAVITATIONAL WARPING');
-        setBadgeColor('text-pink-400 border-pink-500/60');
       }
 
       // Reveal Titles and Actions
@@ -392,12 +381,6 @@ export default function ChronosConclusion({ onComplete }) {
           ctx.fill();
         }
 
-        // Prime Strand Telemetry Text
-        ctx.fillStyle = '#67e8f9';
-        ctx.font = '11px monospace';
-        ctx.fillText('PRIME STRAND // CONTINUUM ZERO [UNIFIED]', 40, centerY - 22);
-        ctx.fillText('ENTROPY: 0.00% // FLUX HARMONIZED', width - 300, centerY - 22);
-
         ctx.restore();
       }
 
@@ -428,8 +411,6 @@ export default function ChronosConclusion({ onComplete }) {
     playedCuesRef.current.clear();
     setShowTitles(false);
     setShowActions(false);
-    setBadgeText('TEMPORAL DIVERGENCE DETECTED');
-    setBadgeColor('text-amber-400 border-amber-500/50');
     soundFx.playWhoosh();
   };
 
@@ -453,44 +434,17 @@ export default function ChronosConclusion({ onComplete }) {
         style={{ opacity: flashOpacity }}
       />
 
-      {/* HUD Telemetry Corners */}
-      <div className="absolute top-6 left-6 font-mono text-[11px] tracking-widest text-cyan-400/80 z-20 pointer-events-none drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
-        TEMPORAL MATRIX // PROTOCOL 2140<br />
-        SYS_STABILITY: CALIBRATING
-      </div>
-      <div className="absolute top-6 right-28 font-mono text-[11px] tracking-widest text-cyan-400/80 text-right z-20 pointer-events-none drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
-        DISPERSION DELTA: FRACTURED<br />
-        PARADOX STATE: RESOLVING
-      </div>
-      <div className="absolute bottom-6 left-6 font-mono text-[11px] tracking-widest text-cyan-400/80 z-20 pointer-events-none drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
-        QUANTUM COHERENCE: 3-STRAND FLUX<br />
-        GRAVITATIONAL COUPLING: ACTIVE
-      </div>
-      <div className="absolute bottom-6 right-6 font-mono text-[11px] tracking-widest text-cyan-400/80 text-right z-20 pointer-events-none drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
-        UNIT CALLSIGN: ACTIVE ENGINEER<br />
-        CHRONOS MAIN KERNEL // SYNC
-      </div>
-
-      {/* Dynamic Status Badge */}
-      <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[25] pointer-events-none">
-        <div
-          className={`font-mono text-xs sm:text-sm font-bold tracking-[0.25em] uppercase px-6 py-2 rounded-lg bg-black/70 border backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-all duration-500 ${badgeColor}`}
-        >
-          {badgeText}
-        </div>
-      </div>
-
       {/* Top Right Quick Skip Button */}
       <button
         type="button"
         onClick={finish}
         className="fixed top-5 right-5 z-[60] px-4 py-2 rounded-lg bg-black/70 border border-cyan-500/50 hover:border-cyan-300 text-cyan-300 hover:text-white font-mono text-xs tracking-widest uppercase backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]"
       >
-        <span>SKIP TO DEBRIEF</span>
+        <span>SKIP</span>
         <FastForward className="w-3.5 h-3.5" />
       </button>
 
-      {/* Center Kinetic Title & Metric Pills */}
+      {/* Center Kinetic Title */}
       <div
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-[25] pointer-events-none w-[90%] max-w-4xl transition-all duration-1000 ${
           showTitles ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
@@ -500,20 +454,8 @@ export default function ChronosConclusion({ onComplete }) {
           TIMELINES <span className="text-cyan-400">MERGED</span>
         </h1>
         <p className="font-mono text-xs sm:text-base tracking-[0.4em] uppercase text-cyan-300 mt-3 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]">
-          THE PRIME CONTINUUM IS RESTORED
+          PRIME CONTINUUM RESTORED
         </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
-          <span className="px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-200 font-mono text-[11px] tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-            ALL 3 BROKEN STRANDS HARMONIZED
-          </span>
-          <span className="px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-200 font-mono text-[11px] tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-            PARADOX DECAY: 0.00%
-          </span>
-          <span className="px-4 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-mono text-[11px] tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-            CHRONOS STABILITY: 100%
-          </span>
-        </div>
       </div>
 
       {/* Action Buttons (Appears after convergence) */}
@@ -527,7 +469,7 @@ export default function ChronosConclusion({ onComplete }) {
           onClick={finish}
           className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-sky-500 hover:from-cyan-300 hover:to-sky-400 text-slate-950 font-mono font-bold text-xs uppercase tracking-widest flex items-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(6,182,212,0.6)] hover:shadow-[0_0_45px_rgba(6,182,212,0.9)] hover:scale-105 transition-all"
         >
-          <span>VIEW FINAL DEBRIEF & STANDINGS</span>
+          <span>CONTINUE ▸</span>
           <Play className="w-3.5 h-3.5 fill-current" />
         </button>
 
@@ -537,7 +479,7 @@ export default function ChronosConclusion({ onComplete }) {
           className="px-6 py-3.5 rounded-xl bg-black/60 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white font-mono font-bold text-xs uppercase tracking-widest flex items-center gap-2 cursor-pointer backdrop-blur-md hover:bg-cyan-950/40 transition-all"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          <span>REPLAY CONVERGENCE</span>
+          <span>↻ REPLAY</span>
         </button>
       </div>
     </div>

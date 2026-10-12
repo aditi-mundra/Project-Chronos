@@ -77,12 +77,11 @@ def test_round3_uses_the_assigned_round2_case():
     scenario = payload["scenario"]
 
     assert scenario["case_id"] == round2_case["case_id"]
-    assert {candidate["id"] for candidate in scenario["candidates"]} == {"alpha", "beta", "gamma"}
-    assert {candidate["name"] for candidate in scenario["candidates"]} == {
-        "Project Alpha", "Project Beta", "Project Gamma"
-    }
+    assert {candidate["name"] for candidate in scenario["candidates"]} == set(suspect_names)
+    assert all(candidate.get("user_id") for candidate in scenario["candidates"])
+    assert all(candidate.get("role") for candidate in scenario["candidates"])
     scenario_text = str(scenario).lower()
-    assert all(name.lower() not in scenario_text for name in suspect_names)
+    assert any(name.lower() in scenario_text for name in suspect_names)
     assert [item["id"] for item in scenario["evidence_archive"]] == [
         f"r2_{file_id.lower()}" for file_id in file_ids
     ]
@@ -90,18 +89,17 @@ def test_round3_uses_the_assigned_round2_case():
     assert "valid_evidence_ids" not in scenario
     assert "culprit" not in scenario["round2_investigation"]["case_info"]
 
-    culprit_index = next(
-        index for index, name in enumerate(suspect_names)
-        if name.lower() == round2_case["culprit"].lower()
+    culprit_candidate = next(
+        c["id"] for c in scenario["candidates"]
+        if c["name"].lower() == round2_case["culprit"].lower()
     )
-    correct_candidate = ("alpha", "beta", "gamma")[culprit_index]
     evidence_ids = [item["id"] for item in scenario["evidence_archive"]]
 
     submitted = client.post(
         "/api/round3/submit",
         json={
             "team_id": team_id,
-            "selected_candidate_id": correct_candidate,
+            "selected_candidate_id": culprit_candidate,
             "selected_evidence_ids": [],
         },
     )
@@ -116,7 +114,7 @@ def test_round3_uses_the_assigned_round2_case():
         "/api/round3/submit",
         json={
             "team_id": team_id,
-            "selected_candidate_id": "gamma",
+            "selected_candidate_id": culprit_candidate,
             "selected_evidence_ids": evidence_ids[:2],
         },
     )
@@ -130,5 +128,5 @@ def test_round3_uses_the_assigned_round2_case():
     assert "round2_score" not in verdict_data
     assert "round3_score" not in verdict_data
     assert "total_score" not in verdict_data
-    assert verdict_data["verdict_details"]["true_culprit_id"] == correct_candidate
-    assert verdict_data["verdict_details"]["true_culprit_name"] == f"Project {correct_candidate.title()}"
+    assert verdict_data["verdict_details"]["true_culprit_id"] == culprit_candidate
+    assert verdict_data["verdict_details"]["true_culprit_name"] == round2_case["culprit"]

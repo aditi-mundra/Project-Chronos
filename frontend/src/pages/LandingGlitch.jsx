@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { soundFx } from '../utils/audio.js';
 import { Shield, Zap, RefreshCw } from 'lucide-react';
 import ChronosTitle from '../components/ChronosTitle.jsx';
+import { isLocalhost } from '../utils/isLocalhost.js';
 
 export default function LandingGlitch({ onStart, onAdminMode, isStarting = false }) {
   const canvasRef = useRef(null);
@@ -86,20 +87,16 @@ export default function LandingGlitch({ onStart, onAdminMode, isStarting = false
       <div className="relative z-10 max-w-5xl w-full mx-auto text-center flex flex-col items-center space-y-8 px-4">
         
         {/* System Fault Badge */}
-        <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-sm bg-[#040a10]/90 border border-rose-900/70 text-[11px] font-mono tracking-widest shadow-lg backdrop-blur-md">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-sm bg-[#040a10]/90 border border-rose-900/70 text-[11px] font-mono tracking-widest shadow-lg backdrop-blur-md">
           <span className="flex items-center gap-1.5 shrink-0">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
             </span>
-            <span className="text-rose-400 font-bold tracking-widest">FAULT</span>
+            <span className="text-rose-400 font-bold tracking-widest">FAULT DETECTED</span>
           </span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">ERR<span className="text-slate-600">::</span><span className="text-cyan-400">Ω</span>-7741</span>
           <span className="text-slate-600">·</span>
-          <span className="text-slate-400">NODE-7 <span className="text-rose-400/80">OFFLINE</span></span>
-          <span className="text-slate-600">·</span>
-          <span className="text-slate-500">T+2140.09.01</span>
+          <span className="text-slate-400">TIMELINE COLLAPSE IMMINENT</span>
         </div>
 
         <div className="py-4 w-full select-none">
@@ -112,16 +109,6 @@ export default function LandingGlitch({ onStart, onAdminMode, isStarting = false
           <span className="text-slate-700">—</span>
           <span>CONTAINMENT <span className="text-rose-600/80">FAILED</span></span>
           <span className="text-cyan-700">◂</span>
-          <button
-            onClick={() => {
-              soundFx.playKeystroke();
-              setEntranceKey((k) => k + 1);
-            }}
-            title="Replay title animation"
-            className="ml-1 text-slate-700 hover:text-cyan-500 transition cursor-pointer"
-          >
-            <RefreshCw className="w-3 h-3" />
-          </button>
         </div>
 
         {/* Immersive Lore Block flanked by Clean Large Club Logos */}
@@ -172,16 +159,14 @@ export default function LandingGlitch({ onStart, onAdminMode, isStarting = false
           </button>
         </div>
 
-        {/* Technical Subtext */}
-        <div className="text-[11px] font-mono text-slate-500 flex items-center justify-center gap-4">
-          <button onClick={() => onAdminMode?.()} className="hover:text-cyan-400 cursor-pointer transition">
-            HOST: LEADERBOARD
-          </button>
-          <span>•</span>
-          <span>ROUNDS: 3 PHASES</span>
-          <span>•</span>
-          <span>SECURE SQLITE MASTER</span>
-        </div>
+        {/* Technical Subtext: Only visible on localhost */}
+        {isLocalhost() && (
+          <div className="text-[11px] font-mono text-slate-500 flex items-center justify-center gap-4">
+            <button onClick={() => onAdminMode?.()} className="hover:text-cyan-400 cursor-pointer transition">
+              HOST LEADERBOARD
+            </button>
+          </div>
+        )}
 
       </div>
     </div>

@@ -156,7 +156,7 @@
 
 /* Compact Top Bar */
 .r1-root .topbar {
-  height: 50px;
+  height: 44px;
   padding: 0 32px;
   border-bottom: 1px solid rgba(112, 122, 161, .2);
   background: rgba(3,5,11,.82);
@@ -178,7 +178,7 @@
 .r1-root .brand-name {
   font-family: 'Super Sliced', 'Share Tech', sans-serif;
   font-weight: 400;
-  font-size: 24px;
+  font-size: 23px;
   line-height: 1;
   letter-spacing: .16em;
 }
@@ -190,7 +190,7 @@
 .r1-root .system-readouts {
   display: flex;
   gap: 20px;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: .12em;
   color: #8da2af;
 }
@@ -234,7 +234,7 @@
 
 /* Command Row & Timer */
 .r1-root .command-row {
-  padding: 10px 32px 6px;
+  padding: 6px 32px 3px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -247,14 +247,14 @@
 .r1-root .console-title,
 .r1-root .workspace-head,
 .r1-root .footerbar {
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: .16em;
   color: #8da0ad;
 }
 
 .r1-root .command-row h1 {
-  margin: 3px 0;
-  font: 700 32px 'Share Tech', sans-serif;
+  margin: 2px 0;
+  font: 700 31px 'Share Tech', sans-serif;
   letter-spacing: .08em;
   line-height: 1.1;
 }
@@ -266,13 +266,13 @@
 .r1-root .instruction {
   margin: 0;
   color: #8da0ad;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: .04em;
 }
 
 .r1-root .timer-box {
-  min-width: 180px;
-  padding: 8px 20px;
+  min-width: 170px;
+  padding: 6px 16px;
   border: 1px solid rgba(142, 114, 185, .5);
   background: rgba(19, 12, 32, .75);
   box-shadow: inset 0 0 24px rgba(99,47,130,.18);
@@ -283,12 +283,12 @@
 .r1-root .timer-box small {
   display: block;
   color: #a894b8;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: .16em;
 }
 .r1-root .timer-box strong {
   display: block;
-  font: 600 36px 'Share Tech', sans-serif;
+  font: 600 35px 'Share Tech', sans-serif;
   letter-spacing: .12em;
   color: #f1e9f8;
   line-height: 1.05;
@@ -307,9 +307,9 @@
 /* Telemetry Row */
 .r1-root .telemetry-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1.2fr 1.2fr 1fr;
-  gap: 14px;
-  padding: 0 32px 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 0 32px 5px;
   position: relative;
   z-index: 2;
   flex-shrink: 0;
@@ -319,8 +319,8 @@
 .r1-root .score-mask {
   border: 1px solid rgba(97, 118, 140, .24);
   background: rgba(7, 11, 20, .78);
-  padding: 8px 14px;
-  min-height: 52px;
+  padding: 6px 12px;
+  min-height: 44px;
 }
 .r1-root .telemetry-card > div:first-child {
   display: flex;
@@ -330,11 +330,11 @@
 .r1-root .telemetry-card span,
 .r1-root .score-mask span {
   color: #8096a6;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: .14em;
 }
 .r1-root .telemetry-card b {
-  font: 600 20px 'Share Tech', sans-serif;
+  font: 600 19px 'Share Tech', sans-serif;
   color: #c5e7df;
 }
 .r1-root .telemetry-bar,
@@ -378,18 +378,18 @@
   background: rgba(4, 7, 14, .64);
   position: relative;
   z-index: 2;
-  flex: 1 1 36%;
+  flex: 1.35 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 170px;
+  min-height: 290px;
 }
 
 .r1-root .workspace-head {
-  padding: 8px 18px;
+  padding: 6px 16px;
   border-bottom: 1px solid rgba(110,118,158,.2);
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: .14em;
   flex-shrink: 0;
 }
@@ -408,14 +408,15 @@
 
 .r1-root .fragment-field {
   flex: 1 1 auto;
-  min-height: 130px;
+  min-height: 240px;
   overflow-y: auto;
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
+  gap: 12px 14px;
+  align-content: center;
   justify-content: center;
+  align-items: flex-start;
   position: relative;
 }
 
@@ -426,19 +427,19 @@
   place-content: center;
   text-align: center;
   color: #6ea49b;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: .16em;
   gap: 10px;
 }
 .r1-root .field-empty span {
-  font-size: 32px;
+  font-size: 31px;
   color: #6bd3ba;
 }
 
 /* Fragment Cards */
 .r1-root .fragment-card {
-  width: 168px;
-  padding: 8px;
+  width: 144px;
+  padding: 6px 7px;
   border: 1px solid rgba(125, 137, 168, .3);
   background: linear-gradient(145deg, rgba(20,25,40,.96), rgba(9,12,20,.96));
   transform: rotate(var(--rot)) translateY(var(--float));
@@ -461,7 +462,7 @@
 }
 .r1-root .fragment-card:hover,
 .r1-root .fragment-card.selected {
-  transform: rotate(0deg) translateY(-12px) scale(1.36);
+  transform: rotate(0deg) translateY(-10px) scale(1.32);
   border-color: #c09cf2;
   box-shadow: 0 24px 44px rgba(0, 0, 0, .9), 0 0 42px rgba(168, 85, 247, .65), inset 0 0 20px rgba(142, 84, 196, .3);
   z-index: 60;
@@ -478,8 +479,8 @@
   top: 0;
   left: 0;
   z-index: 1000;
-  width: 130px;
-  height: 130px;
+  width: 110px;
+  height: 110px;
   pointer-events: none;
   will-change: transform;
   border: 2px solid #c09cf2;
@@ -501,14 +502,14 @@
 }
 
 .r1-root .fragment-corner {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: #8da4b8;
   letter-spacing: .1em;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .r1-root .fragment-image-wrap {
-  height: 120px;
+  height: 94px;
   overflow: hidden;
   position: relative;
   background: #080c12;
@@ -549,31 +550,31 @@
 .r1-root .fragment-footer {
   display: flex;
   justify-content: space-between;
-  margin-top: 4px;
-  font-size: 11px;
+  margin-top: 3px;
+  font-size: 10px;
   color: #7b8e9d;
   letter-spacing: .06em;
 }
 .r1-root .fragment-meta b {
   color: #b59ecc;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 11px;
 }
 .r1-root .fragment-footer strong {
   color: #b5cccc;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* Timeline Drop Zones */
 .r1-root .timeline-section {
-  margin: 10px 32px 0;
+  margin: 6px 32px 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 12px;
   position: relative;
   z-index: 2;
-  flex: 1 1 40%;
-  min-height: 190px;
+  flex: 0.9 1 auto;
+  min-height: 150px;
 }
 
 .r1-root .timeline-line {
@@ -587,7 +588,7 @@
 }
 
 .r1-root .drop-zone {
-  min-height: 190px;
+  min-height: 150px;
   border: 1px solid rgba(110,129,153,.26);
   background: rgba(6,10,18,.72);
   position: relative;
@@ -624,41 +625,41 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px;
+  padding: 6px 12px;
   border-bottom: 1px solid currentColor;
   border-color: rgba(125,142,160,.18);
   position: relative;
   flex-shrink: 0;
 }
 .r1-root .zone-symbol {
-  font-size: 20px;
+  font-size: 19px;
   opacity: .85;
 }
 .r1-root .zone-head h2 {
   margin: 0;
-  font: 600 var(--zone-title, 22px) / 1.05 'Share Tech', sans-serif;
+  font: 600 var(--zone-title, 21px) / 1.05 'Share Tech', sans-serif;
   letter-spacing: .12em;
 }
 .r1-root .zone-head p {
   margin: 2px 0 0;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: .12em;
   opacity: .75;
 }
 .r1-root .zone-head > b {
   margin-left: auto;
-  font: 600 var(--zone-count, 22px) 'Share Tech', sans-serif;
+  font: 600 var(--zone-count, 21px) 'Share Tech', sans-serif;
   opacity: .8;
 }
 
 .r1-root .zone-content {
   flex: 1;
-  min-height: 110px;
+  min-height: 80px;
   overflow-y: auto;
-  padding: 10px 14px;
+  padding: 6px 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 8px;
   align-items: center;
   align-content: flex-start;
   position: relative;
@@ -666,10 +667,10 @@
 .r1-root .drop-prompt {
   width: 100%;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: .16em;
   color: #6a7c8a;
-  padding: 24px 0;
+  padding: 14px 0;
 }
 
 /* Placed Mini Fragments with Hover Zoom and Enlargement */
@@ -685,8 +686,8 @@
   transition: transform .26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .24s ease;
 }
 .r1-root .mini-fragment {
-  width: 84px;
-  height: 84px;
+  width: 68px;
+  height: 68px;
   object-fit: cover;
   border: 2px solid currentColor;
   border-radius: 4px;
@@ -698,7 +699,7 @@
   display: block;
 }
 .r1-root .mini-fragment-tag {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #bfd0d8;
   letter-spacing: .08em;
@@ -734,8 +735,8 @@
 }
 
 .r1-root .zone-footer {
-  padding: 6px 14px;
-  font-size: 11px;
+  padding: 4px 12px;
+  font-size: 10px;
   letter-spacing: .14em;
   color: #728494;
   border-top: 1px solid rgba(110,129,153,.16);
@@ -744,10 +745,10 @@
 
 /* Bottom Console */
 .r1-root .bottom-console {
-  margin: 10px 32px 6px;
+  margin: 6px 32px 4px;
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 16px;
+  gap: 12px;
   position: relative;
   z-index: 2;
   flex-shrink: 0;
@@ -757,7 +758,7 @@
 .r1-root .reconstruction-status {
   border: 1px solid rgba(97,103,140,.22);
   background: rgba(4,7,13,.82);
-  padding: 10px 16px;
+  padding: 6px 14px;
   border-radius: 4px;
 }
 
@@ -765,8 +766,8 @@
   display: flex;
   justify-content: space-between;
   border-bottom: 1px solid rgba(97,103,140,.16);
-  padding-bottom: 6px;
-  font-size: 13px;
+  padding-bottom: 4px;
+  font-size: 12px;
   letter-spacing: .14em;
 }
 .r1-root .console-title span {
@@ -774,7 +775,7 @@
 }
 
 .r1-root .logs {
-  height: 56px;
+  height: 42px;
   overflow-y: auto;
   padding-top: 4px;
 }
@@ -782,7 +783,7 @@
   display: grid;
   grid-template-columns: 75px 1fr;
   gap: 10px;
-  font-size: 12px;
+  font-size: 11px;
   padding: 3px 0;
   color: #788a96;
   animation: logIn .3s ease both;
@@ -796,19 +797,19 @@
 
 .r1-root .big-progress {
   height: 6px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 .r1-root .status-copy {
   display: flex;
   justify-content: space-between;
-  margin: 6px 0 8px;
-  font-size: 13px;
+  margin: 4px 0 6px;
+  font-size: 12px;
   letter-spacing: .1em;
   color: #8496a3;
 }
 .r1-root .status-copy b {
   color: #bde0d9;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .r1-root .primary-button {
@@ -816,9 +817,9 @@
   border: 1px solid #8e6bb8;
   background: linear-gradient(90deg, rgba(82,45,114,.6), rgba(35,22,60,.85));
   color: #ebe2f5;
-  padding: 11px 18px;
+  padding: 8px 16px;
   cursor: pointer;
-  font: 700 15px 'Share Tech', sans-serif;
+  font: 700 14px 'Share Tech', sans-serif;
   letter-spacing: .16em;
   transition: .2s;
   border-radius: 4px;
@@ -837,11 +838,11 @@
 .r1-root .footerbar {
   display: flex;
   justify-content: space-between;
-  padding: 4px 32px 8px;
+  padding: 2px 32px 4px;
   color: #5c6e7a;
   position: relative;
   z-index: 2;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: .14em;
   flex-shrink: 0;
 }
@@ -912,16 +913,14 @@
   line-height: 1.7;
   max-width: 540px;
 }
-.r1-root .clue-panel,
-.r1-root .auth-panel {
+.r1-root .clue-panel {
   border: 1px solid rgba(107,119,143,.24);
   background: rgba(10,13,23,.85);
   padding: 14px;
   margin-top: 12px;
   border-radius: 4px;
 }
-.r1-root .clue-panel span,
-.r1-root .auth-panel span {
+.r1-root .clue-panel span {
   display: block;
   color: #8397a6;
   font-size: 12px;
@@ -933,17 +932,6 @@
   line-height: 1.5;
   color: #e2e8e8;
   font-weight: 500;
-}
-.r1-root .auth-panel {
-  border-color: rgba(125,78,153,.5);
-  text-align: center;
-}
-.r1-root .auth-panel b {
-  display: block;
-  font: 700 28px 'Share Tech', sans-serif;
-  color: #d69aee;
-  letter-spacing: .22em;
-  text-shadow: 0 0 18px rgba(185,103,214,.4);
 }
 .r1-root .score-sealed {
   margin: 14px 0;
@@ -1089,31 +1077,33 @@
 
 /* Small screen / laptop height optimizations */
 @media (max-height: 800px) {
-  .r1-root .topbar { height: 44px; padding: 0 20px; }
-  .r1-root .command-row { padding: 4px 20px 2px; }
-  .r1-root .command-row h1 { font-size: 26px; }
-  .r1-root .timer-box { min-width: 150px; padding: 6px 14px; }
-  .r1-root .timer-box strong { font-size: 28px; }
-  .r1-root .telemetry-grid { padding: 0 20px 4px; gap: 8px; }
-  .r1-root .telemetry-card, .r1-root .score-mask { min-height: 40px; padding: 4px 10px; }
-  .r1-root .telemetry-card b, .r1-root .score-mask b { font-size: 16px; }
-  .r1-root .workspace { margin: 0 20px; min-height: 140px; }
-  .r1-root .workspace-head { padding: 5px 12px; }
-  .r1-root .fragment-field { min-height: 100px; padding: 8px 10px; gap: 10px; }
-  .r1-root .fragment-card { width: 140px; padding: 6px; }
-  .r1-root .fragment-image-wrap { height: 95px; }
-  .r1-root .drag-ghost { width: 100px; height: 100px; }
-  .r1-root .timeline-section { margin: 6px 20px 0; gap: 10px; min-height: 150px; }
-  .r1-root .drop-zone { min-height: 145px; }
-  .r1-root .zone-head { padding: 6px 12px; }
-  .r1-root .zone-head h2 { font-size: 19px; }
-  .r1-root .zone-content { min-height: 75px; padding: 6px 8px; gap: 8px; }
-  .r1-root .mini-fragment { width: 66px; height: 66px; }
-  .r1-root .bottom-console { margin: 6px 20px 4px; gap: 10px; }
-  .r1-root .event-log, .r1-root .reconstruction-status { padding: 6px 12px; }
-  .r1-root .logs { height: 42px; }
-  .r1-root .primary-button { padding: 8px 14px; font-size: 13px; }
-  .r1-root .footerbar { padding: 2px 20px 6px; }
+  .r1-root .topbar { height: 40px; padding: 0 16px; }
+  .r1-root .command-row { padding: 3px 16px 1px; }
+  .r1-root .command-row h1 { font-size: 25px; }
+  .r1-root .timer-box { min-width: 140px; padding: 4px 12px; }
+  .r1-root .timer-box strong { font-size: 27px; }
+  .r1-root .telemetry-grid { padding: 0 16px 3px; gap: 8px; }
+  .r1-root .telemetry-card, .r1-root .score-mask { min-height: 36px; padding: 3px 8px; }
+  .r1-root .telemetry-card b, .r1-root .score-mask b { font-size: 15px; }
+  .r1-root .workspace { margin: 0 16px; min-height: 230px; flex: 1.4 1 auto; }
+  .r1-root .workspace-head { padding: 4px 10px; font-size: 11px; }
+  .r1-root .fragment-field { min-height: 190px; padding: 6px 8px; gap: 8px 10px; }
+  .r1-root .fragment-card { width: 126px; padding: 5px; }
+  .r1-root .fragment-image-wrap { height: 80px; }
+  .r1-root .fragment-corner { font-size: 9px; }
+  .r1-root .fragment-meta, .r1-root .fragment-footer { font-size: 9px; }
+  .r1-root .drag-ghost { width: 95px; height: 95px; }
+  .r1-root .timeline-section { margin: 4px 16px 0; gap: 8px; min-height: 125px; flex: 0.85 1 auto; }
+  .r1-root .drop-zone { min-height: 120px; }
+  .r1-root .zone-head { padding: 4px 10px; }
+  .r1-root .zone-head h2 { font-size: 18px; }
+  .r1-root .zone-content { min-height: 60px; padding: 4px 6px; gap: 6px; }
+  .r1-root .mini-fragment { width: 54px; height: 54px; }
+  .r1-root .bottom-console { margin: 4px 16px 2px; gap: 8px; }
+  .r1-root .event-log, .r1-root .reconstruction-status { padding: 4px 10px; }
+  .r1-root .logs { height: 34px; }
+  .r1-root .primary-button { padding: 6px 12px; font-size: 12px; }
+  .r1-root .footerbar { padding: 2px 16px 4px; font-size: 10px; }
 }
 
 @media (max-width: 960px) {

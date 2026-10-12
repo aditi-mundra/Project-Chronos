@@ -334,7 +334,6 @@ export default function Round1({ onComplete }) {
           </div>
           <div className="system-readouts">
             <div><span>SYSTEM</span><b className={`status-dot ${systemState.toLowerCase()}`} /> <strong>{systemState}</strong></div>
-            <div><span>DRIFT</span><strong className="flicker-text">+08.72ms</strong></div>
             <div><span>TEAM</span><strong>{team?.team_name}</strong></div>
             {(team?.member_1_prn || team?.member_2_prn) && (
               <div className="prn-readout">
@@ -363,8 +362,6 @@ export default function Round1({ onComplete }) {
         <section className="telemetry-grid">
           <Telemetry title="TIMELINE INTEGRITY" value={`${Math.round(integrity)}%`} progress={integrity} />
           <Telemetry title="FRAGMENTS RESTORED" value={`${placedIds.size} / ${fragments.length}`} progress={progress} />
-          <Telemetry title="TEMPORAL DRIFT" value={integrity < 50 ? '+12.31ms' : '+08.72ms'} progress={Math.max(10, integrity - 18)} />
-          <div className="score-mask"><span>HOST LEDGER</span><b>•••</b><small>CLASSIFIED</small></div>
         </section>
 
         <section className="workspace">
@@ -508,7 +505,7 @@ function DropZone({
   const selectedInZone = selectedId && ids.includes(selectedId);
   // Sector name grows subtly with the number of fragments it holds.
   const growth = Math.min(ids.length, 12) / 12;
-  const zoneVars = { '--zone-title': `${22 + growth * 4}px`, '--zone-count': `${20 + growth * 4}px` };
+  const zoneVars = { '--zone-title': `${21 + growth * 4}px`, '--zone-count': `${19 + growth * 4}px` };
   return (
     <div
       className={`drop-zone ${era.toLowerCase()} ${selectedInZone ? 'selected-zone' : ''} ${isOver ? 'drag-over' : ''}`}
@@ -542,7 +539,7 @@ function DropZone({
           ) : null;
         })}
       </div>
-      <div className="zone-footer">SECTOR • {era} • ROUTE ACCEPTED (DOUBLE TAP TO UNSELECT)</div>
+      <div className="zone-footer">SECTOR • {era}</div>
     </div>
   );
 }

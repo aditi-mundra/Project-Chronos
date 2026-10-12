@@ -90,42 +90,6 @@ canvas#cv {
   z-index: 30;
 }
 
-/* HUD Telemetry */
-.hud {
-  position: absolute;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  color: var(--cyan);
-  pointer-events: none;
-  z-index: 15;
-  text-shadow: 0 0 8px rgba(6,182,212,0.6);
-  opacity: 0;
-  transition: opacity 0.5s;
-}
-.hud.tl { top: 24px; left: 24px; }
-.hud.tr { top: 24px; right: 24px; text-align: right; }
-.hud.bl { bottom: 24px; left: 24px; }
-.hud.br { bottom: 24px; right: 24px; text-align: right; }
-
-/* Status Banners */
-#status-badge {
-  position: absolute;
-  top: 15%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(12px, 1.8vw, 16px);
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: var(--gold);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  background: rgba(5, 7, 12, 0.85);
-  padding: 8px 24px;
-  border-radius: 4px;
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
-  z-index: 20;
-  opacity: 0;
-}
-
 /* Main Cinematic Title */
 #center-banner {
   position: absolute;
@@ -159,26 +123,6 @@ canvas#cv {
   margin-top: 18px;
   opacity: 0;
   text-shadow: 0 0 12px rgba(6,182,212,0.6);
-}
-
-#metrics {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 26px;
-  opacity: 0;
-}
-
-.metric-pill {
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  padding: 6px 16px;
-  background: rgba(6,182,212,0.1);
-  border: 1px solid rgba(6,182,212,0.5);
-  border-radius: 999px;
-  color: #a5f3fc;
-  box-shadow: 0 0 15px rgba(6,182,212,0.2);
 }
 
 /* Interactive Action Buttons */
@@ -232,27 +176,14 @@ canvas#cv {
   <div class="scanbar"></div>
   <div id="flash"></div>
 
-  <!-- Telemetry HUD -->
-  <div class="hud tl" id="htl">TEMPORAL MATRIX // PROTOCOL 2140<br>SYS_STABILITY: CALIBRATING</div>
-  <div class="hud tr" id="htr">DISPERSION DELTA: FRACTURED<br>PARADOX STATE: RESOLVING</div>
-  <div class="hud bl" id="hbl">QUANTUM COHERENCE: 3-STRAND FLUX<br>GRAVITATIONAL COUPLING: ACTIVE</div>
-  <div class="hud br" id="hbr">UNIT CALLSIGN: ACTIVE ENGINEER<br>CHRONOS MAIN KERNEL // SYNC</div>
-
-  <div id="status-badge">TEMPORAL DIVERGENCE DETECTED</div>
-
   <div id="center-banner">
     <div id="big-title">TIMELINES MERGED</div>
-    <div id="sub-title">THE PRIME CONTINUUM IS RESTORED</div>
-    <div id="metrics">
-      <div class="metric-pill">ALL 3 BROKEN TIMELINES HARMONIZED</div>
-      <div class="metric-pill">PARADOX DECAY: 0.00%</div>
-      <div class="metric-pill">CHRONOS STABILITY: 100%</div>
-    </div>
+    <div id="sub-title">PRIME CONTINUUM RESTORED</div>
   </div>
 
   <div id="actions">
-    <button class="act-btn" id="btn-debrief">VIEW FINAL DEBRIEF & STANDINGS ▸</button>
-    <button class="act-btn secondary" id="btn-replay">↻ REPLAY CONVERGENCE</button>
+    <button class="act-btn" id="btn-debrief">CONTINUE ▸</button>
+    <button class="act-btn secondary" id="btn-replay">↻ REPLAY</button>
   </div>
 </div>
 
@@ -262,9 +193,8 @@ canvas#cv {
 
 const $ = s => document.querySelector(s);
 const cv = $('#cv'), cx = cv.getContext('2d');
-const flash = $('#flash'), badge = $('#status-badge');
-const bigTitle = $('#big-title'), subTitle = $('#sub-title'), metrics = $('#metrics'), actions = $('#actions');
-const huds = [$('#htl'), $('#htr'), $('#hbl'), $('#hbr')];
+const flash = $('#flash');
+const bigTitle = $('#big-title'), subTitle = $('#sub-title'), actions = $('#actions');
 
 let W = innerWidth, H = innerHeight, DPR = 1;
 function resize(){
@@ -623,12 +553,6 @@ function render(){
       cx.fill();
     }
 
-    // 6. Chronos prime timeline indicators
-    cx.fillStyle = '#67e8f9';
-    cx.font = '11px "Chakra Petch", monospace';
-    cx.fillText('PRIME STRAND // CONTINUUM ZERO [UNIFIED]', 40, centerY - 22);
-    cx.fillText('ENTROPY: 0.00% // FLUX HARMONIZED', W - 320, centerY - 22);
-
     cx.restore();
   }
 
@@ -747,19 +671,12 @@ if (typeof window.gsap === 'undefined') {
 function runCinematic(){
   const tl = gsap.timeline();
 
-  // Phase 0: Start & HUD reveal
+  // Phase 0: Start
   tl.call(()=>{ playAudio('boot', 0.85); playWarpDrone(75, 5.0); }, null, 0);
-  tl.to(huds, { opacity: 1, duration: 1.2, stagger: 0.15 }, 0.2);
-  tl.to(badge, { opacity: 1, duration: 0.8 }, 0.5);
 
   // Phase 1: Temporal Anomaly & Jitter (0.5s - 3.2s)
   tl.call(()=>{ playAudio('glitch', 0.7); }, null, 1.4);
   tl.to(state, { glowIntensity: 1.2, duration: 1.5 }, 1.0);
-  tl.call(()=>{
-    badge.textContent = "TEMPORAL RESONANCE COLLAPSE // GRAVITATIONAL WARPING";
-    badge.style.color = "var(--rose)";
-    badge.style.borderColor = "var(--rose)";
-  }, null, 2.5);
 
   // Phase 2: Violent Warping & Gravitational Inward Pull (3.2s - 7.0s)
   tl.call(()=>{ playAudio('woosh1', 0.9); }, null, 3.2);
@@ -780,9 +697,6 @@ function runCinematic(){
     state.mergeStrength = 1.0;
     state.warpProgress = 1.0;
     state.shake = 0;
-    badge.textContent = "TIMELINES UNIFIED // PRIME CONTINUUM SYNCHRONIZED";
-    badge.style.color = "#34d399";
-    badge.style.borderColor = "#34d399";
   }, null, 7.0);
 
   // Shockwave dissipation
@@ -791,8 +705,7 @@ function runCinematic(){
   // Phase 4: Big Kinetic Text Reveal (7.8s+)
   tl.to(bigTitle, { opacity: 1, scale: 1, duration: 1.1, ease: "expo.out" }, 7.6);
   tl.to(subTitle, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" }, 8.2);
-  tl.to(metrics, { opacity: 1, duration: 0.8 }, 8.8);
-  tl.to(actions, { opacity: 1, duration: 0.8 }, 9.5);
+  tl.to(actions, { opacity: 1, duration: 0.8 }, 9.0);
 
   return tl;
 }
@@ -810,17 +723,11 @@ function forceFinalState(){
   state.warpProgress = 1.0;
   state.shake = 0;
   flash.style.opacity = '0';
-  badge.style.opacity = '1';
-  badge.textContent = 'TIMELINES UNIFIED // PRIME CONTINUUM SYNCHRONIZED';
-  badge.style.color = '#34d399';
-  badge.style.borderColor = '#34d399';
   bigTitle.style.opacity = '1';
   bigTitle.style.transform = 'scale(1)';
   subTitle.style.opacity = '1';
   subTitle.style.transform = 'translateY(0)';
-  metrics.style.opacity = '1';
   actions.style.opacity = '1';
-  huds.forEach(hud => { hud.style.opacity = '1'; });
 }
 
 setTimeout(forceFinalState, 10000);

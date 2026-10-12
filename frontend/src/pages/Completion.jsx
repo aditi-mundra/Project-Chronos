@@ -94,7 +94,7 @@ export default function Completion({
               MISSION <span style={{ color: 'var(--neon-primary)' }}>CONCLUDED</span>
             </h1>
             <p className="text-xs sm:text-sm font-mono text-slate-400 pt-1">
-              Unit: <strong className="text-cyan-300">{teamName}</strong> • Event: TECH FEST 2140
+              Unit: <strong className="text-cyan-300">{teamName}</strong>
             </p>
           </div>
 
@@ -131,7 +131,7 @@ export default function Completion({
           {verdictDetails.narrative_summary && (
             <div className="p-5 rounded-2xl bg-black/60 border border-cyan-950 text-left space-y-2">
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 block">
-                FORENSIC NARRATIVE RESOLUTION (GAME CONCLUSION):
+                FORENSIC NARRATIVE RESOLUTION:
               </span>
               <p className="text-xs sm:text-sm font-mono text-slate-300 leading-relaxed whitespace-pre-wrap">
                 {verdictDetails.narrative_summary}

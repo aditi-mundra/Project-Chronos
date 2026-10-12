@@ -29,7 +29,27 @@ def is_valid_admin_password(pw: Optional[str]) -> bool:
     return cleaned == "Chronos@123" or cleaned.lower() in VALID_ADMIN_PASSWORDS
 
 
+def is_localhost(request: Request) -> bool:
+    """
+    Checks if the incoming request originated from localhost / loopback.
+    Returns False for any network / LAN client.
+    """
+    if not request.client:
+        return True
+    host = request.client.host
+    return host in ("127.0.0.1", "::1", "localhost", "testclient") or host.startswith("127.")
+
+
+def require_localhost(request: Request) -> None:
+    if not is_localhost(request):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Master Leaderboard is strictly restricted to localhost and cannot be accessed over the network.",
+        )
+
+
 def require_admin(request: Request) -> None:
+    require_localhost(request)
     token = ""
     authorization = request.headers.get("authorization", "")
     scheme, _, auth_token = authorization.partition(" ")
@@ -183,7 +203,8 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
 
 
 @router.post("/login", response_model=AdminLoginResponse)
-def admin_login(payload: AdminLoginRequest):
+def admin_login(request: Request, payload: AdminLoginRequest):
+    require_localhost(request)
     if is_valid_admin_password(payload.password):
         return AdminLoginResponse(success=True, token=ADMIN_SECRET_TOKEN, message="ACCESS_GRANTED")
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid host passkey.")

@@ -206,3 +206,39 @@ def test_authoritative_grading_bounds_enforcement():
         conn.commit()
         conn.close()
 
+
+def test_leaderboard_network_access_blocked():
+    from backend.app.main import app
+    # Simulate a network client connecting from LAN (192.168.1.100)
+    network_client = TestClient(app, client=("192.168.1.100", 54321))
+
+    # 1. Network client attempts to fetch leaderboard API -> 403 Forbidden
+    res_lb = network_client.get("/api/admin/leaderboard", headers=ADMIN_HEADERS)
+    assert res_lb.status_code == 403
+    assert "strictly restricted to localhost" in res_lb.text
+
+    # 2. Network client attempts admin login -> 403 Forbidden
+    res_login = network_client.post("/api/admin/login", json={"password": "Chronos@123"})
+    assert res_login.status_code == 403
+    assert "strictly restricted to localhost" in res_login.text
+
+    # 3. Network client attempts CSV export -> 403 Forbidden
+    res_csv = network_client.get("/api/admin/export-csv", headers=ADMIN_HEADERS)
+    assert res_csv.status_code == 403
+    assert "strictly restricted to localhost" in res_csv.text
+
+    # 4. Network client attempts to access /leaderboard or /leaderboard.html frontend routes -> 403 Forbidden
+    res_page = network_client.get("/leaderboard")
+    assert res_page.status_code == 403
+    assert "strictly restricted to localhost" in res_page.text
+
+    res_html = network_client.get("/leaderboard.html")
+    assert res_html.status_code == 403
+    assert "strictly restricted to localhost" in res_html.text
+
+    # 5. Localhost client (127.0.0.1) successfully accesses leaderboard API -> 200 OK
+    local_client = TestClient(app, client=("127.0.0.1", 54321))
+    res_local = local_client.get("/api/admin/leaderboard", headers=ADMIN_HEADERS)
+    assert res_local.status_code == 200
+
+

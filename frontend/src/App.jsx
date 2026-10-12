@@ -15,6 +15,7 @@ import Completion from './pages/Completion.jsx';
 import Leaderboard from './admin/Leaderboard.jsx';
 import AdminControls from './components/AdminControls.jsx';
 import AdminLogin from './admin/AdminLogin.jsx';
+import { isLocalhost } from './utils/isLocalhost.js';
 
 // View order:
 //  'landing'         -> Glitch title page  (START MISSION button)
@@ -26,8 +27,8 @@ import AdminLogin from './admin/AdminLogin.jsx';
 //  'round2'          -> Round 2 Terminal Investigation
 //  'round3'          -> Round 3 Final Accusation
 //  'completion'      -> Mission Concluded Debrief
-//  'leaderboard'     -> Master Host Leaderboard (password-protected)
-//  'leaderboardAuth' -> Protected Leaderboard password gate
+//  'leaderboard'     -> Master Host Leaderboard (password-protected, localhost only)
+//  'leaderboardAuth' -> Protected Leaderboard password gate (localhost only)
 //
 // A logged-in team (session in localStorage) is routed by its server-side state on reload
 // ('resuming'): READY -> prelobby, ROUND1_ACTIVE -> round1, ROUND1_COMPLETED -> round2lobby.
@@ -40,7 +41,7 @@ function AppContent() {
   const { team, logoutTeam } = useAuth();
   const [currentView, setCurrentView] = useState(() => {
     const path = window.location.pathname;
-    if (path === '/leaderboard' || path === '/admin') {
+    if ((path === '/leaderboard' || path === '/admin') && isLocalhost()) {
       return sessionStorage.getItem('chronos_admin_token') ? 'leaderboard' : 'leaderboardAuth';
     }
     return team ? 'resuming' : 'landing';
@@ -260,24 +261,42 @@ function AppContent() {
           />
         )}
 
-        {/* Protected Password Access for Leaderboard */}
+        {/* Protected Password Access for Leaderboard — localhost only */}
         {currentView === 'leaderboardAuth' && (
-          <AdminLogin
-            onLoginSuccess={() => setCurrentView('leaderboard')}
-            onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
-          />
+          isLocalhost() ? (
+            <AdminLogin
+              onLoginSuccess={() => setCurrentView('leaderboard')}
+              onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
+            />
+          ) : (
+            <div className="min-h-[calc(100vh-2.5rem)] flex items-center justify-center font-mono text-center p-6">
+              <div className="max-w-md p-6 rounded-xl bg-black/90 border border-rose-500/50 text-rose-400">
+                <h2 className="text-lg font-bold mb-2">ACCESS RESTRICTED // 403</h2>
+                <p className="text-xs text-slate-400">Master Leaderboard is only accessible directly on localhost.</p>
+              </div>
+            </div>
+          )
         )}
 
-        {/* Master Host Leaderboard */}
+        {/* Master Host Leaderboard — localhost only */}
         {currentView === 'leaderboard' && (
-          <Leaderboard
-            onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
-            onLogout={() => {
-              sessionStorage.removeItem('chronos_admin_token');
-              sessionStorage.removeItem('chronos_host_authed');
-              setCurrentView('leaderboardAuth');
-            }}
-          />
+          isLocalhost() ? (
+            <Leaderboard
+              onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
+              onLogout={() => {
+                sessionStorage.removeItem('chronos_admin_token');
+                sessionStorage.removeItem('chronos_host_authed');
+                setCurrentView('leaderboardAuth');
+              }}
+            />
+          ) : (
+            <div className="min-h-[calc(100vh-2.5rem)] flex items-center justify-center font-mono text-center p-6">
+              <div className="max-w-md p-6 rounded-xl bg-black/90 border border-rose-500/50 text-rose-400">
+                <h2 className="text-lg font-bold mb-2">ACCESS RESTRICTED // 403</h2>
+                <p className="text-xs text-slate-400">Master Leaderboard is only accessible directly on localhost.</p>
+              </div>
+            </div>
+          )
         )}
 
       </main>

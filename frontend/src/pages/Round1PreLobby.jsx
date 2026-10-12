@@ -78,10 +78,6 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
               </h2>
             </div>
             <div className="flex items-center gap-2.5">
-              <span className="px-3.5 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-700/80 text-cyan-300 text-xs sm:text-sm font-mono font-bold tracking-wider inline-flex items-center gap-1.5 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
-                <Users className="w-4 h-4 text-cyan-400" />
-                {/* TEAM ID HIDDEN */}
-              </span>
               <button
                 onClick={handleLogout}
                 className="px-3 py-1.5 rounded-lg border border-rose-900/70 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-rose-100 text-xs sm:text-sm font-mono font-bold tracking-wider inline-flex items-center gap-1.5 transition cursor-pointer"
@@ -101,7 +97,6 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
                   <IdCard className="w-3.5 h-3.5" />
                   <span>Operator 1</span>
                 </span>
-                <span className="text-[11px] text-slate-500">PRIMARY</span>
               </div>
               <span className="text-white font-bold font-mono text-base sm:text-lg block pt-0.5">
                 {team?.member_1_name || 'Member 1'}
@@ -117,7 +112,6 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
                   <IdCard className="w-3.5 h-3.5" />
                   <span>Operator 2</span>
                 </span>
-                <span className="text-[11px] text-slate-500">CO-PILOT</span>
               </div>
               <span className="text-white font-bold font-mono text-base sm:text-lg block pt-0.5">
                 {team?.member_2_name || 'Member 2'}
@@ -135,7 +129,7 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
               <span>Round 1 Briefing: Temporal Deconfliction</span>
             </div>
             <p className="text-slate-300 font-mono leading-relaxed text-xs sm:text-sm">
-              Upon engagement, the authoritative master clock begins recording your duration (<code className="text-cyan-300 font-semibold">r1_time_diff</code>). Locate anomalous timeline coordinates, eliminate historical contradictions, and submit fragments.
+              Upon engagement, the authoritative master clock records your duration. Locate anomalous timeline coordinates, eliminate historical contradictions, and submit fragments.
             </p>
           </div>
 
@@ -166,11 +160,6 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
             )}
           </div>
 
-        </div>
-
-        {/* Security Notice with target text removed */}
-        <div className="text-xs font-mono text-slate-500">
-          Terminal Status: Standard Player Mode
         </div>
 
       </div>

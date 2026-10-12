@@ -96,6 +96,27 @@ export const api = {
   },
 
   // =========================================================================
+  // Transition Round Subsystem (Between Round 1 and Round 2)
+  // =========================================================================
+  async getTransitionInfo(teamId) {
+    return apiRequest(`/api/transition/info?team_id=${encodeURIComponent(teamId)}`);
+  },
+
+  async startTransitionStopwatch(teamId) {
+    return apiRequest('/api/transition/start', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId }),
+    });
+  },
+
+  async verifyTransitionPassword(teamId, password) {
+    return apiRequest('/api/transition/verify', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId, password }),
+    });
+  },
+
+  // =========================================================================
   // Round 2 Subsystem
   // =========================================================================
   async getRound2Files(teamId) {

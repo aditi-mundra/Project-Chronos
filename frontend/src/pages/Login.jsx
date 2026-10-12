@@ -116,10 +116,6 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
             <ArrowLeft className="w-4 h-4" />
             <span>RETURN TO INTRO</span>
           </button>
-          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-cyan-500/80">
-            <Cpu className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-            <span>NODE::AUTH-GATE 01</span>
-          </div>
         </div>
 
         {/* Main Authentication Card */}
@@ -128,17 +124,10 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-pink-500 to-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.7)]" />
 
           {/* Header */}
-          <div className="flex items-start justify-between border-b border-cyan-900/50 pb-4 mb-5">
-            <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-tech text-white tracking-wide">
-                Team Authentication
-              </h2>
-            </div>
-            <div className="hidden sm:block text-right">
-              <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-cyan-950/80 border border-cyan-800 text-cyan-300 uppercase tracking-widest">
-                VERIFICATION REQUIRED
-              </span>
-            </div>
+          <div className="border-b border-cyan-900/50 pb-4 mb-5">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold font-tech text-white tracking-wide">
+              Team Authentication
+            </h2>
           </div>
 
           {/* Error Message */}
@@ -152,10 +141,10 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             
-            {/* Field 1: Team Name */}
+            {/* Team Name */}
             <div className="bg-[#03060f]/90 p-3.5 sm:p-4 rounded-xl border border-cyan-900/60 focus-within:border-cyan-400/80 transition">
               <label className="block text-xs sm:text-sm font-mono font-bold text-cyan-300 mb-1.5 uppercase tracking-wider">
-                1. Team Name (Unique Callsign)
+                Team Name
               </label>
               <input
                 type="text"
@@ -176,13 +165,13 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
               <div className="p-3.5 sm:p-4 rounded-xl bg-[#03060f]/90 border border-cyan-900/60 space-y-3 focus-within:border-cyan-500/70 transition">
                 <div className="text-xs sm:text-sm font-mono font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2 pb-1 border-b border-cyan-950">
                   <IdCard className="w-4 h-4 text-cyan-400" />
-                  <span>Operator 1 Specifications</span>
+                  <span>Operator 1</span>
                 </div>
                 
-                {/* Field 2: Member 1 Name */}
+                {/* Member 1 Name */}
                 <div>
                   <label className="block text-xs sm:text-sm font-mono text-slate-300 mb-1">
-                    2. Member 1 Full Name
+                    Member 1 Full Name
                   </label>
                   <input
                     type="text"
@@ -195,7 +184,7 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
                   />
                 </div>
 
-                {/* Field: Member 1 PRN */}
+                {/* Member 1 PRN */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs sm:text-sm font-mono text-slate-300">
@@ -221,13 +210,13 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
               <div className="p-3.5 sm:p-4 rounded-xl bg-[#03060f]/90 border border-cyan-900/60 space-y-3 focus-within:border-cyan-500/70 transition">
                 <div className="text-xs sm:text-sm font-mono font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2 pb-1 border-b border-cyan-950">
                   <IdCard className="w-4 h-4 text-cyan-400" />
-                  <span>Operator 2 Specifications</span>
+                  <span>Operator 2</span>
                 </div>
                 
-                {/* Field 3: Member 2 Name */}
+                {/* Member 2 Name */}
                 <div>
                   <label className="block text-xs sm:text-sm font-mono text-slate-300 mb-1">
-                    3. Member 2 Full Name
+                    Member 2 Full Name
                   </label>
                   <input
                     type="text"

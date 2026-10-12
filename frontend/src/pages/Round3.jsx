@@ -11,8 +11,7 @@ import {
   X, 
   Bot,
   ExternalLink,
-  User,
-  Sparkles
+  User
 } from 'lucide-react';
 import { soundFx } from '../utils/audio.js';
 import api from '../services/api.js';
@@ -110,7 +109,7 @@ export default function Round3({
   const handleInitiateSubmission = () => {
     if (!selectedCandidateId) {
       soundFx.playError();
-      setSubmissionError('Choose Project Alpha, Project Beta, or Project Gamma.');
+      setSubmissionError('Select the suspect responsible for the timeline anomaly.');
       return;
     }
     soundFx.playWhoosh();
@@ -193,10 +192,10 @@ export default function Round3({
             </div>
             <div>
               <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 block">
-                PHASE 3 // FINAL REVIEW
+                ROUND 3 // FINAL DECISION
               </span>
               <h1 className="text-2xl sm:text-3xl font-extrabold font-tech text-cyan-300 tracking-wide">
-                FINAL PROJECT SELECTION
+                FINAL ACCUSATION
               </h1>
             </div>
           </div>
@@ -215,51 +214,18 @@ export default function Round3({
           </div>
         </div>
 
-        {/* Carried Forward AI Intel Banner */}
-        {chatMessages.length > 0 && (
-          <div className="bg-gradient-to-r from-cyan-950/90 via-slate-900/95 to-indigo-950/80 border border-cyan-500/40 rounded-2xl p-3.5 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_25px_rgba(6,182,212,0.18)]">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
-                <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
-              </div>
-              <div className="text-xs font-mono">
-                <span className="text-cyan-300 font-bold tracking-wide flex items-center gap-1.5">
-                  ROUND 2 AI INTEL SYNCHRONIZED
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                    {chatMessages.length} / 3 LOGGED
-                  </span>
-                </span>
-                <p className="text-slate-300 text-[11px] sm:text-xs mt-0.5">
-                  Your interrogation transcript has been carried forward. Review the AI Analyst's timeline deductions in the right-hand panel to verify your accusation.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                soundFx.playKeystroke();
-                setActiveRightTab('ai_inquiries');
-              }}
-              className="text-xs font-mono font-bold text-cyan-950 bg-cyan-400 hover:bg-cyan-300 px-3.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer transition shadow-[0_0_12px_rgba(6,182,212,0.4)]"
-            >
-              <span>INSPECT AI TRANSCRIPT ({chatMessages.length})</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
         {/* Main Grid: Suspects on Left (7 cols), Round 2 Telemetry & Evidence on Right (5 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
-          {/* LEFT 7 COLUMNS: Suspect Candidates (Alpha, Beta, Gamma / Assigned Suspects) */}
+          {/* LEFT 7 COLUMNS: Suspect Candidates (Real Suspects from Round 2) */}
           <div className="lg:col-span-7 space-y-3">
             <div className="flex items-center justify-between px-1">
               <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                SELECT ONE PROJECT
+                SELECT ACCUSED SUSPECT
               </span>
               <span className="text-[11px] font-mono text-pink-400">
-                {selectedCandidateId ? '1 CANDIDATE DESIGNATED' : 'SELECTION REQUIRED'}
+                {selectedCandidateId ? '1 SUSPECT SELECTED' : 'SELECTION REQUIRED'}
               </span>
             </div>
 
@@ -279,21 +245,25 @@ export default function Round3({
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono font-bold text-sm ${
+                          className={`min-w-10 h-10 px-2 rounded-xl flex items-center justify-center font-mono font-bold text-xs ${
                             isSelected
                               ? 'bg-pink-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.6)]'
                               : 'bg-cyan-950 border border-cyan-800 text-cyan-400'
                           }`}
                         >
-                          {cand.id.toUpperCase().slice(0, 1)}
+                          {cand.user_id || cand.id}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-tech text-xl sm:text-2xl font-bold text-cyan-300 tracking-wide">
-                              {cand.name || cand.label || `Project ${cand.id}`}
+                              {cand.name}
                             </h3>
                           </div>
-                          <p className="text-xs font-mono text-slate-400 mt-1">Candidate project</p>
+                          <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mt-0.5">
+                            <span className="text-cyan-400 font-semibold">{cand.role || cand.designation}</span>
+                            <span className="text-slate-600">•</span>
+                            <span>ID: {cand.user_id || cand.id}</span>
+                          </div>
                         </div>
                       </div>
 
@@ -364,7 +334,7 @@ export default function Round3({
               {activeRightTab === 'evidence_logs' && (
                 <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
                   <div className="text-[11px] font-mono text-slate-400 px-1">
-                    ROUND 2 EVIDENCE // REVIEW ONLY
+                    ROUND 2 EVIDENCE ARCHIVE & LOGS
                   </div>
 
                   {evidenceList.map((ev) => (
@@ -471,10 +441,6 @@ export default function Round3({
                           <p className="text-xs sm:text-[13px] font-sans text-slate-100 leading-relaxed whitespace-pre-wrap">
                             {msg.ai_response || "(No response recorded)"}
                           </p>
-                          <div className="pt-2 border-t border-cyan-950/60 flex items-center justify-between text-[10px] font-mono text-slate-400">
-                            <span>Telemetry & timeline synthesis</span>
-                            <span className="text-cyan-400 font-bold">Identity Protected</span>
-                          </div>
                         </div>
                       </div>
                     ))
@@ -500,8 +466,8 @@ export default function Round3({
               </button>
               <p className="text-[11px] font-mono text-slate-500 text-center mt-2">
                 {!selectedCandidateId
-                  ? 'Choose Project Alpha, Project Beta, or Project Gamma to continue.'
-                  : 'Ready to lock. Evidence is available for review only.'}
+                  ? 'Select a suspect above to lock in your final accusation.'
+                  : 'Ready to submit final accusation.'}
               </p>
               {submissionError && (
                 <p className="text-xs font-mono text-rose-400 text-center mt-2" role="alert">
@@ -567,7 +533,7 @@ export default function Round3({
                 </button>
               </div>
               <p className="text-xs sm:text-sm font-mono text-slate-300 leading-relaxed whitespace-pre-wrap">
-                {scenarioData?.mission_brief || scenarioData?.incident_brief || 'At 21:14:32 UTC, a catastrophic parameter rewrite on T-17 triggered a desynchronization loop across past, present, and future timelines. Synthesize your Round 2 audit logs and Analyst interrogation responses to identify which project introduced the rogue payload.'}
+                {scenarioData?.mission_brief || scenarioData?.incident_brief || 'Synthesize your Round 2 audit logs, access history, and Analyst interrogation responses to identify which suspect was responsible for the timeline collapse.'}
               </p>
               <div className="text-right">
                 <button
@@ -594,8 +560,9 @@ export default function Round3({
               </div>
 
               <div className="p-4 bg-black/60 rounded-xl border border-pink-900/60 text-left text-xs font-mono text-slate-300 space-y-1.5">
-                <div>• Selected Project: <strong className="text-pink-400">{activeCandidate?.name}</strong></div>
-                <div>• Supporting evidence remains attached automatically.</div>
+                <div>• Accused Suspect: <strong className="text-pink-400">{activeCandidate?.name}</strong></div>
+                <div>• Role: <span className="text-cyan-300">{activeCandidate?.role || activeCandidate?.designation}</span></div>
+                <div>• User ID: <span className="text-slate-300">{activeCandidate?.user_id || activeCandidate?.id}</span></div>
               </div>
 
               <div className="flex gap-3">
@@ -626,7 +593,7 @@ export default function Round3({
             <div className="w-16 h-16 rounded-full border-4 border-cyan-400 border-t-pink-500 animate-spin shadow-[0_0_40px_rgba(6,182,212,0.7)]" />
             <div className="space-y-2">
               <span className="px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 font-mono text-[10px] tracking-widest uppercase inline-block">
-                TEMPORAL PROTOCOL 2140 // LOCKING
+                TEMPORAL PROTOCOL // LOCKING
               </span>
               <h3 className="font-orbitron font-bold text-2xl text-white tracking-widest">
                 LOCKING PARADOX COORDINATES...

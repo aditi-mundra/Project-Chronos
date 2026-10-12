@@ -676,6 +676,18 @@
   </main>
 
   <script>
+    // Enforce localhost-only access: Block network / LAN access
+    const isLocalhostHost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname) || window.location.hostname.endsWith('.localhost');
+    if (!isLocalhostHost) {
+      document.body.innerHTML = `
+        <div style="min-height:100vh;background:#05070c;color:#f43f5e;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;padding:20px;text-align:center;">
+          <h1 style="font-size:24px;letter-spacing:0.2em;margin-bottom:12px;">ACCESS DENIED // 403</h1>
+          <p style="color:#94a3b8;font-size:14px;max-width:500px;">The Master Leaderboard is strictly restricted to localhost and cannot be accessed over the network.</p>
+        </div>
+      `;
+      throw new Error("Access Denied: Leaderboard is strictly restricted to localhost.");
+    }
+
     const HOST_KEYS = ['Chronos@123', 'chronos@123'];
     let rawLeaderboard = [];
     let countdown = 5;

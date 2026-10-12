@@ -13,11 +13,13 @@ import {
   Trophy, 
   UserCheck, 
   LogOut,
-  Palette
+  Palette,
+  Timer
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { soundFx } from '../utils/audio.js';
+import { isLocalhost } from '../utils/isLocalhost.js';
 
 /**
  * Temporary Admin & Developer Control Panel
@@ -42,9 +44,15 @@ export default function AdminControls({ currentView, onSelectView }) {
         current_state: 'READY'
       });
     }
-    if (view === 'leaderboard' && !sessionStorage.getItem('chronos_admin_token')) {
-      onSelectView('leaderboardAuth');
-      return;
+    if (view === 'leaderboard') {
+      if (!isLocalhost()) {
+        soundFx.playError();
+        return;
+      }
+      if (!sessionStorage.getItem('chronos_admin_token')) {
+        onSelectView('leaderboardAuth');
+        return;
+      }
     }
     onSelectView(view);
   };
@@ -79,11 +87,11 @@ export default function AdminControls({ currentView, onSelectView }) {
     { id: 'login', label: '3. Team Login', icon: LogIn },
     { id: 'prelobby', label: '4. Pre-Lobby Countdown', icon: Hourglass },
     { id: 'round1', label: '5. Round 1 (Classify)', icon: Flame },
-    { id: 'round2lobby', label: '6. Round 2 Lobby', icon: LayoutDashboard },
+    { id: 'round2lobby', label: '6. Waiting for Authentication', icon: Timer },
     { id: 'round2', label: '7. Round 2 Terminal', icon: Terminal },
     { id: 'round3', label: '8. Round 3 Final Accusation', icon: Target },
     { id: 'completion', label: '9. Completion / Debrief', icon: Trophy },
-    { id: 'leaderboard', label: '📊 Master Leaderboard', icon: Trophy },
+    ...(isLocalhost() ? [{ id: 'leaderboard', label: '📊 Master Leaderboard', icon: Trophy }] : []),
   ];
 
   if (!window.location.search.includes('admin=1')) {

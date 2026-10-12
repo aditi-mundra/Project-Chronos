@@ -98,44 +98,36 @@ def _round2_data(cursor, team_id: int, *, include_solution: bool = False) -> Dic
 
 
 def _build_case(round2_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Map Round 2 identities to anonymous Alpha/Beta/Gamma project aliases."""
+    """Build Round 3 case preserving the actual suspect names and evidence files from Round 2."""
     case_info = round2_data["case_info"]
     culprit_name = case_info.get("culprit", "").strip().lower()
     candidates = []
     culprit_candidate_id = ""
-    identity_aliases = {}
 
-    for candidate_id, suspect in zip(CANDIDATE_IDS, round2_data["suspects"]):
-        project_name = f"Project {candidate_id.title()}"
-        identity_aliases[suspect["suspect_name"]] = project_name
-        identity_aliases[suspect["user_id"]] = f"PROJECT-{candidate_id.upper()}"
-        if suspect["suspect_name"].strip().lower() == culprit_name:
-            culprit_candidate_id = candidate_id
+    for suspect in round2_data["suspects"]:
+        s_name = suspect["suspect_name"].strip()
+        s_id = suspect["user_id"].strip()
+        s_role = suspect["role"].strip()
+        if s_name.lower() == culprit_name or s_id.lower() == culprit_name:
+            culprit_candidate_id = s_id
         candidates.append(
             {
-                "id": candidate_id,
-                "label": project_name,
-                "name": project_name,
-                "designation": project_name,
+                "id": s_id,
+                "user_id": s_id,
+                "name": s_name,
+                "role": s_role,
+                "designation": s_role,
+                "label": f"{s_name} ({s_role})",
             }
         )
 
     if not culprit_candidate_id:
         raise ValueError("The Round 2 culprit does not match one of the assigned suspects.")
 
-    # Candidate order is presentation-only and changes whenever Round 3 loads.
-    random.SystemRandom().shuffle(candidates)
-
-    def anonymize(value: str) -> str:
-        result = value or ""
-        for identity, alias in sorted(identity_aliases.items(), key=lambda item: len(item[0]), reverse=True):
-            result = re.sub(re.escape(identity), alias, result, flags=re.IGNORECASE)
-        return result
-
     evidence = []
     for item in round2_data["files"]:
         evidence_id = f"r2_{item['file_id'].lower()}"
-        content = anonymize(item["content_text"].strip())
+        content = item["content_text"].strip()
         evidence.append(
             {
                 "id": evidence_id,
@@ -143,7 +135,8 @@ def _build_case(round2_data: Dict[str, Any]) -> Dict[str, Any]:
                 "category": f"Timeline {item['timeline_tag'].title()}",
                 "category_code": f"TIMELINE_{item['timeline_tag'].upper()}",
                 "source_file": item["filename"],
-                "label": f"Project {item['file_id'].title()} ({item['timeline_tag'].title()})",
+                "filename": item["filename"],
+                "label": f"{item['filename']} ({item['timeline_tag'].title()})",
                 "title": item["filename"],
                 "excerpt": content[:240] + ("..." if len(content) > 240 else ""),
                 "full_text": content,
@@ -151,23 +144,26 @@ def _build_case(round2_data: Dict[str, Any]) -> Dict[str, Any]:
             }
         )
 
+    culprit_suspect = next((c for c in candidates if c["id"] == culprit_candidate_id), None)
+    culprit_display = culprit_suspect["name"] if culprit_suspect else culprit_candidate_id
+
     return {
         "case_id": case_info["case_id"],
-        "title": f"Final Review: {case_info['case_code']}",
+        "title": f"Final Decision: {case_info['case_code']}",
         "description": case_info["incident"],
         "mission_brief": (
             "Re-evaluate the investigation you completed in Round 2. Review the carried "
-            "case files, then lock in Project Alpha, Project Beta, or Project Gamma."
+            "case files and logs, then identify the true culprit responsible for the incident."
         ),
         "incident_brief": case_info["incident"],
         "candidates": candidates,
         "evidence_pool": evidence,
         "evidence_archive": evidence,
         "culprit_candidate_id": culprit_candidate_id,
+        "culprit_name": case_info.get("culprit", ""),
         "valid_evidence_ids": [item["id"] for item in evidence],
-        "_identity_aliases": identity_aliases,
         "narrative_summary": (
-            f"The Round 2 evidence identifies Project {culprit_candidate_id.title()} as responsible."
+            f"The Round 2 forensic evidence identifies {culprit_display} as responsible for the timeline anomaly."
         ),
     }
 
@@ -176,7 +172,7 @@ def _client_case(full_case: Dict[str, Any], round2_data: Dict[str, Any]) -> Dict
     safe = {
         key: value
         for key, value in full_case.items()
-        if key not in {"culprit_candidate_id", "valid_evidence_ids", "narrative_summary", "_identity_aliases"}
+        if key not in {"culprit_candidate_id", "culprit_name", "valid_evidence_ids", "narrative_summary", "_identity_aliases"}
     }
     public_case_info = {
         key: value
@@ -199,11 +195,7 @@ def _client_case(full_case: Dict[str, Any], round2_data: Dict[str, Any]) -> Dict
         "case_info": public_case_info,
         "chat_messages": [
             {
-                key: (
-                    _anonymize_round3_text(value, full_case["_identity_aliases"])
-                    if key in {"user_prompt", "ai_response"} and isinstance(value, str)
-                    else value
-                )
+                key: value
                 for key, value in message.items()
                 if key != "points_deducted"
             }
@@ -211,13 +203,6 @@ def _client_case(full_case: Dict[str, Any], round2_data: Dict[str, Any]) -> Dict
         ],
     }
     return safe
-
-
-def _anonymize_round3_text(value: str, aliases: Dict[str, str]) -> str:
-    result = value or ""
-    for identity, alias in sorted(aliases.items(), key=lambda item: len(item[0]), reverse=True):
-        result = re.sub(re.escape(identity), alias, result, flags=re.IGNORECASE)
-    return result
 
 
 def _existing_response(team, submission) -> Dict[str, Any]:
@@ -331,11 +316,12 @@ class Round3Service:
         selected_candidate_id: str,
         selected_evidence_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        candidate_id = (selected_candidate_id or "").strip().lower()
+        cand_input = (selected_candidate_id or "").strip()
+        candidate_id = cand_input.lower()
         # Evidence is carried over for review only; the final action is one candidate.
         evidence_ids = []
-        if not candidate_id:
-            return {"status": "error", "error_code": "MISSING_CANDIDATE", "message": "Choose Alpha, Beta, or Gamma."}
+        if not cand_input:
+            return {"status": "error", "error_code": "MISSING_CANDIDATE", "message": "Choose a suspect."}
 
         connection = get_connection()
         try:
@@ -376,24 +362,47 @@ class Round3Service:
             except json.JSONDecodeError:
                 return {"status": "error", "error_code": "CASE_DATA_INVALID", "message": "Stored Round 3 case data is invalid."}
 
-            valid_candidates = {item["id"] for item in case_data.get("candidates", [])}
+            candidates_list = case_data.get("candidates", [])
+            valid_candidates = {
+                item["id"].strip().lower() for item in candidates_list
+            } | {
+                item.get("user_id", "").strip().lower() for item in candidates_list
+            } | {
+                item.get("name", "").strip().lower() for item in candidates_list
+            }
             if candidate_id not in valid_candidates:
-                return {"status": "error", "error_code": "INVALID_CANDIDATE", "message": "Choose Alpha, Beta, or Gamma."}
+                return {"status": "error", "error_code": "INVALID_CANDIDATE", "message": "Choose a valid suspect."}
 
-            is_correct = candidate_id == case_row["culprit_candidate_id"].strip().lower()
+            canonical_cand = next(
+                (c for c in candidates_list if c["id"].strip().lower() == candidate_id or c.get("user_id", "").strip().lower() == candidate_id or c.get("name", "").strip().lower() == candidate_id),
+                None
+            )
+            saved_candidate_id = canonical_cand["id"] if canonical_cand else cand_input
+
+            culprit_id = case_row["culprit_candidate_id"].strip().lower()
+            culprit_name = case_data.get("culprit_name", "").strip().lower()
+            is_correct = (
+                candidate_id == culprit_id
+                or candidate_id == culprit_name
+                or any(
+                    (c.get("id", "").strip().lower() == culprit_id or c.get("user_id", "").strip().lower() == culprit_id)
+                    and (c.get("id", "").strip().lower() == candidate_id or c.get("user_id", "").strip().lower() == candidate_id or c.get("name", "").strip().lower() == candidate_id)
+                    for c in candidates_list
+                )
+            )
             points_awarded = 30 if is_correct else 0
             now = get_utc_now_iso()
             cursor.execute(
                 "INSERT INTO round3_submissions "
                 "(team_id, selected_candidate_id, selected_evidence_ids, is_correct, points_awarded, submitted_at) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
-                (team_id, candidate_id, json.dumps(evidence_ids), int(is_correct), points_awarded, now),
+                (team_id, saved_candidate_id, json.dumps(evidence_ids), int(is_correct), points_awarded, now),
             )
             cursor.execute(
                 "INSERT INTO submissions "
                 "(team_id, round, reference_id, answer, is_correct, points_awarded, submitted_at) "
                 "VALUES (?, 3, ?, ?, ?, ?, ?)",
-                (team_id, candidate_id, json.dumps({"candidate_id": candidate_id, "evidence_ids": evidence_ids}), int(is_correct), points_awarded, now),
+                (team_id, saved_candidate_id, json.dumps({"candidate_id": saved_candidate_id, "evidence_ids": evidence_ids}), int(is_correct), points_awarded, now),
             )
 
             r1_score = max(-25.0, min(50.0, float(team["round1_score"] or 0)))
@@ -447,9 +456,17 @@ class Round3Service:
 
             round2_data = _round2_data(cursor, team_id, include_solution=True)
             full_case = _build_case(round2_data)
-            candidates = {item["id"]: item for item in full_case["candidates"]}
-            selected = candidates.get(submission["selected_candidate_id"])
-            culprit = candidates[full_case["culprit_candidate_id"]]
+            candidates_list = full_case["candidates"]
+            sub_id = submission["selected_candidate_id"].strip().lower()
+            selected = next(
+                (c for c in candidates_list if c["id"].strip().lower() == sub_id or c.get("user_id", "").strip().lower() == sub_id or c.get("name", "").strip().lower() == sub_id),
+                None
+            )
+            culprit_id = full_case["culprit_candidate_id"].strip().lower()
+            culprit = next(
+                (c for c in candidates_list if c["id"].strip().lower() == culprit_id or c.get("user_id", "").strip().lower() == culprit_id or c.get("name", "").strip().lower() == full_case.get("culprit_name", "").strip().lower()),
+                None
+            )
             team_data = dict(team)
             m1_name = team_data.get("member_1_name") or team_data.get("member1_name") or ""
             m2_name = team_data.get("member_2_name") or team_data.get("member2_name") or ""
@@ -479,9 +496,9 @@ class Round3Service:
                     "submitted_at": submission["submitted_at"],
                 },
                 "verdict_details": {
-                    "true_culprit_id": full_case["culprit_candidate_id"],
-                    "true_culprit_name": culprit["name"],
-                    "true_culprit_designation": culprit["designation"],
+                    "true_culprit_id": culprit["id"] if culprit else full_case["culprit_candidate_id"],
+                    "true_culprit_name": culprit["name"] if culprit else full_case["culprit_candidate_id"],
+                    "true_culprit_designation": culprit["designation"] if culprit else "",
                     "valid_evidence_ids": full_case["valid_evidence_ids"],
                     "narrative_summary": full_case["narrative_summary"],
                 },

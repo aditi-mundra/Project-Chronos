@@ -60,7 +60,7 @@ export default function Leaderboard({ onBack, onLogout }) {
       setLastRefreshed(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Failed to fetch leaderboard:', err);
-      if (err?.status === 401) {
+      if (err?.status === 401 || err?.status === 403) {
         setAutoRefresh(false);
         sessionStorage.removeItem('chronos_admin_token');
         sessionStorage.removeItem('chronos_host_authed');

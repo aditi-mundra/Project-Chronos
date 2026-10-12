@@ -19,7 +19,7 @@ except Exception:
     pass
 
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -36,6 +36,7 @@ try:
     from .routes.round3 import router as round3_router
     from .routes.game import router as game_router
     from .routes.admin import router as admin_router
+    from .routes.transition import router as transition_router
 except (ImportError, ValueError):
     from backend.app.database.schema import (
         create_tables,
@@ -48,6 +49,7 @@ except (ImportError, ValueError):
     from backend.app.routes.round3 import router as round3_router
     from backend.app.routes.game import router as game_router
     from backend.app.routes.admin import router as admin_router
+    from backend.app.routes.transition import router as transition_router
 
 
 @asynccontextmanager
@@ -150,10 +152,25 @@ app.include_router(
     admin_router
 )
 
+app.include_router(
+    transition_router
+)
+
 
 # Must stay LAST: catch-all for the frontend's files and client-side routes.
 @app.get("/{full_path:path}", include_in_schema=False)
-def serve_frontend(full_path: str):
+def serve_frontend(request: Request, full_path: str):
+    # Enforce localhost-only access for master leaderboard
+    lower_path = full_path.lower().strip("/")
+    if lower_path in ("leaderboard", "leaderboard.html", "admin") or lower_path.startswith("leaderboard"):
+        client_host = request.client.host if request.client else ""
+        is_local = client_host in ("127.0.0.1", "::1", "localhost", "testclient") or client_host.startswith("127.")
+        if not is_local:
+            raise HTTPException(
+                status_code=403,
+                detail="Access Denied: Master Leaderboard is strictly restricted to localhost and cannot be accessed over the network.",
+            )
+
     if not FRONTEND_INDEX.is_file() or full_path.startswith(("api/", "static/")):
         raise HTTPException(status_code=404, detail="Not found")
 
