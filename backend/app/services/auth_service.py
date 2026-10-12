@@ -41,6 +41,7 @@ def _team_payload(row, message, session_token=""):
 # A PRN is exactly 11 digits and starts with the batch prefix 24, 25, 26 or 27.
 PRN_PATTERN = re.compile(r"^(24|25|26|27)\d{9}$")
 PRN_RULE = "A PRN must be exactly 11 digits and start with 24, 25, 26 or 27."
+MAX_NAME_LENGTH = 50
 
 
 def is_valid_prn(value: str) -> bool:
@@ -127,6 +128,16 @@ def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_p
         if not is_valid_prn(value):
             raise HTTPException(status_code=400, detail=f"{label} PRN is not valid. {PRN_RULE}")
 
+    # Two different people: one PRN typed twice would register a one-person team.
+    if prn_1 == prn_2:
+        raise HTTPException(status_code=400, detail="Member 1 and Member 2 must have different PRNs.")
+
+    # Same limits as the login form (maxLength 50): stops absurd names reaching the
+    # leaderboard, the CSV export and the admin tables.
+    for label, value in (("Team name", team_name), ("Member 1 name", member_1_name), ("Member 2 name", member_2_name)):
+        if len(value) > MAX_NAME_LENGTH:
+            raise HTTPException(status_code=400, detail=f"{label} must be at most {MAX_NAME_LENGTH} characters.")
+
     connection = get_connection()
     try:
         # Take the write lock up front so two teams registering at the same moment
@@ -136,6 +147,21 @@ def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_p
         existing = _find_team(connection, team_name)
         if existing:
             return _login_returning_team(connection, existing, prn_1, prn_2)
+
+        # A new team may not reuse a PRN that already belongs to a registered team: otherwise
+        # the same two players could register again under a new name and replay Round 1.
+        taken = connection.execute(
+            "SELECT team_name FROM teams WHERE member_1_prn IN (?, ?) OR member_2_prn IN (?, ?) LIMIT 1",
+            (prn_1, prn_2, prn_1, prn_2),
+        ).fetchone()
+        if taken:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f'A PRN you entered is already registered with the team "{taken["team_name"]}". '
+                    "Log in with that team name instead."
+                ),
+            )
 
         next_id = connection.execute(
             "SELECT COALESCE(MAX(id), 0) + 1 FROM teams"

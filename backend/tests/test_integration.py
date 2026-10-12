@@ -742,6 +742,45 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(res.status_code, 401)
         self.assertEqual(self._ledger(a), [])
 
+    def test_19_stale_round1_calls_never_rewind_a_team(self):
+        """An old tab / late auto-submit must not drag a team back to ROUND1_COMPLETED (and
+        must not overwrite its Round 1 auth code or finish time)."""
+        p = self.player("stale")
+        play_round1(p)
+        before = db("SELECT round1_auth_code, round1_completed_at FROM teams WHERE id=?", (p.id,))[0]
+        self.assertEqual(p.post("/api/round2/start", {"team_id": p.id}).status_code, 200)
+        state = db("SELECT current_state FROM teams WHERE id=?", (p.id,))[0]["current_state"]
+        self.assertEqual(state, "ROUND_2_ACTIVE")
+
+        again = p.post("/api/round1/finish")
+        self.assertEqual(again.status_code, 200)
+        self.assertTrue(again.json()["round1_completed"])
+        late_answer = p.post("/api/round1/submit", item_id=1, answer="PAST")
+        self.assertIn("error", late_answer.json())
+        p.get("/api/round1/items")
+        after = db("SELECT current_state, round1_auth_code, round1_completed_at FROM teams WHERE id=?", (p.id,))[0]
+        self.assertEqual(after["current_state"], "ROUND_2_ACTIVE")
+        self.assertEqual(after["round1_auth_code"], before["round1_auth_code"])
+        self.assertEqual(after["round1_completed_at"], before["round1_completed_at"])
+        self.assertTrue(p.get("/api/round1/status").json()["completed"])
+
+    def test_20_login_validation_limits(self):
+        def login(**kw):
+            body = {"team_name": "Valid Limits", "member_1_name": "A", "member_2_name": "B",
+                    "member_1_prn": "24500000001", "member_2_prn": "25500000002"}
+            body.update(kw)
+            return self.client.post("/api/auth/login", json=body)
+
+        self.assertEqual(login(member_2_prn="24500000001", team_name="Same Prn").status_code, 400)
+        self.assertEqual(login(team_name="x" * 51).status_code, 400)
+        self.assertEqual(login(member_1_name="y" * 51, team_name="Long Name").status_code, 400)
+        first = login(team_name="Prn Owner", member_1_prn="24500000011", member_2_prn="25500000012")
+        self.assertEqual(first.status_code, 200)
+        # the same two players cannot register again under another name (Round 1 replay)
+        dup = login(team_name="Prn Owner Again", member_1_prn="24500000011", member_2_prn="25500000099")
+        self.assertEqual(dup.status_code, 409)
+        self.assertIn("Prn Owner", dup.json()["detail"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

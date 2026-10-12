@@ -33,6 +33,17 @@ def _name_key(item):
     return name or f"#{item['item_id']}"
 
 
+# Round 1 is open only while the team is in one of these states. Later rounds spell their
+# states differently (ROUND_2_ACTIVE, ROUND3ACTIVE, COMPLETED ...), so "finished" must be tested
+# as "no longer open", never as `== "ROUND1_COMPLETED"`: a stale request from an old tab used to
+# drag a team in Round 2 back to ROUND1_COMPLETED and overwrite its auth code and finish time.
+_ROUND1_OPEN_STATES = {"", "READY", "LOGGEDIN", "REGISTERED", "ROUND1ACTIVE"}
+
+
+def _round1_closed(state):
+    return (state or "").replace("_", "").upper() not in _ROUND1_OPEN_STATES
+
+
 # Small web copies of the Round 1 images (made by optimize_round1_images.py), named by
 # item id so the file name does not reveal the answer. The originals are ~4 MB each.
 WEB_IMAGE_DIR = Path(__file__).resolve().parents[2] / "static" / "round1_web"
@@ -151,6 +162,13 @@ def get_round1_items(team_id):
         """, (team_id,))
 
         assigned_count = cursor.fetchone()[0]
+
+        # A team past Round 1 without an assignment (Round 1 skipped by the host) must not get
+        # one now: that would put it back into ROUND1_ACTIVE and restart the clock.
+        if assigned_count == 0 and _round1_closed(team["current_state"]):
+            return {
+                "error": "Round 1 has already been completed."
+            }
 
         # ---------------------------------------------------------
         # CREATE NEW ASSIGNMENT
@@ -303,7 +321,7 @@ def submit_answer(team_id, item_id, answer):
         # CHECK ROUND 1 IS STILL OPEN
         # ---------------------------------------------------------
 
-        if team["current_state"] == "ROUND1_COMPLETED":
+        if _round1_closed(team["current_state"]):
             return {
                 "error": "Round 1 has already been completed."
             }
@@ -585,7 +603,7 @@ def finish_round1(team_id):
 
         # Normally every assigned item must be submitted. Once the time limit has
         # passed the team may finish with what it submitted (unanswered items score 0).
-        already_completed = team["current_state"] == "ROUND1_COMPLETED"
+        already_completed = _round1_closed(team["current_state"])
         elapsed = _elapsed_seconds(cursor, team_id)
         time_is_up = (
             elapsed is not None
@@ -612,7 +630,7 @@ def finish_round1(team_id):
         # ALREADY COMPLETED
         # ---------------------------------------------------------
 
-        if team["current_state"] == "ROUND1_COMPLETED":
+        if already_completed:
 
             completion_time_seconds = None
 
@@ -663,7 +681,8 @@ def finish_round1(team_id):
                 round1_completed_at = CURRENT_TIMESTAMP,
                 round1_auth_code = ?
             WHERE id = ?
-              AND COALESCE(current_state, '') != 'ROUND1_COMPLETED'
+              AND UPPER(REPLACE(COALESCE(current_state, ''), '_', ''))
+                  IN ('', 'READY', 'LOGGEDIN', 'REGISTERED', 'ROUND1ACTIVE')
         """, (auth_code, team_id))
 
         if cursor.rowcount == 0:
@@ -762,7 +781,7 @@ def get_round1_status(team_id):
 
         submitted_items = cursor.fetchone()[0]
 
-        completed = team["current_state"] == "ROUND1_COMPLETED"
+        completed = _round1_closed(team["current_state"])
         elapsed = _elapsed_seconds(cursor, team_id)
 
         remaining = None

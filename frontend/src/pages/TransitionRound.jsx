@@ -120,6 +120,7 @@ export default function TransitionRound({ teamId, teamName, onProceedToRound2, o
   const [loadError, setLoadError] = useState('');
   const [stopError, setStopError] = useState('');
   const stopwatch = useStopwatch();
+  const { resume: resumeStopwatch, freeze: freezeStopwatch } = stopwatch; // stable callbacks
   const uid = useId();
 
   const live = Boolean(teamId);
@@ -143,11 +144,11 @@ export default function TransitionRound({ teamId, teamName, onProceedToRound2, o
         } else if (state.started && state.stopped) {
           // Reloaded after END STOPWATCH: the recorded time is frozen, passkey screen.
           setRecordedMs(state.elapsed_ms ?? null);
-          stopwatch.freeze(state.elapsed_ms ?? 0);
+          freezeStopwatch(state.elapsed_ms ?? 0);
           setStage('password_entry');
         } else if (state.started) {
           // Reloaded while the stopwatch runs: it carries on from the server's value.
-          stopwatch.resume(state.elapsed_ms ?? 0);
+          resumeStopwatch(state.elapsed_ms ?? 0);
           setStage('timer_running');
         }
       })
@@ -155,7 +156,7 @@ export default function TransitionRound({ teamId, teamName, onProceedToRound2, o
         if (!cancelled) setLoadError(err.message || 'Could not load the transition round.');
       });
     return () => { cancelled = true; };
-  }, [live, teamId]);
+  }, [live, teamId, resumeStopwatch, freezeStopwatch]);
 
   const startStopwatch = async () => {
     if (stopwatch.status !== 'idle' || busy || !clue) return;
