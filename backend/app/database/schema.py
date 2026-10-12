@@ -7,10 +7,6 @@ from .connection import get_connection
 ROUND1_MANIFEST = Path(__file__).resolve().parents[3] / "backend" / "round1_manifest.csv"
 ROUND1_IMAGE_FOLDER = "static/round1"
 
-DEFAULT_ROUND2_FILES = [
-    {"file_id": "L1", "project_name": "Project Chronos", "timeline_tag": "T1", "filename": "chrono_log_1.txt", "content_text": "Time loop detected...", "is_locked": 0},
-    {"file_id": "L2", "project_name": "Project Chronos", "timeline_tag": "T2", "filename": "chrono_log_2.txt", "content_text": "Anomaly in sector 7.", "is_locked": 0},
-]
 
 def create_tables():
     connection = get_connection()
@@ -102,10 +98,12 @@ def create_tables():
 
             CREATE TABLE IF NOT EXISTS round3_team_cases (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                team_id INTEGER NOT NULL,
+                team_id INTEGER NOT NULL UNIQUE,
                 case_id TEXT NOT NULL,
                 status TEXT DEFAULT 'PENDING',
-                valid_evidence_ids TEXT NOT NULL,
+                case_data TEXT NOT NULL DEFAULT '{}',
+                culprit_candidate_id TEXT NOT NULL DEFAULT '',
+                valid_evidence_ids TEXT NOT NULL DEFAULT '[]',
                 assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
             );
@@ -164,6 +162,7 @@ def create_tables():
         """)
 
         _migrate_teams_schema(connection)
+        _migrate_round3_schema(connection)
         connection.commit()
     finally:
         connection.close()
@@ -226,6 +225,62 @@ def _migrate_teams_schema(connection):
         pass
 
 
+def _migrate_round3_schema(connection):
+    """Bring older Round 3 databases up to the schema used by the service."""
+    connection.execute("""
+        CREATE TABLE IF NOT EXISTS round3_team_cases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            team_id INTEGER NOT NULL UNIQUE,
+            case_id TEXT NOT NULL,
+            status TEXT DEFAULT 'PENDING',
+            case_data TEXT NOT NULL DEFAULT '{}',
+            culprit_candidate_id TEXT NOT NULL DEFAULT '',
+            valid_evidence_ids TEXT NOT NULL DEFAULT '[]',
+            assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+        );
+    """)
+    team_case_columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(round3_team_cases)")
+    }
+    additions = {
+        "status": "TEXT DEFAULT 'PENDING'",
+        "case_data": "TEXT NOT NULL DEFAULT '{}'",
+        "culprit_candidate_id": "TEXT NOT NULL DEFAULT ''",
+        "valid_evidence_ids": "TEXT NOT NULL DEFAULT '[]'",
+        "assigned_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
+    }
+    for column, definition in additions.items():
+        if column not in team_case_columns:
+            try:
+                connection.execute(
+                    f"ALTER TABLE round3_team_cases ADD COLUMN {column} {definition}"
+                )
+            except Exception:
+                pass
+
+    # One active Round 3 case and one final decision per team. Existing
+    # installations may contain duplicates from the old implementation, so
+    # retain the newest row before adding the integrity constraints.
+    connection.execute(
+        "DELETE FROM round3_team_cases WHERE id NOT IN "
+        "(SELECT MAX(id) FROM round3_team_cases GROUP BY team_id)"
+    )
+    connection.execute(
+        "DELETE FROM round3_submissions WHERE id NOT IN "
+        "(SELECT MAX(id) FROM round3_submissions GROUP BY team_id)"
+    )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_round3_team_cases_team_id "
+        "ON round3_team_cases(team_id)"
+    )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_round3_submissions_team_id "
+        "ON round3_submissions(team_id)"
+    )
+    connection.commit()
+
+
 def seed_round1_items_if_empty():
     connection = get_connection()
     try:
@@ -261,34 +316,13 @@ def seed_round1_items_if_empty():
 
 
 def seed_round2_files_if_empty():
-    connection = get_connection()
+    """Initializes Round 2 cases and tables (safe no-op if already loaded)."""
     try:
-        count = connection.execute("SELECT COUNT(*) FROM round2_files").fetchone()[0]
-        if count > 0:
-            return 0
-
-        inserted = 0
-        for f in DEFAULT_ROUND2_FILES:
-            connection.execute(
-                """
-                INSERT OR IGNORE INTO round2_files
-                (file_id, project_name, timeline_tag, filename, content_text, is_locked)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    f["file_id"],
-                    f["project_name"],
-                    f["timeline_tag"],
-                    f["filename"],
-                    f["content_text"],
-                    f["is_locked"],
-                ),
-            )
-            inserted += 1
-        connection.commit()
-        return inserted
-    finally:
-        connection.close()
+        from ..services.round2_service import init_round2
+        init_round2()
+    except Exception:
+        pass
+    return 0
 
 
 if __name__ == "__main__":

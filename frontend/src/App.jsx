@@ -40,12 +40,15 @@ function AppContent() {
   const { team, logoutTeam } = useAuth();
   const [currentView, setCurrentView] = useState(() => {
     const path = window.location.pathname;
-    if (path === '/leaderboard') return 'leaderboard';
+    if (path === '/leaderboard') {
+      return sessionStorage.getItem('chronos_admin_token') ? 'leaderboard' : 'adminLogin';
+    }
     if (path === '/admin') return 'adminLogin';
     return team ? 'resuming' : 'landing';
   });
   const [isCrtActive, setIsCrtActive] = useState(false);
   const [round1Result, setRound1Result] = useState(null);
+  const [round2Boot, setRound2Boot] = useState(false);
 
   // Session ended (logout, or server says the team no longer exists) -> back to landing.
   useEffect(() => {
@@ -56,27 +59,61 @@ function AppContent() {
 
   // Put a team on the right screen for its server-side state (login and page reload).
   const routeForState = useCallback(async (teamId, state) => {
-    if (state === 'ROUND1_ACTIVE') {
+    const s = String(state || '').toUpperCase();
+
+    // 1. If team has already completed the game / Round 3, route directly to completion
+    if (
+      s === 'COMPLETED' ||
+      s === 'FINISHED' ||
+      s === 'DECISION_SUBMITTED' ||
+      s === 'FINAL_REVEAL' ||
+      s.includes('ROUND3_COMPLETED') ||
+      s.includes('ROUND_3_COMPLETED') ||
+      s.includes('ROUND3_FINISHED')
+    ) {
+      setCurrentView('completion');
+      return;
+    }
+
+    // 2. Active Round 1
+    if (s === 'ROUND1_ACTIVE') {
       setCurrentView('round1');
       return;
     }
+
+    // 3. Pre-round states
     if (!state || PRE_ROUND_STATES.includes(state)) {
       setCurrentView('prelobby');
       return;
     }
-    if (state === 'ROUND2_ACTIVE') {
+
+    // 4. Round 2
+    if (s === 'ROUND2_ACTIVE' || s === 'ROUND_2_ACTIVE') {
+      setRound2Boot(false);
       setCurrentView('round2');
       return;
     }
-    if (state === 'ROUND3_ACTIVE' || state === 'ROUND2_COMPLETED') {
+
+    // 5. Round 3 or Round 2 Completed
+    if (
+      s.includes('ROUND3') ||
+      s.includes('ROUND_3') ||
+      s === 'ROUND2_COMPLETED' ||
+      s === 'ROUND_2_COMPLETED'
+    ) {
+      // Check if team already has a submitted Round 3 verdict
+      try {
+        const v = await api.getRound3Verdict(teamId);
+        if (v && (v.status === 'success' || v.submission?.submitted_at || v.is_submitted)) {
+          setCurrentView('completion');
+          return;
+        }
+      } catch (_) {}
       setCurrentView('round3');
       return;
     }
-    if (state === 'COMPLETED' || state === 'DECISION_SUBMITTED' || state === 'FINAL_REVEAL') {
-      setCurrentView('completion');
-      return;
-    }
-    // Round 1 is finished: the lobby shows its result.
+
+    // 6. Round 1 is finished: the lobby shows its result.
     try {
       const status = await api.getRound1Status(teamId);
       setRound1Result(status.result || null);
@@ -189,7 +226,10 @@ function AppContent() {
         {currentView === 'round2lobby' && team && (
           <Round2Lobby
             result={round1Result}
-            onStartRound2={() => setCurrentView('round2')}
+            onStartRound2={() => {
+              setRound2Boot(true);
+              setCurrentView('round2');
+            }}
             onLogout={handleLogout}
           />
         )}
@@ -198,6 +238,8 @@ function AppContent() {
         {currentView === 'round2' && team && (
           <Round2
             team={team}
+            boot={round2Boot}
+            onLogout={handleLogout}
             onAdvanceToRound3={() => setCurrentView('round3')}
           />
         )}
@@ -227,11 +269,14 @@ function AppContent() {
         )}
 
         {currentView === 'adminLogin' && (
-          <AdminLogin onLoginSuccess={() => setCurrentView('adminDashboard')} />
+          <AdminLogin onLoginSuccess={() => setCurrentView(window.location.pathname === '/leaderboard' ? 'leaderboard' : 'adminDashboard')} />
         )}
         
         {currentView === 'adminDashboard' && (
-          <Dashboard onLogout={() => setCurrentView('landing')} />
+          <Dashboard onLogout={() => {
+            sessionStorage.removeItem('chronos_admin_token');
+            setCurrentView('landing');
+          }} />
         )}
 
       </main>

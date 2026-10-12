@@ -2,19 +2,20 @@ import React, { useState } from 'react';
 import { ShieldCheck, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { soundEngine } from '../components/AudioEngine';
 import ThemeSelector from '../components/ThemeSelector';
+import api from '../services/api.js';
 
 export default function AdminLogin({ onLoginSuccess }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const p = (password || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
-    if (p === 'chronos2140' || p === 'admin') {
+    try {
+      const result = await api.adminLogin(password);
+      sessionStorage.setItem('chronos_admin_token', result.token);
       soundEngine.playPurgeConfirm();
       onLoginSuccess();
-    } else {
-      soundEngine.playError();
+    } catch (_) {
       setError('Invalid Admin Security Key.');
     }
   };
@@ -63,7 +64,7 @@ export default function AdminLogin({ onLoginSuccess }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter Admin Key (default: admin)"
+              placeholder="Enter host security key"
               className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-white/15 text-white font-mono text-base outline-none focus:border-[var(--neon-primary)] focus:ring-2 focus:ring-[var(--neon-primary)] transition-all"
             />
           </div>

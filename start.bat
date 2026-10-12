@@ -86,23 +86,30 @@ netsh advfirewall firewall show rule name="CHRONOS Server" >nul 2>nul
 if errorlevel 1 netsh advfirewall firewall add rule name="CHRONOS Server" dir=in action=allow protocol=TCP localport=%PORT% >nul 2>nul
 
 echo.
-echo Starting CHRONOS on port %PORT% ...
+echo Starting CHRONOS Unified LAN Server on port %PORT% ...
 start "CHRONOS Server" /D "%ROOT%backend" cmd /k %PY% -m uvicorn app.main:app --host 0.0.0.0 --port %PORT%
 
 echo.
-echo ================================================================
-echo  CHRONOS is starting.
+echo =======================================================================
+echo   CHRONOS CORE IS ONLINE -- LOCAL AREA NETWORK (LAN) HOST ACTIVE
+echo =======================================================================
+echo   Host PC Local:           http://localhost:%PORT%/
 echo.
-echo  On this PC:               http://localhost:%PORT%/
-echo  Other PCs ^(same network^), open one of:
+echo   LAN Party / Lab PCs URL (Share with Teams):
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
-  for /f "tokens=* delims= " %%b in ("%%a") do echo      http://%%b:%PORT%/
+  for /f "tokens=* delims= " %%b in ("%%a") do echo       http://%%b:%PORT%/
 )
 echo.
-echo  If another PC cannot connect: click "Allow access" if Windows asks, or
-echo  run this file once as Administrator ^(it opens the firewall port^).
-echo  To stop: close the "CHRONOS Server" window.
-echo ================================================================
+echo   Admin Leaderboard (Screen): http://localhost:%PORT%/leaderboard
+echo   Host Admin Controls:      http://localhost:%PORT%/admin
+echo   API Documentation:        http://localhost:%PORT%/docs
+echo   LAN Health Diagnostic:    http://localhost:%PORT%/api/health
+echo =======================================================================
+echo   Share the LAN URL above with all player PCs on this lab network.
+echo   If another PC cannot connect: click "Allow access" if Windows asks, or
+echo   run this file once as Administrator (opens firewall port %PORT%).
+echo   To stop: close the "CHRONOS Server" window.
+echo =======================================================================
 
 if not defined NO_BROWSER (
   timeout /t 4 /nobreak >nul

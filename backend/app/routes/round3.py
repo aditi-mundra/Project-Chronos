@@ -5,10 +5,9 @@ FastAPI endpoints for Round 3: Final Decision / Wisdom Round.
 
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List
 
 from ..services.round3_service import Round3Service
-from ..data.round3_cases import ROUND_3_CANONICAL_CASES, ROUND_3_SCENARIO_TEMPLATES
 
 router = APIRouter(prefix="/api/round3", tags=["Round 3: Final Decision"])
 
@@ -22,7 +21,7 @@ class Round3StartRequest(BaseModel):
 class Round3SubmitRequest(BaseModel):
     team_id: int = Field(..., description="Unique database ID of the team", examples=[1])
     selected_candidate_id: str = Field(..., description="ID of the accused suspect (alpha, beta, or gamma)", examples=["alpha"])
-    selected_evidence_ids: Optional[List[str]] = Field(default_factory=list, description="Optional supporting evidence IDs carried from Round 2")
+    selected_evidence_ids: List[str] = Field(default_factory=list, description="Deprecated; Round 2 evidence is review-only")
 
 # =============================================================================
 # Endpoints
@@ -41,6 +40,8 @@ def start_round3(payload: Round3StartRequest):
         return result
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+    except PermissionError as pe:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(pe))
     except Exception as ex:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to start Round 3: {str(ex)}")
 
@@ -54,6 +55,8 @@ def get_scenario(team_id: int = Query(..., description="Team ID to fetch scenari
         return result
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+    except PermissionError as pe:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(pe))
     except Exception as ex:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to fetch scenario: {str(ex)}")
 
@@ -61,7 +64,6 @@ def get_scenario(team_id: int = Query(..., description="Team ID to fetch scenari
 def submit_decision(payload: Round3SubmitRequest):
     """
     Evaluates and records the team's final decision:
-    - Validates minimum 2 supporting evidence items.
     - Evaluates suspect against secret case solution.
     - Awards 30 points for correct culprit, 0 for incorrect.
     - Atomically updates total_score and round3_completed_at.
@@ -77,8 +79,10 @@ def submit_decision(payload: Round3SubmitRequest):
             error_code = result.get("error_code")
             if error_code == "TEAM_NOT_FOUND":
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=result.get("message"))
-            elif error_code in ("INVALID_EVIDENCE_COUNT", "MISSING_CANDIDATE"):
+            elif error_code in ("INVALID_CANDIDATE", "MISSING_CANDIDATE"):
                 raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=result.get("message"))
+            elif error_code in ("INVALID_STATE", "CASE_NOT_STARTED"):
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=result.get("message"))
             else:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message"))
         return result
@@ -100,13 +104,3 @@ def get_verdict(team_id: int = Query(..., description="Team ID to fetch verdict 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
     except Exception as ex:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to fetch verdict: {str(ex)}")
-
-@router.get("/debug-cases", summary="List All Scenario Templates (Admin / Testing)")
-def list_debug_cases():
-    """
-    Returns the master catalog of scenario templates for inspection and verification.
-    """
-    return {
-        "count": len(ROUND_3_SCENARIO_TEMPLATES),
-        "cases": ROUND_3_SCENARIO_TEMPLATES
-    }

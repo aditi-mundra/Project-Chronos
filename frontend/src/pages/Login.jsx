@@ -25,13 +25,21 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
 
   const handleInputChange = (field, value) => {
     soundFx.playKeystroke();
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let val = value;
+    if (field === 'member1_prn' || field === 'member2_prn') {
+      val = value.replace(/\D/g, '').slice(0, 11);
+    }
+    setFormData((prev) => ({ ...prev, [field]: val }));
     if (errorMsg) setErrorMsg('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    const prnRegex = /^(23|24|25|26)\d{9}$/;
+    const prn1 = formData.member1_prn.trim();
+    const prn2 = formData.member2_prn.trim();
 
     // Validation
     if (!formData.team_name.trim()) {
@@ -44,9 +52,24 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
       setErrorMsg('Both Member 1 and Member 2 names are required.');
       return;
     }
-    if (!formData.member1_prn.trim() || !formData.member2_prn.trim()) {
+    if (!prn1 || !prn2) {
       soundFx.playGlitch();
       setErrorMsg('PRN credentials for both Member 1 and Member 2 are required.');
+      return;
+    }
+    if (!prnRegex.test(prn1)) {
+      soundFx.playGlitch();
+      setErrorMsg('Member 1 PRN must be strictly numeric, exactly 11 digits long, and start with 23, 24, 25, or 26.');
+      return;
+    }
+    if (!prnRegex.test(prn2)) {
+      soundFx.playGlitch();
+      setErrorMsg('Member 2 PRN must be strictly numeric, exactly 11 digits long, and start with 23, 24, 25, or 26.');
+      return;
+    }
+    if (prn1 === prn2) {
+      soundFx.playGlitch();
+      setErrorMsg('Member 1 and Member 2 must have distinct PRNs.');
       return;
     }
 
@@ -174,15 +197,20 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
 
                 {/* Field: Member 1 PRN */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-mono text-slate-300 mb-1">
-                    Member 1 PRN / Student ID
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs sm:text-sm font-mono text-slate-300">
+                      Member 1 PRN
+                    </label>
+                    <span className="text-[10px] font-mono text-cyan-400">11 digits (23/24/25/26)</span>
+                  </div>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.member1_prn}
                     onChange={(e) => handleInputChange('member1_prn', e.target.value)}
-                    placeholder="e.g. 2140108920"
-                    maxLength={30}
+                    placeholder="e.g. 24100000001"
+                    maxLength={11}
                     className="w-full bg-[#050814] border border-slate-800 focus:border-cyan-400 rounded-lg px-3 py-2 sm:py-2.5 text-sm sm:text-base font-mono text-white placeholder-slate-500 outline-none transition"
                     disabled={isSubmitting}
                   />
@@ -214,15 +242,20 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
 
                 {/* Field: Member 2 PRN */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-mono text-slate-300 mb-1">
-                    Member 2 PRN / Student ID
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs sm:text-sm font-mono text-slate-300">
+                      Member 2 PRN
+                    </label>
+                    <span className="text-[10px] font-mono text-cyan-400">11 digits (23/24/25/26)</span>
+                  </div>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.member2_prn}
                     onChange={(e) => handleInputChange('member2_prn', e.target.value)}
-                    placeholder="e.g. 2140108921"
-                    maxLength={30}
+                    placeholder="e.g. 24100000002"
+                    maxLength={11}
                     className="w-full bg-[#050814] border border-slate-800 focus:border-cyan-400 rounded-lg px-3 py-2 sm:py-2.5 text-sm sm:text-base font-mono text-white placeholder-slate-500 outline-none transition"
                     disabled={isSubmitting}
                   />

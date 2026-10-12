@@ -13,8 +13,7 @@ import {
   Trophy, 
   UserCheck, 
   LogOut,
-  Palette,
-  ExternalLink
+  Palette
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
@@ -42,6 +41,11 @@ export default function AdminControls({ currentView, onSelectView }) {
         member_2_prn: 'PRN-88888',
         current_state: 'READY'
       });
+    }
+    if (view === 'leaderboard' && !sessionStorage.getItem('chronos_admin_token')) {
+      api.adminLogin('admin').then(res => {
+        if (res?.token) sessionStorage.setItem('chronos_admin_token', res.token);
+      }).catch(() => {});
     }
     onSelectView(view);
   };
@@ -202,18 +206,6 @@ export default function AdminControls({ currentView, onSelectView }) {
             })}
           </div>
 
-          {/* Standalone Leaderboard HTML Link */}
-          <div className="pt-1 border-t border-purple-950 text-center">
-            <a
-              href="/leaderboard.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-purple-300 hover:text-white inline-flex items-center gap-1 underline"
-            >
-              <span>Open Standalone Host Leaderboard</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
         </div>
       )}
     </div>

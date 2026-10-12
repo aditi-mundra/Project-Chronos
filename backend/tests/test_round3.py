@@ -1,125 +1,134 @@
-"""
-Project Chronos — Round 3 Automated Test Suite
-Verifies deterministic case seeding, anti-collusion permutations,
-evidence constraint enforcement, scoring accuracy (+30 / 0), and idempotency locks.
-"""
+"""Round 2 -> Round 3 integration and integrity tests."""
 
 import sys
+import uuid
 from pathlib import Path
 
-# Add project root to sys.path
+from fastapi.testclient import TestClient
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from backend.app.database.schema import create_tables
 from backend.app.database.connection import get_connection
-from backend.app.services.round3_service import Round3Service
-from backend.app.data.round3_cases import get_case_for_team, get_sanitized_case_for_client
+from backend.app.database.schema import create_tables
+from backend.app.main import app
+from backend.app.services.round2_service import init_round2
 
-def run_all_tests():
-    print("================================================================")
-    print(" PROJECT CHRONOS — ROUND 3 VERIFICATION & TEST SUITE")
-    print("================================================================")
-    
-    # 1. Database Initialization
+
+def _new_team(client: TestClient) -> int:
+    suffix = uuid.uuid4().int % 100_000_000
+    response = client.post(
+        "/api/auth/login",
+        json={
+            "team_name": f"R3 Integration {suffix}",
+            "member_1_name": "Test One",
+            "member_2_name": "Test Two",
+            "member_1_prn": f"24{suffix:08d}1",
+            "member_2_prn": f"25{suffix:08d}2",
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["team_id"]
+
+
+def _complete_round2(client: TestClient, team_id: int):
+    assert client.post("/api/round2/start", json={"team_id": team_id}).status_code == 200
+    with get_connection() as connection:
+        case = connection.execute(
+            "SELECT c.* FROM round2_team_cases tc "
+            "JOIN round2_cases c ON c.case_id = tc.case_id WHERE tc.team_id = ?",
+            (team_id,),
+        ).fetchone()
+        suspects = connection.execute(
+            "SELECT suspect_name FROM round2_case_suspects WHERE case_id = ? ORDER BY id",
+            (case["case_id"],),
+        ).fetchall()
+        files = connection.execute(
+            "SELECT file_id FROM round2_case_files WHERE case_id = ? AND is_locked = 0 ORDER BY id",
+            (case["case_id"],),
+        ).fetchall()
+
+    response = client.post(
+        "/api/round2/submit", json={"team_id": team_id, "suspect": case["culprit"]}
+    )
+    assert response.status_code == 200, response.text
+    return case, [row["suspect_name"] for row in suspects], [row["file_id"] for row in files]
+
+
+def test_round3_requires_round2_completion():
     create_tables()
-    print("✔ 1. Database schema created successfully.")
+    init_round2()
+    client = TestClient(app)
+    team_id = _new_team(client)
 
-    # Prepare Test Teams
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM teams WHERE id IN (101, 102, 103)")
-    cursor.execute("DELETE FROM round3_team_cases WHERE team_id IN (101, 102, 103)")
-    cursor.execute("DELETE FROM round3_submissions WHERE team_id IN (101, 102, 103)")
-    
-    cursor.execute("""
-        INSERT INTO teams (id, team_name, member_1_name, member_2_name, current_state, round1_score, round2_score)
-        VALUES 
-        (101, 'Unit Test Team Alpha', 'Samarth', 'Adwaiy', 'ROUND_2_COMPLETED', 40, 40),
-        (102, 'Unit Test Team Beta', 'Alice', 'Bob', 'ROUND_2_COMPLETED', 45, 35),
-        (103, 'Unit Test Team Gamma', 'Charlie', 'Dana', 'ROUND_2_COMPLETED', 30, 50)
-    """)
-    conn.commit()
-    conn.close()
-    print("✔ 2. Test teams seeded into master database.")
+    response = client.post("/api/round3/start", json={"team_id": team_id})
+    assert response.status_code == 409
 
-    # 2. Test Round 3 Initialization & Case Assignment
-    res_101 = Round3Service.start_round3_for_team(101)
-    assert res_101["status"] == "success", "Failed to start Round 3 for Team 101"
-    assert res_101["case"]["case_id"] != "", "Case ID should not be empty"
-    assert len(res_101["case"]["candidates"]) == 3, "Each case must have exactly 3 candidates"
-    assert len(res_101["case"]["evidence_pool"]) >= 4, "Each case must have at least 4 evidence items"
-    # Ensure sanitized (no secret answers exposed to client)
-    assert "culprit_candidate_id" not in res_101["case"], "Secret culprit must NOT be sent to client"
-    assert "valid_evidence_ids" not in res_101["case"], "Secret valid evidence must NOT be sent to client"
-    print("✔ 3. Round 3 initialized with sanitized client payload.")
 
-    # 3. Test Determinism (Same team always gets same case)
-    res_101_retry = Round3Service.get_team_scenario(101)
-    assert res_101_retry["case"]["case_id"] == res_101["case"]["case_id"], "Idempotent case retrieval failed"
-    assert res_101_retry["case"]["candidates"][0]["name"] == res_101["case"]["candidates"][0]["name"]
-    print("✔ 4. Case generation idempotency & determinism verified.")
+def test_round3_uses_the_assigned_round2_case():
+    create_tables()
+    init_round2()
+    client = TestClient(app)
+    team_id = _new_team(client)
+    round2_case, suspect_names, file_ids = _complete_round2(client, team_id)
 
-    # 4. Test Anti-Collusion Permutations across Different Teams
-    res_102 = Round3Service.start_round3_for_team(102)
-    res_103 = Round3Service.start_round3_for_team(103)
-    print(f"   - Team 101 Case: {res_101['case']['case_id']}")
-    print(f"   - Team 102 Case: {res_102['case']['case_id']}")
-    print(f"   - Team 103 Case: {res_103['case']['case_id']}")
-    print("✔ 5. Anti-collusion team scenario isolation verified.")
+    start = client.post("/api/round3/start", json={"team_id": team_id})
+    assert start.status_code == 200, start.text
+    payload = start.json()
+    scenario = payload["scenario"]
 
-    # 5. Test Candidate Constraint (Missing candidate must be rejected)
-    sub_fail = Round3Service.submit_round3_decision(101, "", [])
-    assert sub_fail["status"] == "error", "Submitting with empty suspect candidate should fail"
-    assert sub_fail["error_code"] == "MISSING_CANDIDATE"
-    print("✔ 6. Suspect candidate designation validation verified.")
+    assert scenario["case_id"] == round2_case["case_id"]
+    assert {candidate["id"] for candidate in scenario["candidates"]} == {"alpha", "beta", "gamma"}
+    assert {candidate["name"] for candidate in scenario["candidates"]} == {
+        "Project Alpha", "Project Beta", "Project Gamma"
+    }
+    scenario_text = str(scenario).lower()
+    assert all(name.lower() not in scenario_text for name in suspect_names)
+    assert [item["id"] for item in scenario["evidence_archive"]] == [
+        f"r2_{file_id.lower()}" for file_id in file_ids
+    ]
+    assert "culprit_candidate_id" not in scenario
+    assert "valid_evidence_ids" not in scenario
+    assert "culprit" not in scenario["round2_investigation"]["case_info"]
 
-    # 6. Test Scoring: Correct Culprit (+30 Points)
-    # Get internal case for 101 to know correct answer
-    case_101_full = get_case_for_team(101)
-    correct_cand_id = case_101_full["culprit_candidate_id"]
-    valid_evs = case_101_full["valid_evidence_ids"][:2]
+    culprit_index = next(
+        index for index, name in enumerate(suspect_names)
+        if name.lower() == round2_case["culprit"].lower()
+    )
+    correct_candidate = ("alpha", "beta", "gamma")[culprit_index]
+    evidence_ids = [item["id"] for item in scenario["evidence_archive"]]
 
-    sub_correct = Round3Service.submit_round3_decision(101, correct_cand_id, valid_evs)
-    assert sub_correct["status"] == "success"
-    assert sub_correct["is_correct"] is True
-    assert sub_correct["points_awarded"] == 30, f"Expected 30 points, got {sub_correct['points_awarded']}"
-    assert sub_correct["round3_score"] == 30
-    assert sub_correct["total_score"] == 40 + 40 + 30 # R1 (40) + R2 (40) + R3 (30) = 110
-    print("✔ 7. Correct decision scoring (+30 points & total score calculation) verified.")
+    submitted = client.post(
+        "/api/round3/submit",
+        json={
+            "team_id": team_id,
+            "selected_candidate_id": correct_candidate,
+            "selected_evidence_ids": [],
+        },
+    )
+    assert submitted.status_code == 200, submitted.text
+    result = submitted.json()
+    assert "is_correct" not in result
+    assert "points_awarded" not in result
+    assert "round3_score" not in result
+    assert "total_score" not in result
 
-    # 7. Test Scoring: Incorrect Culprit (0 Points)
-    case_102_full = get_case_for_team(102)
-    wrong_cand_id = next(c["id"] for c in case_102_full["candidates"] if c["id"] != case_102_full["culprit_candidate_id"])
-    sub_wrong = Round3Service.submit_round3_decision(102, wrong_cand_id, ["ev_02_timeline", "ev_02_access"])
-    assert sub_wrong["status"] == "success"
-    assert sub_wrong["is_correct"] is False
-    assert sub_wrong["points_awarded"] == 0
-    assert sub_wrong["round3_score"] == 0
-    assert sub_wrong["total_score"] == 45 + 35 + 0 # R1 (45) + R2 (35) + R3 (0) = 80
-    print("✔ 8. Incorrect decision scoring (0 points awarded) verified.")
+    duplicate = client.post(
+        "/api/round3/submit",
+        json={
+            "team_id": team_id,
+            "selected_candidate_id": "gamma",
+            "selected_evidence_ids": evidence_ids[:2],
+        },
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["is_already_locked"] is True
 
-    # 8. Test Idempotency Lock (Submitting again returns existing record without altering score)
-    sub_duplicate = Round3Service.submit_round3_decision(101, "cand_c", ["ev_01_timeline", "ev_04_auth"])
-    assert sub_duplicate["status"] == "success"
-    assert sub_duplicate.get("is_already_locked") is True
-    assert sub_duplicate["points_awarded"] == 30 # Unchanged from initial submission
-    print("✔ 9. Idempotency lock preventing score tampering verified.")
-
-    # 9. Test Verdict Retrieval & Debrief
-    verdict = Round3Service.get_round3_verdict(101)
-    assert verdict["status"] == "success"
-    assert verdict["total_score"] == 110
-    assert verdict["verdict_details"]["true_culprit_id"] == correct_cand_id
-    assert verdict["verdict_details"]["narrative_summary"] != ""
-    print("✔ 10. Verdict forensic narrative debrief retrieval verified.")
-
-    print("\n================================================================")
-    print(" 🎉 ALL 10 ROUND 3 TESTS PASSED PERFECTLY!")
-    print("================================================================")
-
-def test_round3():
-    run_all_tests()
-
-if __name__ == "__main__":
-    run_all_tests()
-
+    verdict = client.get(f"/api/round3/verdict?team_id={team_id}")
+    assert verdict.status_code == 200
+    verdict_data = verdict.json()
+    assert "round1_score" not in verdict_data
+    assert "round2_score" not in verdict_data
+    assert "round3_score" not in verdict_data
+    assert "total_score" not in verdict_data
+    assert verdict_data["verdict_details"]["true_culprit_id"] == correct_candidate
+    assert verdict_data["verdict_details"]["true_culprit_name"] == f"Project {correct_candidate.title()}"

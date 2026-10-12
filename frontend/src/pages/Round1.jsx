@@ -19,7 +19,7 @@ const initialZones = { PAST: [], PRESENT: [], FUTURE: [] };
  *  - the first GET /items assigns this team's items and starts its Round 1 clock;
  *  - the remaining time shown here comes from GET /status, so a page reload cannot reset it;
  *  - on FINISH (or when time runs out) the answers are submitted and POST /finish returns
- *    the score, authentication code and clue, which are handed to `onComplete`.
+ *    the authentication code and clue, which are handed to `onComplete`.
  */
 export default function Round1({ onComplete }) {
   const { team, updateTeamState } = useAuth();
@@ -111,7 +111,7 @@ export default function Round1({ onComplete }) {
   useEffect(() => {
     if (secondsLeft === null || timeUp) return;
     if (secondsLeft <= 60) setSystemState('CRITICAL');
-    else if (secondsLeft <= 180) setSystemState('UNSTABLE');
+    else if (secondsLeft <= 120) setSystemState('UNSTABLE');
     else if (fragments.length) setSystemState('STABLE');
   }, [secondsLeft, timeUp, fragments.length]);
 
@@ -119,7 +119,7 @@ export default function Round1({ onComplete }) {
   const remaining = fragments.filter((fragment) => !placedIds.has(fragment.id));
   const completed = placedIds.size === fragments.length && fragments.length > 0;
   const progress = fragments.length ? Math.round((placedIds.size / fragments.length) * 100) : 0;
-  const timerWarning = secondsLeft !== null && secondsLeft <= 180;
+  const timerWarning = secondsLeft !== null && secondsLeft <= 60;
 
   useEffect(() => {
     if (completed) {
@@ -182,7 +182,7 @@ export default function Round1({ onComplete }) {
 
     const tick = () => {
       const ghost = ghostRef.current;
-      if (ghost) ghost.style.transform = `translate3d(${state.x - 46}px, ${state.y - 46}px, 0) scale(1.06) rotate(-3deg)`;
+      if (ghost) ghost.style.transform = `translate3d(${state.x - 36}px, ${state.y - 36}px, 0) scale(1.06) rotate(-3deg)`;
       const margin = 80;
       const scroller = rootRef.current;
       if (scroller) {
@@ -268,10 +268,9 @@ export default function Round1({ onComplete }) {
       if (!done.round1_completed) throw new Error(done.message || 'Round 1 is not complete yet.');
 
       setSystemState('AUTHENTICATED');
-      addLog('Final scan complete • score sealed', 'success');
+      addLog('Final scan complete • result stored in host ledger', 'success');
       updateTeamState('ROUND1_COMPLETED');
       onCompleteRef.current?.({
-        score: done.score,
         auth_code: done.auth_code,
         clue: done.clue,
         completion_time_seconds: done.completion_time_seconds,
@@ -336,7 +335,7 @@ export default function Round1({ onComplete }) {
           <Telemetry title="TIMELINE INTEGRITY" value={`${Math.round(integrity)}%`} progress={integrity} />
           <Telemetry title="FRAGMENTS RESTORED" value={`${placedIds.size} / ${fragments.length}`} progress={progress} />
           <Telemetry title="TEMPORAL DRIFT" value={integrity < 50 ? '+12.31ms' : '+08.72ms'} progress={Math.max(10, integrity - 18)} />
-          <div className="score-mask"><span>FINAL SCORE</span><b>•••</b><small>REVEALED ONLY AFTER FINISH</small></div>
+          <div className="score-mask"><span>HOST LEDGER</span><b>•••</b><small>CLASSIFIED</small></div>
         </section>
 
         <section className="workspace">
@@ -400,7 +399,7 @@ export default function Round1({ onComplete }) {
                 : timeUp
                   ? (submitError ? 'RETRY SUBMISSION' : 'SEALING TIMELINE...')
                   : completed
-                    ? 'FINISH ROUND • SEAL SCORE'
+                    ? 'FINISH ROUND • SEAL RESULT'
                     : 'ROUTE ALL FRAGMENTS TO CONTINUE'}
             </button>
           </div>
@@ -434,9 +433,9 @@ function FragmentCard({ fragment, index, selected, dragging, onSelect, onPointer
 function DropZone({ era, ids, fragments, selectedId, draggingId, isOver, onBeginDrag, onPlace, onSelect }) {
   const meta = ERA_META[era];
   const selectedInZone = selectedId && ids.includes(selectedId);
-  // Sector name grows with the number of fragments it holds (19px empty → 40px at 12+).
+  // Sector name grows subtly with the number of fragments it holds.
   const growth = Math.min(ids.length, 12) / 12;
-  const zoneVars = { '--zone-title': `${19 + growth * 21}px`, '--zone-count': `${18 + growth * 14}px` };
+  const zoneVars = { '--zone-title': `${15 + growth * 3}px`, '--zone-count': `${14 + growth * 3}px` };
   return (
     <div
       className={`drop-zone ${era.toLowerCase()} ${selectedInZone ? 'selected-zone' : ''} ${isOver ? 'drag-over' : ''}`}

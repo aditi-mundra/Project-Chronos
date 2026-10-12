@@ -15,6 +15,9 @@ sys.path.insert(0, str(BASE_DIR / "backend"))
 from backend.app.main import app
 from backend.app.database.schema import create_tables, seed_round1_items_if_empty, seed_round2_files_if_empty
 from backend.app.database.connection import get_connection
+from backend.app.routes.admin import ADMIN_SECRET_TOKEN
+
+ADMIN_HEADERS = {"Authorization": f"Bearer {ADMIN_SECRET_TOKEN}"}
 
 def test_full_chronos_pipeline():
     create_tables()
@@ -35,8 +38,8 @@ def test_full_chronos_pipeline():
         "team_name": team_name,
         "member_1_name": "Test Pilot Alpha",
         "member_2_name": "Test Pilot Beta",
-        "member_1_prn": "PRN-10101",
-        "member_2_prn": "PRN-20202"
+        "member_1_prn": "24101010101",
+        "member_2_prn": "25202020202"
     }
     res_login = client.post("/api/auth/login", json=login_payload)
     assert res_login.status_code == 200, f"Login failed: {res_login.text}"
@@ -58,16 +61,34 @@ def test_full_chronos_pipeline():
     assert isinstance(r1_items, list)
     assert len(r1_items) > 0
 
-    # Submit answers for Round 1
-    for item in r1_items[:5]:
+    # Submit every assigned item and complete Round 1 before advancing.
+    for item in r1_items:
         item_id = item.get("id") or item.get("item_id")
         client.post(f"/api/round1/submit?team_id={team_id}&item_id={item_id}&answer=PAST")
+    finish_r1 = client.post(f"/api/round1/finish?team_id={team_id}")
+    assert finish_r1.status_code == 200, finish_r1.text
 
-    # 5. Round 2 Files Check
+    # 5. Start and complete the team's assigned Round 2 case.
+    start_r2 = client.post("/api/round2/start", json={"team_id": team_id})
+    assert start_r2.status_code == 200, start_r2.text
     res_r2_files = client.get(f"/api/round2/files?team_id={team_id}")
     assert res_r2_files.status_code == 200
     r2_data = res_r2_files.json()
     assert "files" in r2_data or isinstance(r2_data, list)
+
+    conn = get_connection()
+    try:
+        culprit = conn.execute(
+            "SELECT c.culprit FROM round2_team_cases tc "
+            "JOIN round2_cases c ON c.case_id = tc.case_id WHERE tc.team_id = ?",
+            (team_id,),
+        ).fetchone()["culprit"]
+    finally:
+        conn.close()
+    finish_r2 = client.post(
+        "/api/round2/submit", json={"team_id": team_id, "suspect": culprit}
+    )
+    assert finish_r2.status_code == 200, finish_r2.text
 
     # 6. Round 3 Start
     res_r3_start = client.post("/api/round3/start", json={"team_id": team_id})
@@ -83,10 +104,21 @@ def test_full_chronos_pipeline():
     assert len(scen_data["scenario"]["candidates"]) == 3
 
     # 8. Round 3 Final Submission
+    scenario = scen_data["scenario"]
+    conn = get_connection()
+    try:
+        r3_case_row = conn.execute(
+            "SELECT culprit_candidate_id FROM round3_team_cases WHERE team_id = ?",
+            (team_id,),
+        ).fetchone()
+        selected_candidate = r3_case_row["culprit_candidate_id"] if r3_case_row else scenario["candidates"][0]["id"]
+    finally:
+        conn.close()
+    evidence_ids = [item["id"] for item in scenario["evidence_archive"]]
     sub_payload = {
         "team_id": team_id,
-        "selected_candidate_id": "alpha",
-        "selected_evidence_ids": ["ev_01_future", "ev_02_incident"]
+        "selected_candidate_id": selected_candidate,
+        "selected_evidence_ids": evidence_ids[:2]
     }
     res_r3_sub = client.post("/api/round3/submit", json=sub_payload)
     assert res_r3_sub.status_code == 200, f"R3 submit failed: {res_r3_sub.text}"
@@ -99,48 +131,30 @@ def test_full_chronos_pipeline():
     assert res_verdict.status_code == 200
     verdict_data = res_verdict.json()
     assert verdict_data["status"] == "success"
-    assert verdict_data["submission"]["selected_candidate_id"] == "alpha"
+    assert verdict_data["submission"]["selected_candidate_id"] == selected_candidate
     assert verdict_data["verdict_details"]["true_culprit_id"] != ""
 
     # 10. Admin Leaderboard & CSV Export
-    res_lb = client.get("/api/admin/leaderboard")
+    assert client.get("/api/admin/leaderboard").status_code == 401
+    res_lb = client.get("/api/admin/leaderboard", headers=ADMIN_HEADERS)
     assert res_lb.status_code == 200
     lb_data = res_lb.json()
     assert isinstance(lb_data, list)
     assert len(lb_data) > 0
 
-    res_csv = client.get("/api/admin/export-csv")
+    res_csv = client.get("/api/admin/export-csv", headers=ADMIN_HEADERS)
     assert res_csv.status_code == 200
     assert "text/csv" in res_csv.headers["content-type"]
     assert "Rank" in res_csv.text
 
     # 11. Table-level CSV Export (docs/database.md Section 6)
     for tbl in ["teams", "round1_items", "round2_files", "round3_team_cases"]:
-        res_tbl_csv = client.get(f"/api/admin/export/csv/{tbl}")
+        res_tbl_csv = client.get(f"/api/admin/export/csv/{tbl}", headers=ADMIN_HEADERS)
         assert res_tbl_csv.status_code == 200
         assert "text/csv" in res_tbl_csv.headers["content-type"]
 
-    res_invalid_tbl = client.get("/api/admin/export/csv/non_existent_table")
+    res_invalid_tbl = client.get("/api/admin/export/csv/non_existent_table", headers=ADMIN_HEADERS)
     assert res_invalid_tbl.status_code == 400
-
-    # 12. Query Helpers Verification (docs/database.md Section 5)
-    from datetime import datetime, timezone
-    from backend.app.database.queries import update_team_scores, record_round1_completion
-    conn = get_connection()
-    try:
-        t0 = datetime.now(timezone.utc)
-        t1 = datetime.now(timezone.utc)
-        record_round1_completion(conn, team_id, 24.0, t0, t1)
-        update_team_scores(conn, team_id)
-        
-        cur = conn.cursor()
-        cur.execute("SELECT r1_score, round1_score, total_score, r1_time_diff FROM teams WHERE id = ?", (team_id,))
-        row = cur.fetchone()
-        assert row["r1_score"] == 24.0
-        assert row["round1_score"] == 24.0
-        assert row["r1_time_diff"] is not None
-    finally:
-        conn.close()
 
     print("================================================================")
     print(" ✔ FULL PIPELINE & LEADERBOARD INTEGRATION TEST PASSED!")

@@ -6,6 +6,7 @@ Provides host leaderboard, admin authentication, system logs, and CSV export.
 import io
 import csv
 import os
+import secrets
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
@@ -15,13 +16,10 @@ from ..database.connection import get_connection
 
 router = APIRouter(prefix="/api/admin", tags=["Admin & Host Leaderboard"])
 
-ADMIN_PASSWORD = os.getenv("CHRONOS_ADMIN_PASSWORD", "chronos2140")
-ADMIN_SECRET_TOKEN = "CHRONOS_SUPERVISOR_SESSION_SECURE_2140"
-VALID_ADMIN_PASSWORDS = {
-    "admin",
-    "chronos2140",
-    ADMIN_PASSWORD.strip().lower(),
-}
+DEFAULT_ADMIN_PASSWORDS = {"admin", "chronos2140"}
+ADMIN_PASSWORD = os.getenv("CHRONOS_ADMIN_PASSWORD", "").strip()
+ADMIN_SECRET_TOKEN = os.getenv("CHRONOS_ADMIN_TOKEN") or secrets.token_urlsafe(32)
+VALID_ADMIN_PASSWORDS = {ADMIN_PASSWORD.lower(), *DEFAULT_ADMIN_PASSWORDS} if ADMIN_PASSWORD else DEFAULT_ADMIN_PASSWORDS
 
 
 def is_valid_admin_password(pw: Optional[str]) -> bool:
@@ -29,6 +27,22 @@ def is_valid_admin_password(pw: Optional[str]) -> bool:
         return False
     cleaned = pw.strip().strip('"').strip("'").lower()
     return cleaned in VALID_ADMIN_PASSWORDS
+
+
+def require_admin(request: Request) -> None:
+    token = ""
+    authorization = request.headers.get("authorization", "")
+    scheme, _, auth_token = authorization.partition(" ")
+    if scheme.lower() == "bearer" and auth_token:
+        token = auth_token
+    elif request.query_params.get("token"):
+        token = request.query_params.get("token")
+
+    if not token or not secrets.compare_digest(token, ADMIN_SECRET_TOKEN):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Host authorization required.",
+        )
 
 
 class AdminLoginRequest(BaseModel):
@@ -81,9 +95,12 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 member_2_prn,
                 current_state,
                 round1_score,
+                r1_score,
                 round1_auth_code,
                 round2_score,
+                r2_score,
                 round3_score,
+                r3_score,
                 total_score,
                 round1_started_at,
                 round1_completed_at,
@@ -101,10 +118,22 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
         entries = []
         for idx, r in enumerate(rows):
             r1_diff = calculate_r1_time_diff(r["round1_started_at"], r["round1_completed_at"])
-            r1_score_val = float(r["round1_score"] or 0.0)
-            r2_score_val = float(r["round2_score"] or 0.0)
-            r3_score_val = float(r["round3_score"] or 0.0)
-            calc_total = float(r["total_score"] or (r1_score_val + r2_score_val + r3_score_val))
+            
+            # Preserve negative Round 1 scores and enforce authoritative grading bounds:
+            # Round 1: 50.0 maximum, -25.0 minimum
+            # Round 2: 20.0 maximum, 0.0 minimum
+            # Round 3: 30.0 maximum, 0.0 minimum
+            r1_val = r["round1_score"] if r["round1_score"] is not None else r["r1_score"]
+            r1_score_val = max(-25.0, min(50.0, float(r1_val))) if r1_val is not None else 0.0
+
+            r2_val = r["round2_score"] if r["round2_score"] is not None else r["r2_score"]
+            r2_score_val = max(0.0, min(20.0, float(r2_val))) if r2_val is not None else 0.0
+
+            r3_val = r["round3_score"] if r["round3_score"] is not None else r["r3_score"]
+            r3_score_val = max(0.0, min(30.0, float(r3_val))) if r3_val is not None else 0.0
+
+            # Direct mathematical total of Round 1 + Round 2 + Round 3 scores (Max 100, Min -25)
+            calc_total = round(r1_score_val + r2_score_val + r3_score_val, 2)
 
             status_val = "FINISHED" if r["current_state"] in ("COMPLETED", "DECISION_SUBMITTED", "FINAL_REVEAL") else (r["current_state"] or "ACTIVE")
 
@@ -133,6 +162,14 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 "r3_score": r3_score_val,
                 "round3_score": r3_score_val,
                 "total_score": calc_total,
+                "r1_max": 50.0,
+                "r1_min": -25.0,
+                "r2_max": 20.0,
+                "r2_min": 0.0,
+                "r3_max": 30.0,
+                "r3_min": 0.0,
+                "total_max": 100.0,
+                "total_min": -25.0,
                 "current_state": r["current_state"] or "READY",
                 "status": status_val,
             })
@@ -149,18 +186,20 @@ def admin_login(payload: AdminLoginRequest):
 
 
 @router.get("/leaderboard")
-def get_admin_leaderboard():
+def get_admin_leaderboard(request: Request):
     """
     Returns ranked leaderboard of all registered teams with real-time score calculation.
     """
+    require_admin(request)
     return fetch_leaderboard_data()
 
 
 @router.get("/export-csv")
-def export_leaderboard_csv():
+def export_leaderboard_csv(request: Request):
     """
     Generates and downloads a complete master CSV export of the leaderboard.
     """
+    require_admin(request)
     entries = fetch_leaderboard_data()
 
     output = io.StringIO()
@@ -174,13 +213,13 @@ def export_leaderboard_csv():
         "Operator 2 Name",
         "Operator 2 PRN",
         "Status / State",
-        "Round 1 Score",
+        "Round 1 Score (Max 50 / Min -25)",
         "Round 1 Time (s)",
         "Round 1 Time Formatted",
         "Round 1 Auth Code",
-        "Round 2 Score",
-        "Round 3 Score",
-        "Total Score"
+        "Round 2 Score (Max 20)",
+        "Round 3 Score (Max 30)",
+        "Total Score (Max 100)"
     ])
 
     for t in entries:
@@ -214,8 +253,9 @@ def export_leaderboard_csv():
 from ..utils.csv_export import export_table_to_csv
 
 @router.get("/export/csv/{table_name}")
-def download_table_csv(table_name: str = "teams"):
+def download_table_csv(request: Request, table_name: str = "teams"):
     """Download live table data as a downloadable CSV file."""
+    require_admin(request)
     try:
         csv_data = export_table_to_csv(table_name)
         return Response(
@@ -228,10 +268,11 @@ def download_table_csv(table_name: str = "teams"):
 
 
 @router.get("/logs")
-def get_admin_logs(limit: int = Query(100, ge=1, le=1000)):
+def get_admin_logs(request: Request, limit: int = Query(100, ge=1, le=1000)):
     """
     Returns recent chronological audit trail events.
     """
+    require_admin(request)
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -259,7 +300,7 @@ async def clear_database(
     password: Optional[str] = Query(None)
 ):
     """
-    Clears all competition database records with password 'admin' authorization.
+    Clears all competition database records with the configured host passkey.
     Wipes all teams, submissions, round cases, and audit logs.
     Preserves and verifies seed data for subsequent games.
     """

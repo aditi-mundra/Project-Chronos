@@ -110,14 +110,6 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                       {result.auth_code}
                     </span>
                   </div>
-                  <div className="p-3 rounded-lg bg-[#050814] border border-cyan-950">
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-slate-400">
-                      Round 1 Score
-                    </span>
-                    <span className="block mt-1 text-2xl sm:text-3xl font-mono font-bold text-emerald-300">
-                      {result.score}
-                    </span>
-                  </div>
                 </div>
                 {result.clue && (
                   <p className="text-slate-300 font-mono leading-relaxed text-xs sm:text-sm">

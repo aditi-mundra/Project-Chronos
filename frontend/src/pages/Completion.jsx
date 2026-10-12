@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Trophy, RotateCcw, ShieldCheck, FileCheck2 } from 'lucide-react';
+import { RotateCcw, ShieldCheck, FileCheck2, Sparkles, Play } from 'lucide-react';
 import api from '../services/api.js';
 import { soundFx } from '../utils/audio.js';
 import ThemeSelector from '../components/ThemeSelector';
+import ChronosConclusion from '../components/ChronosConclusion';
 
 /**
  * Project Chronos — Final Mission Debrief & Completion Screen
- * High-readability cyberpunk layout.
- * Note: Final scores and rankings are calculated on the backend and revealed during the closing awards.
+ * High-readability cyberpunk layout featuring the full-screen Timeline Convergence
+ * cinematic immediately after Round 3 ends, with replay capability and complete forensic audit.
  */
 export default function Completion({ 
   teamId, 
@@ -15,6 +16,7 @@ export default function Completion({
 }) {
   const [loading, setLoading] = useState(true);
   const [verdictData, setVerdictData] = useState(null);
+  const [showCinematic, setShowCinematic] = useState(true);
 
   useEffect(() => {
     async function loadVerdict() {
@@ -22,7 +24,7 @@ export default function Completion({
         setLoading(true);
         if (teamId) {
           const res = await api.getRound3Verdict(teamId);
-          if (res.status === 'success') {
+          if (res) {
             setVerdictData(res);
           }
         }
@@ -34,6 +36,18 @@ export default function Completion({
     }
     loadVerdict();
   }, [teamId]);
+
+  // If the cinematic is active, display the full-screen Timeline Convergence sequence
+  if (showCinematic) {
+    return (
+      <ChronosConclusion 
+        onComplete={() => {
+          soundFx.playAccessGranted();
+          setShowCinematic(false);
+        }} 
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -49,6 +63,7 @@ export default function Completion({
   const teamName = verdictData?.team_name || "Temporal Engineers";
   const submission = verdictData?.submission || {};
   const verdictDetails = verdictData?.verdict_details || {};
+  const r2Invest = verdictData?.round2_investigation || {};
 
   return (
     <div className="relative min-h-screen bg-[var(--bg-primary)] text-[var(--text-body)] flex flex-col items-center justify-center p-3 sm:p-5 lg:p-6 overflow-x-hidden font-space">
@@ -71,19 +86,24 @@ export default function Completion({
         {/* Main Completion Card */}
         <div className="bg-[#070c18]/95 border border-emerald-800/60 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(16,185,129,0.2)] backdrop-blur-xl space-y-6">
           
-          <h1 className="font-orbitron font-black text-4xl lg:text-6xl text-white tracking-wider">
-            THANK YOU FOR <span style={{ color: 'var(--neon-primary)' }}>PLAYING</span>
-          </h1>
-          <p className="text-xs sm:text-sm font-mono text-slate-400 pt-1">
-            Unit: <strong className="text-cyan-300">{teamName}</strong> • Event: TECH FEST 2140
-          </p>
+          <div className="space-y-2">
+            <span className="px-3.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-mono text-[11px] font-bold tracking-widest uppercase inline-block shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              PRIME CONTINUUM RESTORED // TIMELINES UNIFIED
+            </span>
+            <h1 className="font-orbitron font-black text-3xl sm:text-5xl lg:text-6xl text-white tracking-wider">
+              MISSION <span style={{ color: 'var(--neon-primary)' }}>CONCLUDED</span>
+            </h1>
+            <p className="text-xs sm:text-sm font-mono text-slate-400 pt-1">
+              Unit: <strong className="text-cyan-300">{teamName}</strong> • Event: TECH FEST 2140
+            </p>
+          </div>
 
-          {/* Submission Summary Grid */}
+          {/* Accusation & Stabilization Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
             <div className="p-4 rounded-xl bg-[#03060f]/90 border border-cyan-900/60 space-y-2">
               <div className="flex items-center gap-2 text-cyan-400 font-mono text-xs uppercase font-bold tracking-wider">
                 <FileCheck2 className="w-4 h-4" />
-                <span>ACCUSED SUSPECT</span>
+                <span>FINAL ACCUSED SUSPECT</span>
               </div>
               <div className="text-lg font-bold font-mono text-white">
                 {submission.selected_candidate_name || submission.selected_candidate_id || "RECORDED"}
@@ -95,14 +115,14 @@ export default function Completion({
 
             <div className="p-4 rounded-xl bg-[#03060f]/90 border border-emerald-900/60 space-y-2">
               <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs uppercase font-bold tracking-wider">
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 <span>TIMELINE CONTINUUM</span>
               </div>
               <div className="text-lg font-bold font-mono text-emerald-300">
-                STABILIZATION ENGAGED
+                PRIME STRAND SYNCHRONIZED
               </div>
               <div className="text-[11px] font-mono text-slate-400">
-                All rounds concluded. Awaiting leaderboard reveal.
+                Entropy: 0.00% • 3 Fractured Strands Merged
               </div>
             </div>
           </div>
@@ -119,19 +139,27 @@ export default function Completion({
             </div>
           )}
 
-          {/* 3D Video Conclusion */}
-          <div className="w-full aspect-video rounded-2xl overflow-hidden border-2 border-white/20 shadow-[0_0_40px_var(--neon-glow)] relative">
-            <video 
-              className="w-full h-full object-cover"
-              autoPlay 
-              loop 
-              muted 
-              playsInline
+          {/* Replay Cinematic Feature Banner */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-purple-950/30 to-emerald-950/40 border border-cyan-700/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-left space-y-0.5">
+              <div className="text-white font-tech font-bold text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-cyan-300 animate-pulse" />
+                <span>TIMELINE CONVERGENCE SEQUENCE</span>
+              </div>
+              <p className="text-xs font-mono text-slate-400">
+                Experience the 3 broken timelines warping and merging into the Prime Strand.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                soundFx.playWhoosh();
+                setShowCinematic(true);
+              }}
+              className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.7)] transition-all shrink-0"
             >
-              <source src="https://assets.mixkit.co/videos/preview/mixkit-abstract-technology-connection-with-a-blue-and-pink-light-glow-32367-large.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-            <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>REPLAY CINEMATIC</span>
+            </button>
           </div>
 
           {/* CTA Actions */}

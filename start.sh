@@ -70,16 +70,28 @@ fi
 [ -f "$ROOT/frontend/dist/index.html" ] || fail "No frontend build found. Install Node.js from https://nodejs.org and run this again."
 
 # ---- Addresses other devices can use ----
-LAN_IP="$("$VPY" - <<'EOF' 2>/dev/null
-import socket
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+LAN_IPS="$("$VPY" - <<'EOF' 2>/dev/null
+import socket, subprocess, re, platform
+ips = set()
+for target in [("10.255.255.255", 1), ("192.168.255.255", 1), ("172.31.255.255", 1), ("8.8.8.8", 80)]:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.2)
+        s.connect(target)
+        ip = s.getsockname()[0]
+        if ip and not ip.startswith("127."):
+            ips.add(ip)
+        s.close()
+    except Exception:
+        pass
 try:
-    s.connect(("10.255.255.255", 1))   # no packet is sent; this only picks the outgoing interface
-    print(s.getsockname()[0])
+    host = socket.gethostname()
+    for ip in socket.gethostbyname_ex(host)[2]:
+        if not ip.startswith("127."):
+            ips.add(ip)
 except Exception:
     pass
-finally:
-    s.close()
+print(" ".join(sorted(list(ips))))
 EOF
 )"
 
@@ -94,18 +106,27 @@ cat << 'EOF'
 [1/3] Checking Python & Backend Dependencies...
 [✔] Database schema verified.
 EOF
-echo "[3/3] Launching Unified Single Server on 0.0.0.0:$PORT (Serving Web App + API)..."
+echo "[3/3] Launching Unified LAN Server on 0.0.0.0:$PORT (Serving Web App + API)..."
 echo
-echo "================================================================"
-echo "  CHRONOS CORE IS ONLINE & READY (UNIFIED SINGLE SERVER)"
-echo "================================================================"
-echo "  🌐 Web App & Game:     http://localhost:$PORT"
-if [ -n "$LAN_IP" ]; then
-  echo "  🌐 Network (Wi-Fi):    http://$LAN_IP:$PORT"
+echo "======================================================================="
+echo "  ⚡ CHRONOS CORE IS ONLINE — LOCAL AREA NETWORK (LAN) HOST ACTIVE ⚡"
+echo "======================================================================="
+echo "  🖥️  Host PC Local:           http://localhost:$PORT"
+if [ -n "$LAN_IPS" ]; then
+  echo
+  echo "  📡 LAN Party / Lab PCs URL (Share with Teams):"
+  for ip in $LAN_IPS; do
+    echo "      👉  http://$ip:$PORT"
+  done
 fi
-echo "  📡 API Docs:           http://localhost:$PORT/docs"
-echo "  🏆 Admin Leaderboard:  http://localhost:$PORT/api/admin/leaderboard"
-echo "================================================================"
+echo
+echo "  🏆 Admin Leaderboard (Screen): http://localhost:$PORT/leaderboard"
+echo "  🛠️  Host Admin Controls:      http://localhost:$PORT/admin"
+echo "  📖 API Documentation:        http://localhost:$PORT/docs"
+echo "  💚 LAN Health Diagnostic:    http://localhost:$PORT/api/health"
+echo "======================================================================="
+echo "  💡 Share the LAN URL above with all player PCs on this lab network."
+echo "======================================================================="
 echo
 
 # ---- Open the browser a moment after the server is up ----

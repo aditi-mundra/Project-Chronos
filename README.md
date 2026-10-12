@@ -5,35 +5,49 @@
 
 ---
 
-## ⚡ Quickstart — Unified One-Command Deployment
+## ⚡ Quickstart — LAN Party & Computer Lab Deployment
 
-You can launch both the **FastAPI Central Server** (Port `8000`) and the **React Vite Client** (Port `5173`) with a single command:
+Project Chronos is engineered for seamless **Local Area Network (LAN) hosting** across college computer labs, hackathons, and offline gaming events.
+
+### 🎮 Host the Game on LAN in 1 Command:
 
 ```bash
-# Option 1: Using Bash Launcher
+# Required once per terminal session: choose a private host-only passkey.
+# Windows PowerShell: $env:CHRONOS_ADMIN_PASSWORD="your-private-passkey"
+export CHRONOS_ADMIN_PASSWORD="your-private-passkey"
+
+# Option 1: Python Launcher (Cross-platform: Windows, Mac, Linux)
+python run.py
+
+# Option 2: Shell Script (macOS / Linux)
 ./start.sh
 
-# Option 2: Using Python Launcher
-python3 run.py
+# Option 3: Windows Batch File (Windows)
+start.bat
 ```
 
-### What this single command does automatically:
-1. **Pre-flight Checks**: Verifies Python (`fastapi`, `uvicorn`) and Node.js dependencies (`npm install`).
-2. **Database Auto-Provisioning**: Creates and checks the unified SQLite schema with Write-Ahead Logging (WAL) and foreign key enforcement.
-3. **LAN Network Binding**: Binds backend and frontend to `0.0.0.0` so player workstations across the event venue can connect seamlessly over the local network.
-4. **Concurrent Execution**: Launches both services simultaneously with live reload.
-5. **Clean Exit**: Pressing `Ctrl + C` gracefully terminates both services.
+The host dashboard remains disabled when `CHRONOS_ADMIN_PASSWORD` is not set. Never share this passkey with participant machines.
+
+### 📡 What Happens Automatically:
+1. **Auto LAN IP Discovery**: Detects all active IPv4 network interfaces on the host (Ethernet, Wi-Fi) and prints the exact shareable player URLs.
+2. **Unified Single-Process Server**: Serves the optimized React UI and FastAPI API from a single process (`0.0.0.0:8000`).
+3. **Zero Client Installation**: Player PCs need **no downloads or software installed**; players simply open `http://<HOST_IP>:8000` in their browser.
+4. **Offline Resilience**: Runs 100% offline once launched, immune to venue internet drops.
+5. **Database Concurrency**: Uses SQLite with Write-Ahead Logging (WAL) to support 50+ concurrent team PCs with sub-millisecond latency.
 
 ---
 
-## 🌐 Network Endpoints
+## 🌐 Network Endpoints for Event Hosts & Players
 
-| Interface | Local URL | LAN Access URL |
+| Interface | Host PC Local | Player & Lab LAN URL |
 | :--- | :--- | :--- |
-| **Player Game Client** | `http://localhost:5173` | `http://<SERVER_IP>:5173` |
-| **FastAPI Interactive Docs** | `http://127.0.0.1:8000/docs` | `http://<SERVER_IP>:8000/docs` |
-| **Admin Live Leaderboard** | `http://127.0.0.1:8000/api/admin/leaderboard` | `http://<SERVER_IP>:8000/api/admin/leaderboard` |
-| **Admin Game Telemetry Logs** | `http://127.0.0.1:8000/api/admin/logs` | `http://<SERVER_IP>:8000/api/admin/logs` |
+| **🎮 Player Game Client** | `http://localhost:8000` | `http://<HOST_IP>:8000` |
+| **🏆 Live Leaderboard (Projector)** | `http://localhost:8000/leaderboard` | `http://<HOST_IP>:8000/leaderboard` |
+| **🛠️ Master Admin Dashboard** | `http://localhost:8000/admin` | `http://<HOST_IP>:8000/admin` |
+| **📖 Interactive API Docs** | `http://localhost:8000/docs` | `http://<HOST_IP>:8000/docs` |
+| **💚 LAN Connectivity Health Check** | `http://localhost:8000/api/health` | `http://<HOST_IP>:8000/api/health` |
+
+> 📖 **Full Guide**: For detailed network topology, firewall rules, lab switches, and multi-PC troubleshooting, check out the [LAN Deployment Guide](docs/LAN_DEPLOYMENT_GUIDE.md).
 
 ---
 
@@ -69,8 +83,12 @@ For the actual event, it is recommended to build the frontend and serve everythi
    Run the backend using Uvicorn. FastAPI is configured to automatically serve the `frontend/dist` directory for all unmatched routes, meaning it will serve the React app on port `8000` alongside the API.
    ```bash
    pip install -r backend/requirements.txt
+   # Set this to a private host-only passkey before launching.
+   export CHRONOS_ADMIN_PASSWORD="replace-with-a-private-passkey"
    uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
    ```
+
+   On Windows PowerShell, use `$env:CHRONOS_ADMIN_PASSWORD="replace-with-a-private-passkey"` instead of `export`.
 
 3. **Client Access**
    - Players: `http://<SERVER_IP>:8000`
@@ -81,10 +99,10 @@ For the actual event, it is recommended to build the frontend and serve everythi
 ## 🎮 Game Architecture & Rounds
 
 1. **Round 0**: Team Registration & Cinematic Briefing.
-2. **Round 1 (Timeline Fragmentation)**: Image-based classification puzzle (+2 / -1 points, Max 50).
-3. **Round 2 (CHRONOS Terminal)**: Physical token search + Digital audit log investigation with restricted Gemini Assistant (+30 culprit + max 20 AI balance, Max 50).
-4. **Round 3 (Final Decision / Wisdom Round)**: Deterministically seeded suspect matrix & evidence grid (+30 points, Max 30).
-5. **Completion**: Cumulative score reveal (Max 130 Points), time-based tie-breakers, and forensic narrative resolution.
+2. **Round 1 (Timeline Fragmentation)**: Image-based classification puzzle (+2 / -1 points, max 50).
+3. **Round 2 (CHRONOS Terminal)**: Timed audit-log investigation with a restricted AI analyst (max 20).
+4. **Round 3 (Final Decision)**: Untimed review of the same Round 2 case. Teams choose Alpha, Beta, or Gamma and cite at least two carried evidence files (+30 / 0).
+5. **Completion**: Participant-safe mission debrief. Scores and correctness remain private in SQLite and are available only through the authenticated host dashboard.
 
 ---
 
@@ -93,5 +111,6 @@ For the actual event, it is recommended to build the frontend and serve everythi
 Run the full automated test suite to verify case generation, anti-collusion permutations, evidence constraints, and scoring integrity:
 
 ```bash
-python3 backend/tests/test_round3.py
+python -m pip install pytest httpx2
+python -m pytest backend/tests/test_round3.py
 ```
