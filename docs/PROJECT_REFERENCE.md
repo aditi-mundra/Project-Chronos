@@ -294,6 +294,7 @@ Admin-only leaderboard:
 Rank
 Team
 Round 1 Score
+Lobby Score
 Round 2 Score
 Round 3 Score
 Total Score
@@ -385,6 +386,7 @@ member_2_name
 current_state
 
 round1_score
+transition_score
 round2_score
 round3_score
 total_score
@@ -607,18 +609,20 @@ Overall:
 ```text
 TOTAL SCORE =
 ROUND 1
++ ROUND TRANSITION (LOBBY)
 + ROUND 2
 + ROUND 3
 ```
 
-The technical specification defines the intended maximum scoring range as:
+The authoritative maximum scoring ranges are:
 
 ```text
-Round 1: 325
-Round 2: 265
-Round 3: 200
+Round 1: 50 (Minimum: -25)
+Round Transition: 20 (Minimum: 0)
+Round 2: 20 (Minimum: 0)
+Round 3: 10 (Minimum: 0)
 
-Maximum Total: 790
+Maximum Total: 100 (Minimum Total: -25)
 ```
 
 The exact question-level scoring and penalties must follow the finalized event specification.

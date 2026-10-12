@@ -18,6 +18,8 @@ import {
   Sparkles,
   Terminal,
   RefreshCw,
+  FastForward,
+  ShieldAlert,
 } from 'lucide-react';
 
 /**
@@ -45,6 +47,8 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
   const [verifyError, setVerifyError] = useState(null);
   const [proceeding, setProceeding] = useState(false);
   const [autoAdvancedBanner, setAutoAdvancedBanner] = useState(false);
+  const [skippingAuth, setSkippingAuth] = useState(false);
+  const [noAuthAdvancedBanner, setNoAuthAdvancedBanner] = useState(false);
   const [gradedResult, setGradedResult] = useState(null);
   const inputRef = useRef(null);
 
@@ -296,6 +300,42 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
       }
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleSkipAuthentication = async () => {
+    if (skippingAuth || isCompleted) return;
+    soundFx.playKeystroke();
+    setSkippingAuth(true);
+    setVerifyError(null);
+    try {
+      const res = await api.skipTransition(teamId);
+      if (res) {
+        soundFx.playWhoosh();
+        setGradedResult(res);
+        setTransition((prev) => ({
+          ...prev,
+          stopwatch_status: 'COMPLETED',
+          is_completed: true,
+          can_proceed: true,
+          elapsed_seconds: res.elapsed_seconds ?? prev?.elapsed_seconds ?? 0,
+          transition_score: 0.0,
+          auto_advanced: true,
+        }));
+        setNoAuthAdvancedBanner(true);
+      }
+    } catch (err) {
+      console.error('Failed to advance without authentication:', err);
+      setTransition((prev) => ({
+        ...prev,
+        stopwatch_status: 'COMPLETED',
+        is_completed: true,
+        can_proceed: true,
+        transition_score: 0.0,
+      }));
+      setNoAuthAdvancedBanner(true);
+    } finally {
+      setSkippingAuth(false);
     }
   };
 
@@ -560,6 +600,26 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                           <span>STOPWATCH REQUIRED // Start stopwatch above to unlock security password entry.</span>
                         </div>
+                        <div className="text-center pt-1">
+                          <button
+                            type="button"
+                            onClick={handleSkipAuthentication}
+                            disabled={skippingAuth || isCompleted}
+                            className="text-xs font-mono text-slate-400 hover:text-cyan-300 transition-colors underline decoration-slate-600 hover:decoration-cyan-400 cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                          >
+                            {skippingAuth ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                                <span>ADVANCING TO ROUND 2...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FastForward className="w-3.5 h-3.5 text-slate-400" />
+                                <span>ADVANCE TO ROUND 2 WITHOUT AUTHENTICATION (0 PTS)</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -750,6 +810,27 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                           </>
                         )}
                       </button>
+
+                      <div className="pt-2 text-center">
+                        <button
+                          type="button"
+                          onClick={handleSkipAuthentication}
+                          disabled={skippingAuth || isCompleted}
+                          className="text-xs font-mono text-slate-400 hover:text-cyan-300 transition-colors underline decoration-slate-600 hover:decoration-cyan-400 cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                        >
+                          {skippingAuth ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                              <span>ADVANCING TO ROUND 2...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FastForward className="w-3.5 h-3.5 text-slate-400" />
+                              <span>ADVANCE WITHOUT AUTHENTICATION (0 PTS)</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </form>
                   </div>
                 )}
@@ -761,10 +842,20 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                       <div className="p-4 rounded-xl bg-amber-950/60 border border-amber-500/80 text-amber-200 font-mono text-xs flex flex-col items-center justify-center gap-1.5 text-center shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                         <div className="flex items-center gap-1.5 font-bold text-amber-300 text-sm">
                           <AlertTriangle className="w-4 h-4 text-amber-400" />
-                          <span>3 INACCURATE ATTEMPTS (0 PTS AWARDED)</span>
+                          <span>3 INACCURATE ATTEMPTS</span>
                         </div>
                         <span className="text-slate-300 font-medium">
                           SECURITY BYPASS ENGAGED // ADVANCING TO ROUND 2
+                        </span>
+                      </div>
+                    ) : noAuthAdvancedBanner || transition?.transition_score === 0 ? (
+                      <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-300 font-mono text-xs flex flex-col items-center justify-center gap-1.5 text-center shadow-[0_0_20px_rgba(100,116,139,0.2)]">
+                        <div className="flex items-center gap-1.5 font-bold text-slate-200 text-sm">
+                          <ShieldAlert className="w-4 h-4 text-slate-400" />
+                          <span>NO AUTHENTICATION PROVIDED // SECTOR BYPASS ENGAGED</span>
+                        </div>
+                        <span className="text-slate-400 font-medium">
+                          SECURITY CLEARANCE BYPASS // PROCEED TO ROUND 2
                         </span>
                       </div>
                     ) : (
@@ -773,9 +864,6 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                           <ShieldCheck className="w-4 h-4 text-emerald-400" />
                           <span>AUTHENTICATION VERIFIED: SECTOR CLEARED</span>
                         </div>
-                        <span className="text-emerald-400 font-bold text-sm">
-                          +{transition?.transition_score ?? gradedResult?.points_awarded ?? 20} PTS AWARDED TO SQUAD
-                        </span>
                       </div>
                     )}
 

@@ -59,6 +59,17 @@ def verify_password(payload: VerifyPasswordPayload):
     return res
 
 
+@router.post("/skip")
+def skip_authentication(payload: TeamIdPayload):
+    """
+    Advance to Round 2 with no authentication (+0 points awarded).
+    """
+    res = svc.skip_transition_authentication(payload.team_id)
+    if "error" in res:
+        raise HTTPException(status_code=404, detail=res["error"])
+    return res
+
+
 @router.post("/add-passwords")
 def add_passwords(payload: AddPasswordsPayload):
     """

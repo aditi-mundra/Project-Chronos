@@ -96,10 +96,11 @@ For the actual event, it is recommended to build the frontend and serve everythi
 ## 🎮 Game Architecture & Rounds
 
 1. **Round 0**: Team Registration & Cinematic Briefing.
-2. **Round 1 (Timeline Fragmentation)**: Image-based classification puzzle (+2 / -1 points, max 50).
-3. **Round 2 (CHRONOS Terminal)**: Timed audit-log investigation with a restricted AI analyst (max 20).
-4. **Round 3 (Final Decision)**: Untimed review of the same Round 2 case. Teams choose Alpha, Beta, or Gamma and cite at least two carried evidence files (+30 / 0).
-5. **Completion**: Participant-safe mission debrief. Scores and correctness remain private in SQLite and are available only through the authenticated host dashboard.
+2. **Round 1 (Timeline Fragmentation)**: Image-based classification puzzle (+2 / -1 points; max 50, min -25).
+3. **Round Transition (Lobby)**: Physical token authentication puzzle (+20 on 1st guess, +10 on 2nd, +5 on 3rd, +0 for skip; score hidden on player terminal, displayed on host leaderboard; max 20, min 0).
+4. **Round 2 (CHRONOS Terminal)**: Timed audit-log investigation with a restricted AI analyst (max 20, min 0).
+5. **Round 3 (Final Decision)**: Untimed review of the same Round 2 case. Teams choose Alpha, Beta, or Gamma and cite carried evidence files (+10 for correct guess, 0 for wrong guess; max 10, min 0).
+6. **Completion**: Participant-safe mission debrief. Scores and correctness remain private in SQLite and are available only through the authenticated host dashboard (Overall Event Score: max 100, min -25).
 
 ---
 

@@ -390,7 +390,7 @@ class Round3Service:
                     for c in candidates_list
                 )
             )
-            points_awarded = 30 if is_correct else 0
+            points_awarded = 10.0 if is_correct else 0.0
             now = get_utc_now_iso()
             cursor.execute(
                 "INSERT INTO round3_submissions "
@@ -405,18 +405,17 @@ class Round3Service:
                 (team_id, saved_candidate_id, json.dumps({"candidate_id": saved_candidate_id, "evidence_ids": evidence_ids}), int(is_correct), points_awarded, now),
             )
 
-            r1_score = max(-25.0, min(50.0, float(team["round1_score"] or 0)))
-            r2_score = max(0.0, min(20.0, float(team["round2_score"] or 0)))
             r3_score = float(points_awarded)
-            total_score = round(r1_score + r2_score + r3_score, 2)
             cursor.execute(
                 """
-                UPDATE teams SET round3_score = ?, r3_score = ?, total_score = ?,
+                UPDATE teams SET round3_score = ?, r3_score = ?,
                     round3_completed_at = ?, status = 'FINISHED', current_state = 'COMPLETED',
                     updated_at = ? WHERE id = ?
                 """,
-                (r3_score, r3_score, total_score, now, now, team_id),
+                (r3_score, r3_score, now, now, team_id),
             )
+            from ..database.queries import update_team_scores
+            update_team_scores(connection, team_id)
             cursor.execute(
                 "UPDATE round3_team_cases SET status = 'COMPLETED' WHERE team_id = ?",
                 (team_id,),

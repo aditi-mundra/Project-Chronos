@@ -29,9 +29,9 @@ def test_leaderboard_total_calculation_with_negative_round1():
         conn.commit()
 
         teams_data = [
-            ("TEST_LB_NEG1", -15.0, 10.0, 30.0),
+            ("TEST_LB_NEG1", -15.0, 10.0, 10.0),
             ("TEST_LB_NEG2", -8.0, 0.0, 0.0),
-            ("TEST_LB_POS1", 20.0, 15.0, 30.0),
+            ("TEST_LB_POS1", 20.0, 15.0, 10.0),
             ("TEST_LB_ZERO", 0.0, 0.0, 0.0),
         ]
 
@@ -78,20 +78,20 @@ def test_leaderboard_total_calculation_with_negative_round1():
         assert len(test_lb_teams) == 4
 
         # Validate total score in API response
-        assert test_lb_teams["TEST_LB_POS1"]["total_score"] == 65.0
+        assert test_lb_teams["TEST_LB_POS1"]["total_score"] == 45.0
         assert test_lb_teams["TEST_LB_POS1"]["round1_score"] == 20.0
 
-        assert test_lb_teams["TEST_LB_NEG1"]["total_score"] == 25.0
+        assert test_lb_teams["TEST_LB_NEG1"]["total_score"] == 5.0
         assert test_lb_teams["TEST_LB_NEG1"]["round1_score"] == -15.0
         assert test_lb_teams["TEST_LB_NEG1"]["round2_score"] == 10.0
-        assert test_lb_teams["TEST_LB_NEG1"]["round3_score"] == 30.0
+        assert test_lb_teams["TEST_LB_NEG1"]["round3_score"] == 10.0
 
         assert test_lb_teams["TEST_LB_ZERO"]["total_score"] == 0.0
 
         assert test_lb_teams["TEST_LB_NEG2"]["total_score"] == -8.0
         assert test_lb_teams["TEST_LB_NEG2"]["round1_score"] == -8.0
 
-        # Validate ranking order: 65 > 25 > 0 > -8
+        # Validate ranking order: 45 > 5 > 0 > -8
         lb_subset = [t["team_name"] for t in lb if t["team_name"].startswith("TEST_LB_")]
         assert lb_subset == ["TEST_LB_POS1", "TEST_LB_NEG1", "TEST_LB_ZERO", "TEST_LB_NEG2"]
 
@@ -99,7 +99,7 @@ def test_leaderboard_total_calculation_with_negative_round1():
         res_csv = client.get("/api/admin/export-csv", headers=ADMIN_HEADERS)
         assert res_csv.status_code == 200
         assert "TEST_LB_NEG1" in res_csv.text
-        assert "25.0" in res_csv.text
+        assert "5.0" in res_csv.text
         assert "-15.0" in res_csv.text
         assert "-8.0" in res_csv.text
 
@@ -114,8 +114,9 @@ def test_authoritative_grading_bounds_enforcement():
     Verify authoritative grading bounds are strictly enforced across DB queries,
     leaderboard API calculations, and CSV exports:
     - Round 1: [-25.0, 50.0]
+    - Lobby / Transition: [0.0, 20.0]
     - Round 2: [0.0, 20.0]
-    - Round 3: [0.0, 30.0]
+    - Round 3: [0.0, 10.0]
     - Total: [-25.0, 100.0]
     """
     create_tables()
@@ -127,27 +128,27 @@ def test_authoritative_grading_bounds_enforcement():
         conn.commit()
 
         # Insert teams with values exceeding limits
-        # High extreme: R1 = 70.0, R2 = 50.0, R3 = 45.0
+        # High extreme: R1 = 70.0, Trans = 30.0, R2 = 50.0, R3 = 45.0
         cur_hi = conn.execute("""
             INSERT INTO teams (
                 team_name, member_1_name, member_2_name,
                 member_1_prn, member_2_prn, current_state,
-                round1_score, r1_score, round2_score, r2_score,
-                round3_score, r3_score, total_score
+                round1_score, r1_score, transition_score,
+                round2_score, r2_score, round3_score, r3_score, total_score
             ) VALUES ('TEST_BOUNDS_HIGH', 'H1', 'H2', 'PRN_H1', 'PRN_H2', 'COMPLETED',
-                      70.0, 70.0, 50.0, 50.0, 45.0, 45.0, 0.0)
+                      70.0, 70.0, 30.0, 50.0, 50.0, 45.0, 45.0, 0.0)
         """)
         hi_id = cur_hi.lastrowid
 
-        # Low extreme: R1 = -40.0, R2 = -10.0, R3 = -5.0
+        # Low extreme: R1 = -40.0, Trans = -10.0, R2 = -10.0, R3 = -5.0
         cur_lo = conn.execute("""
             INSERT INTO teams (
                 team_name, member_1_name, member_2_name,
                 member_1_prn, member_2_prn, current_state,
-                round1_score, r1_score, round2_score, r2_score,
-                round3_score, r3_score, total_score
+                round1_score, r1_score, transition_score,
+                round2_score, r2_score, round3_score, r3_score, total_score
             ) VALUES ('TEST_BOUNDS_LOW', 'L1', 'L2', 'PRN_L1', 'PRN_L2', 'COMPLETED',
-                      -40.0, -40.0, -10.0, -10.0, -5.0, -5.0, 0.0)
+                      -40.0, -40.0, -10.0, -10.0, -10.0, -5.0, -5.0, 0.0)
         """)
         lo_id = cur_lo.lastrowid
         conn.commit()
@@ -157,14 +158,16 @@ def test_authoritative_grading_bounds_enforcement():
         update_team_scores(conn, lo_id)
 
         # Verify DB clamping
-        hi_row = conn.execute("SELECT round1_score, round2_score, round3_score, total_score FROM teams WHERE id = ?", (hi_id,)).fetchone()
+        hi_row = conn.execute("SELECT round1_score, transition_score, round2_score, round3_score, total_score FROM teams WHERE id = ?", (hi_id,)).fetchone()
         assert hi_row["round1_score"] == 50.0
+        assert hi_row["transition_score"] == 20.0
         assert hi_row["round2_score"] == 20.0
-        assert hi_row["round3_score"] == 30.0
+        assert hi_row["round3_score"] == 10.0
         assert hi_row["total_score"] == 100.0
 
-        lo_row = conn.execute("SELECT round1_score, round2_score, round3_score, total_score FROM teams WHERE id = ?", (lo_id,)).fetchone()
+        lo_row = conn.execute("SELECT round1_score, transition_score, round2_score, round3_score, total_score FROM teams WHERE id = ?", (lo_id,)).fetchone()
         assert lo_row["round1_score"] == -25.0
+        assert lo_row["transition_score"] == 0.0
         assert lo_row["round2_score"] == 0.0
         assert lo_row["round3_score"] == 0.0
         assert lo_row["total_score"] == -25.0
@@ -176,19 +179,23 @@ def test_authoritative_grading_bounds_enforcement():
         lookup = {t["team_name"]: t for t in lb if t["team_name"].startswith("TEST_BOUNDS_")}
 
         assert lookup["TEST_BOUNDS_HIGH"]["round1_score"] == 50.0
+        assert lookup["TEST_BOUNDS_HIGH"]["transition_score"] == 20.0
         assert lookup["TEST_BOUNDS_HIGH"]["round2_score"] == 20.0
-        assert lookup["TEST_BOUNDS_HIGH"]["round3_score"] == 30.0
+        assert lookup["TEST_BOUNDS_HIGH"]["round3_score"] == 10.0
         assert lookup["TEST_BOUNDS_HIGH"]["total_score"] == 100.0
         assert lookup["TEST_BOUNDS_HIGH"]["r1_max"] == 50.0
         assert lookup["TEST_BOUNDS_HIGH"]["r1_min"] == -25.0
+        assert lookup["TEST_BOUNDS_HIGH"]["lobby_max"] == 20.0
+        assert lookup["TEST_BOUNDS_HIGH"]["lobby_min"] == 0.0
         assert lookup["TEST_BOUNDS_HIGH"]["r2_max"] == 20.0
         assert lookup["TEST_BOUNDS_HIGH"]["r2_min"] == 0.0
-        assert lookup["TEST_BOUNDS_HIGH"]["r3_max"] == 30.0
+        assert lookup["TEST_BOUNDS_HIGH"]["r3_max"] == 10.0
         assert lookup["TEST_BOUNDS_HIGH"]["r3_min"] == 0.0
         assert lookup["TEST_BOUNDS_HIGH"]["total_max"] == 100.0
         assert lookup["TEST_BOUNDS_HIGH"]["total_min"] == -25.0
 
         assert lookup["TEST_BOUNDS_LOW"]["round1_score"] == -25.0
+        assert lookup["TEST_BOUNDS_LOW"]["transition_score"] == 0.0
         assert lookup["TEST_BOUNDS_LOW"]["round2_score"] == 0.0
         assert lookup["TEST_BOUNDS_LOW"]["round3_score"] == 0.0
         assert lookup["TEST_BOUNDS_LOW"]["total_score"] == -25.0
@@ -197,8 +204,9 @@ def test_authoritative_grading_bounds_enforcement():
         res_csv = client.get("/api/admin/export-csv", headers=ADMIN_HEADERS)
         assert res_csv.status_code == 200
         assert "Round 1 Score (Max 50 / Min -25)" in res_csv.text
+        assert "Lobby Score (Max 20)" in res_csv.text
         assert "Round 2 Score (Max 20)" in res_csv.text
-        assert "Round 3 Score (Max 30)" in res_csv.text
+        assert "Round 3 Score (Max 10)" in res_csv.text
         assert "Total Score (Max 100)" in res_csv.text
 
     finally:

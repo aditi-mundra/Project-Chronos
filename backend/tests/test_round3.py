@@ -110,6 +110,11 @@ def test_round3_uses_the_assigned_round2_case():
     assert "round3_score" not in result
     assert "total_score" not in result
 
+    with get_connection() as connection:
+        row = connection.execute("SELECT round3_score, r3_score FROM teams WHERE id = ?", (team_id,)).fetchone()
+        assert row["round3_score"] == 10.0
+        assert row["r3_score"] == 10.0
+
     duplicate = client.post(
         "/api/round3/submit",
         json={
@@ -130,3 +135,36 @@ def test_round3_uses_the_assigned_round2_case():
     assert "total_score" not in verdict_data
     assert verdict_data["verdict_details"]["true_culprit_id"] == culprit_candidate
     assert verdict_data["verdict_details"]["true_culprit_name"] == round2_case["culprit"]
+
+
+def test_round3_wrong_guess_awards_zero_points():
+    create_tables()
+    init_round2()
+    client = TestClient(app)
+    team_id = _new_team(client)
+    round2_case, suspect_names, _ = _complete_round2(client, team_id)
+
+    start = client.post("/api/round3/start", json={"team_id": team_id})
+    assert start.status_code == 200
+    scenario = start.json()["scenario"]
+
+    # Pick an innocent suspect
+    wrong_candidate = next(
+        c["id"] for c in scenario["candidates"]
+        if c["name"].lower() != round2_case["culprit"].lower()
+    )
+
+    submitted = client.post(
+        "/api/round3/submit",
+        json={
+            "team_id": team_id,
+            "selected_candidate_id": wrong_candidate,
+            "selected_evidence_ids": [],
+        },
+    )
+    assert submitted.status_code == 200
+
+    with get_connection() as connection:
+        row = connection.execute("SELECT round3_score, r3_score FROM teams WHERE id = ?", (team_id,)).fetchone()
+        assert row["round3_score"] == 0.0
+        assert row["r3_score"] == 0.0

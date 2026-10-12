@@ -20,7 +20,7 @@ The schema is partitioned into functional subsystems:
 1. **Master Core (`teams`)**: Persists team registration credentials, PRNs, state machine status, individual round timestamps, and aggregated scores.
 2. **Round 1 Subsystem (`round1_items`, `round1_submissions`)**: Manages the 25 technology puzzle images, correct historical era classifications (`PAST`, `PRESENT`, `FUTURE`), and individual team answers with $+2/-1$ scoring.
 3. **Round 2 Subsystem (`round2_files`, `round2_chat_messages`, `round2_submissions`)**: Manages project text audit logs (Alpha, Beta, Gamma), tracks restricted Gemini AI assistant queries (deducting 5, 5, 10 points), and records culprit findings.
-4. **Round 3 Subsystem (`round3_team_cases`, `round3_submissions`)**: Stores procedurally generated/seeded case assignments to prevent cross-team answer leakage and records final culprit and supporting evidence submissions ($+30$ points).
+4. **Round 3 Subsystem (`round3_team_cases`, `round3_submissions`)**: Stores procedurally generated/seeded case assignments to prevent cross-team answer leakage and records final culprit and supporting evidence submissions ($+10$ points).
 5. **Telemetry & Audit Subsystem (`game_logs`)**: Records time-stamped system events, logins, transitions, and errors for live admin monitoring.
 
 ### 2.3 Concurrency, Locking & Integrity Constraints
@@ -56,11 +56,12 @@ erDiagram
         datetime r1_start_time "Round 1 Start Timestamp"
         datetime r1_end_time "Round 1 Completion Timestamp"
         float r1_time_diff "Round 1 Duration in Seconds"
-        float r1_score "Round 1 Raw Score"
+        float r1_score "Round 1 Score (Max 50, Min -25)"
         float r1_scaled "Round 1 Scaled Score"
-        float r2_score "Round 2 Score (Max 50)"
-        float r3_score "Round 3 Score (Max 30)"
-        float total_score "Total Cumulative Score (Max 130)"
+        float transition_score "Lobby Transition Score (Max 20)"
+        float r2_score "Round 2 Score (Max 20)"
+        float r3_score "Round 3 Score (Max 10)"
+        float total_score "Total Cumulative Score (Max 100, Min -25)"
         string status "ACTIVE | FINISHED | DISQUALIFIED"
         string current_state "State Machine Status"
         datetime created_at "Registration Timestamp"
@@ -111,10 +112,10 @@ erDiagram
         int id PK "Round 2 Record ID"
         int team_id FK "References teams(team_id)"
         string suspect_identified "Identified Culprit"
-        int is_correct "1 if Correct (+30), 0 if Wrong"
-        float points_awarded "Culprit Score (30.0 or 0.0)"
+        int is_correct "1 if Correct, 0 if Wrong"
+        float points_awarded "Culprit Score"
         float ai_points_remaining "Remaining AI Points (Max 20.0)"
-        float round2_total_score "Total R2 Score (Max 50.0)"
+        float round2_total_score "Total R2 Score (Max 20.0)"
         datetime submitted_at "Submission Timestamp"
     }
 
@@ -132,8 +133,8 @@ erDiagram
         int team_id FK "References teams(team_id)"
         string selected_candidate_id "Accused Candidate ID"
         string selected_evidence_ids "JSON Array of Selected Evidence"
-        int is_correct "1 if Correct (+30), 0 if Wrong"
-        float points_awarded "Score Change (+30.0 or 0.0)"
+        int is_correct "1 if Correct (+10), 0 if Wrong"
+        float points_awarded "Score Change (+10.0 or 0.0)"
         datetime submitted_at "Submission Timestamp"
     }
 
@@ -169,10 +170,11 @@ CREATE TABLE IF NOT EXISTS teams (
     r1_score FLOAT DEFAULT 0.0,          -- Raw points (+2 / -1)
     r1_scaled FLOAT DEFAULT 0.0,         -- Scaled/normalized score if applicable
     
-    -- Round 2 & Round 3 Scores
-    r2_score FLOAT DEFAULT 0.0,          -- Investigation (max 50: 30 culprit + 20 AI balance)
-    r3_score FLOAT DEFAULT 0.0,          -- Final Decision (max 30)
-    total_score FLOAT DEFAULT 0.0,       -- Sum of r1_score/r1_scaled + r2_score + r3_score
+    -- Round Transition, Round 2 & Round 3 Scores
+    transition_score FLOAT DEFAULT 0.0,  -- Lobby Authentication (max 20)
+    r2_score FLOAT DEFAULT 0.0,          -- Investigation (max 20 AI balance)
+    r3_score FLOAT DEFAULT 0.0,          -- Final Decision (max 10)
+    total_score FLOAT DEFAULT 0.0,       -- Sum of r1_score + transition_score + r2_score + r3_score
     
     -- Game Progression & Timestamps
     status TEXT DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'FINISHED', 'DISQUALIFIED')),
@@ -247,10 +249,10 @@ CREATE TABLE IF NOT EXISTS round2_submissions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     team_id INTEGER NOT NULL,
     suspect_identified TEXT NOT NULL,
-    is_correct INTEGER NOT NULL,          -- 1 = Correct (+30), 0 = Incorrect (0)
+    is_correct INTEGER NOT NULL,          -- 1 = Correct, 0 = Incorrect
     points_awarded FLOAT NOT NULL,
     ai_points_remaining FLOAT NOT NULL,   -- Starting 20.0 minus deductions
-    round2_total_score FLOAT NOT NULL,    -- points_awarded + ai_points_remaining
+    round2_total_score FLOAT NOT NULL,    -- ai_points_remaining (Max 20.0)
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE CASCADE
 );
@@ -279,7 +281,7 @@ CREATE TABLE IF NOT EXISTS round3_submissions (
     team_id INTEGER NOT NULL,
     selected_candidate_id TEXT NOT NULL,
     selected_evidence_ids TEXT NOT NULL,  -- JSON array of selected evidence
-    is_correct INTEGER NOT NULL,          -- 1 = +30 points, 0 = 0 points
+    is_correct INTEGER NOT NULL,          -- 1 = +10 points, 0 = 0 points
     points_awarded FLOAT NOT NULL,
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE CASCADE
@@ -314,30 +316,38 @@ import sqlite3
 from datetime import datetime
 
 def update_team_scores(connection: sqlite3.Connection, team_id: int):
-    """Recomputes total_score and updates the master teams table."""
+    """
+    Recomputes total_score and synchronizes column aliases (round1_score/r1_score, etc.).
+    Enforces authoritative grading bounds:
+    - Round 1: [-25.0, 50.0]
+    - Round Transition (Lobby): [0.0, 20.0]
+    - Round 2: [0.0, 20.0]
+    - Round 3: [0.0, 10.0]
+    - Total: [-25.0, 100.0]
+    """
     cursor = connection.cursor()
     cursor.execute("""
-        UPDATE teams
-        SET total_score = ROUND(COALESCE(r1_score, 0.0) + COALESCE(r2_score, 0.0) + COALESCE(r3_score, 0.0), 2),
-            updated_at = CURRENT_TIMESTAMP
-        WHERE team_id = ?
+        SELECT round1_score, r1_score, transition_score,
+               round2_score, r2_score, round3_score, r3_score
+        FROM teams WHERE id = ?
     """, (team_id,))
-    connection.commit()
+    row = cursor.fetchone()
+    if not row:
+        return
 
-def record_round1_completion(connection: sqlite3.Connection, team_id: int, r1_score: float, start_time: datetime, end_time: datetime):
-    """Computes duration in seconds and updates Round 1 metrics."""
-    time_diff = (end_time - start_time).total_seconds()
-    cursor = connection.cursor()
+    s1 = max(-25.0, min(50.0, float(row["round1_score"] or row["r1_score"] or 0.0)))
+    s_trans = max(0.0, min(20.0, float(row["transition_score"] or 0.0)))
+    s2 = max(0.0, min(20.0, float(row["round2_score"] or row["r2_score"] or 0.0)))
+    s3 = max(0.0, min(10.0, float(row["round3_score"] or row["r3_score"] or 0.0)))
+    total = round(s1 + s_trans + s2 + s3, 2)
+
     cursor.execute("""
         UPDATE teams
-        SET r1_start_time = ?,
-            r1_end_time = ?,
-            r1_time_diff = ?,
-            r1_score = ?,
-            total_score = ROUND(? + COALESCE(r2_score, 0.0) + COALESCE(r3_score, 0.0), 2),
-            updated_at = CURRENT_TIMESTAMP
-        WHERE team_id = ?
-    """, (start_time.isoformat(), end_time.isoformat(), round(time_diff, 2), r1_score, r1_score, team_id))
+        SET round1_score = ?, r1_score = ?, transition_score = ?,
+            round2_score = ?, r2_score = ?, round3_score = ?, r3_score = ?,
+            total_score = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (s1, s1, s_trans, s2, s2, s3, s3, total, team_id))
     connection.commit()
 ```
 

@@ -19,9 +19,9 @@ To prevent teams who finish early from leaking answers (`"The culprit is X"`), R
 
 ### 1.3 Key Rules & Scoring
 * **Scoring**:
-  * Correct Culprit Identified: **+30 Points**
+  * Correct Culprit Identified: **+10 Points**
   * Wrong Culprit Identified: **0 Points**
-  * Maximum Round 3 Score: **30 Points** (Contributing to the overall event maximum of **130 Points**).
+  * Maximum Round 3 Score: **10 Points** (Contributing to the overall event maximum of **100 Points**).
 * **Evidence Validation**: Teams must select at least **two pieces of supporting evidence** (Timeline Modification, Access History, Incident Timestamp, System Authorization) corroborating their decision.
 * **Tie-Breaker Rule**: Round 3 completion time is the **1st priority tie-breaker** for the overall event leaderboard, making speed and accuracy in this round decisive.
 
@@ -47,7 +47,7 @@ ROUND 2 COMPLETED
 │ - Verify Active State & Timer Expiry Guard             │
 │ - Validate Selected Culprit Against Team Case Seed      │
 │ - Validate Minimum 2 Supporting Evidence Selections     │
-│ - Record Score (+30 / 0) and round3_completed_at        │
+│ - Record Score (+10 / 0) and round3_completed_at        │
 └─────────────────────────────────────────────────────────┘
        │
        ▼ (State Transition: DECISION_SUBMITTED -> FINAL_REVEAL)
@@ -115,7 +115,7 @@ In `backend/app/database/schema.py`:
    - `reference_id`: Selected candidate ID.
    - `answer`: JSON payload with `{ "candidate_id": "...", "evidence_ids": ["...", "..."] }`
    - `is_correct`: `1` or `0`
-   - `points_awarded`: `30` or `0`
+   - `points_awarded`: `10` or `0`
    - `submitted_at`: Server timestamp.
 
 ### 2.2.2 State Machine Transitions
@@ -185,10 +185,10 @@ In `backend/app/database/schema.py`:
      - Check evidence validity (at least 2 matching valid evidence IDs).
   4. Scoring:
      - `is_correct = (selected_candidate_id == culprit_candidate_id)`
-     - `points = 30 if is_correct else 0`
+     - `points = 10 if is_correct else 0`
   5. Update `teams`:
      - `round3_score = points`
-     - `total_score = round1_score + round2_score + points`
+     - `total_score = round1_score + transition_score + round2_score + points`
      - `round3_completed_at = datetime.utcnow().isoformat()`
      - `current_state = "COMPLETED"` (or `DECISION_SUBMITTED`)
   6. Insert record into `submissions` and log event into `game_logs`.
@@ -197,9 +197,9 @@ In `backend/app/database/schema.py`:
   {
     "status": "success",
     "verdict_recorded": true,
-    "points_awarded": 30,
-    "round3_score": 30,
-    "total_score": 110,
+    "points_awarded": 10,
+    "round3_score": 10,
+    "total_score": 90,
     "completed_at": "2026-09-30T10:52:14Z",
     "next_state": "COMPLETED"
   }
@@ -272,7 +272,7 @@ In `backend/app/database/schema.py`:
 
 ### Phase 4: Integration, Admin Leaderboard & Verification (Day 3 - Day 4)
 - [x] Test complete end-to-end player trajectory: Login ➔ Round 1 ➔ Round 2 ➔ Round 3 ➔ Completion.
-- [x] Verify Admin Leaderboard reflects Round 3 score (+30 / 0) and accurately breaks ties using `round3_completed_at`.
+- [x] Verify Admin Leaderboard reflects Round 3 score (+10 / 0) and accurately breaks ties using `round3_completed_at`.
 - [x] Conduct multi-team concurrency test to verify scenario isolation.
 
 ---
@@ -281,7 +281,7 @@ In `backend/app/database/schema.py`:
 
 * [x] **Scenario Determinism**: Team 1 always receives Case 1 on reload; Team 2 receives Case 2.
 * [x] **Evidence Constraint**: Submitting with 1 evidence item returns a 422/400 validation error.
-* [x] **Scoring Accuracy**: Correct candidate awards exactly +30 points; incorrect awards 0 points.
+* [x] **Scoring Accuracy**: Correct candidate awards exactly +10 points; incorrect awards 0 points.
 * [x] **Tie-Breaker Integrity**: `round3_completed_at` is accurately recorded in UTC ISO8601 format.
 * [x] **State Lockdown**: Once submitted, navigating back or calling `/submit` again cannot alter score or timestamp.
 

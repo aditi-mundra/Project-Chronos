@@ -116,6 +116,13 @@ export const api = {
     });
   },
 
+  async skipTransition(teamId) {
+    return apiRequest('/api/transition/skip', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId }),
+    });
+  },
+
   // =========================================================================
   // Round 2 Subsystem
   // =========================================================================

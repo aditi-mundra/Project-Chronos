@@ -490,7 +490,7 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
             suffix = "ST" if attempt_number == 1 else ("ND" if attempt_number == 2 else "RD")
             return {
                 "success": True,
-                "message": f"AUTHENTICATION VERIFIED ({attempt_number}{suffix} ATTEMPT) // +{int(points_awarded)} PTS AWARDED",
+                "message": f"AUTHENTICATION VERIFIED ({attempt_number}{suffix} ATTEMPT) // ACCESS GRANTED",
                 "elapsed_seconds": round(float(elapsed_seconds), 2),
                 "is_completed": True,
                 "points_awarded": points_awarded,
@@ -537,7 +537,7 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
                     "attempts_used": 3,
                     "attempts_remaining": 0,
                     "elapsed_seconds": round(float(elapsed_seconds), 2),
-                    "message": "3 INACCURATE RESPONSES (0 PTS) // SECURITY LOCKOUT BYPASS TRIGGERED: ADVANCING TO ROUND 2.",
+                    "message": "3 INACCURATE RESPONSES // SECURITY LOCKOUT BYPASS TRIGGERED: ADVANCING TO ROUND 2.",
                 }
             else:
                 cursor.execute(
@@ -563,5 +563,80 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
                     "next_potential_points": next_pts,
                     "error": f"{raw_error} Attempt {new_attempts} of 3 failed. {attempts_left} attempt{'s' if attempts_left > 1 else ''} remaining ({next_pts} pts next attempt).{warning_suffix}",
                 }
+    finally:
+        conn.close()
+
+
+def skip_transition_authentication(team_id: int) -> Dict[str, Any]:
+    """
+    Allows a squad to advance directly to Round 2 with no authentication (+0 points awarded).
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, team_name, transition_start_time, transition_status, 
+                   transition_attempts, transition_score, transition_time_diff,
+                   transition_password_used
+            FROM teams
+            WHERE id = ?
+            """,
+            (team_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return {"error": "Invalid team_id."}
+
+        # If already completed, return existing completion state
+        if row["transition_status"] == "COMPLETED":
+            return get_transition_info(team_id)
+
+        now_dt = datetime.now(timezone.utc)
+        now_iso = now_dt.isoformat(timespec="milliseconds")
+        elapsed_seconds = float(row["transition_time_diff"] or 0.0)
+        start_time = row["transition_start_time"]
+
+        if start_time and elapsed_seconds == 0.0:
+            try:
+                start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                if start_dt.tzinfo is None:
+                    start_dt = start_dt.replace(tzinfo=timezone.utc)
+                elapsed_seconds = max(0.0, (now_dt - start_dt).total_seconds())
+            except Exception:
+                pass
+
+        cursor.execute(
+            """
+            UPDATE teams
+            SET transition_end_time = ?,
+                transition_time_diff = ?,
+                transition_status = 'COMPLETED',
+                transition_password_used = COALESCE(NULLIF(transition_password_used, ''), 'NO_AUTHENTICATION'),
+                transition_score = 0.0
+            WHERE id = ?
+            """,
+            (now_iso, elapsed_seconds, team_id),
+        )
+        update_team_scores(conn, team_id)
+
+        _log_event(cursor, team_id, "TRANSITION_NO_AUTHENTICATION_ADVANCE", {
+            "stop_time": now_iso,
+            "elapsed_seconds": elapsed_seconds,
+            "points_awarded": 0.0,
+        })
+        conn.commit()
+
+        return {
+            "success": True,
+            "is_completed": True,
+            "can_proceed": True,
+            "auto_advanced": True,
+            "points_awarded": 0.0,
+            "attempts_used": int(row["transition_attempts"] or 0),
+            "attempts_remaining": max(0, 3 - int(row["transition_attempts"] or 0)),
+            "elapsed_seconds": round(float(elapsed_seconds), 2),
+            "message": "NO AUTHENTICATION // ADVANCING TO ROUND 2.",
+        }
     finally:
         conn.close()

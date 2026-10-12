@@ -182,7 +182,14 @@ For example:
 
 Once they find the required tokens, they will use them on their desktop to authenticate themselves.
 
-After authentication, Round 2.2 will be unlocked.
+### Round Transition (Lobby) Grading System:
+* **1st Guess Correct**: **+20 points**
+* **2nd Guess Correct**: **+10 points**
+* **3rd Guess Correct**: **+5 points**
+* **No Authentication / Skipped**: **+0 points** (Teams are permitted to advance without authentication).
+* **Stealth Scoring**: The marks awarded are **not displayed** on the player frontend (`+20 PTS AWARDED TO SQUAD` text removed). The points are recorded secretly in the database and displayed exclusively on the Host Master Leaderboard.
+
+After authentication (or bypass), Round 2.2 will be unlocked.
 
 ---
 
@@ -374,18 +381,11 @@ button.
 
 # ROUND 2 EVALUATION
 
-### Culprit identification:
+### AI investigation balance:
+* Maximum = *20 points*
+* Minimum = *0 points*
 
-* Correct candidate = *+30 points*
-* Wrong candidate = *0 points*
-
-### AI investigation:
-
-Maximum = *20 points*
-
-Therefore, Round 2 can provide a maximum of:
-
-*50 points*
+Therefore, Round 2 provides a maximum of *20 points* based on remaining AI analyst points/credits.
 
 The idea is that teams should use the AI carefully. They are allowed to use it, but excessive dependence reduces their score.
 
@@ -483,7 +483,7 @@ The backend will compare their answer against the unique case assigned to that t
 
 ### Round 3 scoring:
 
-* Correct culprit = *+30 points*
+* Correct culprit = *+10 points*
 * Wrong culprit = *0 points*
 
 The selected evidence can also be validated against the case to ensure that the team has actually followed the investigation logic.
@@ -495,34 +495,29 @@ The selected evidence can also be validated against the case to ensure that the 
 The total score across all rounds will determine the winner.
 
 ### ROUND 1
+* Maximum: *50 points*
+* Minimum: *-25 points*
 
-Maximum:
-
-*50 points*
+### ROUND TRANSITION (LOBBY)
+* 1st Guess: *+20 points*
+* 2nd Guess: *+10 points*
+* 3rd Guess: *+5 points*
+* Skipped / Unauthenticated: *0 points*
+* Maximum: *20 points*
+* Minimum: *0 points*
 
 ### ROUND 2
-
-Culprit identification:
-
-*30 points*
-
-AI investigation:
-
-*20 points*
-
-Maximum Round 2:
-
-*50 points*
+* AI Investigation & Deduction: *20 points maximum* (remaining AI credits)
+* Minimum: *0 points*
 
 ### ROUND 3
-
-Final decision:
-
-*30 points*
+* Final decision: *+10 points* (Correct) / *0 points* (Wrong)
+* Maximum: *10 points*
+* Minimum: *0 points*
 
 Therefore:
 
-## TOTAL MAXIMUM SCORE = 130 POINTS
+## TOTAL MAXIMUM SCORE = 100 POINTS (MINIMUM = -25 POINTS)
 
 ---
 
@@ -560,13 +555,13 @@ Receive clue
 Receive unique authentication code
 ↓
 
-*ROUND 2.1 → PHYSICAL SPLIT*
+*ROUND 2.1 → PHYSICAL SPLIT & LOBBY TRANSITION*
 
 Find hidden tokens around the venue
 ↓
 Complete physical mini-game
 ↓
-Authenticate desktop
+Authenticate desktop (Graded: +20 1st / +10 2nd / +5 3rd / +0 Skip; stealth scoring)
 ↓
 
 *ROUND 2.2 → CHRONOS TERMINAL*

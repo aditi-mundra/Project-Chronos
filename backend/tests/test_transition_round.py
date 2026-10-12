@@ -226,3 +226,65 @@ def test_transition_graded_attempts_and_auto_advance():
     assert info_fail4["transition_attempts"] == 3
     assert info_fail4["is_completed"] is True
 
+
+def test_transition_skip_and_leaderboard_database_sync():
+    """
+    Test that advancing with no authentication (skip) awards 0 points,
+    allows proceeding to Round 2, and properly synchronizes with the
+    Leaderboard database and admin CSV export.
+    """
+    from backend.app.routes.admin import ADMIN_SECRET_TOKEN
+    admin_headers = {"Authorization": f"Bearer {ADMIN_SECRET_TOKEN}"}
+
+    # 1. Register a team
+    r = client.post("/api/auth/login", json={
+        "team_name": "TEST_TRANS_SKIP",
+        "member_1_name": "Skip1",
+        "member_2_name": "Skip2",
+        "member_1_prn": "24666666661",
+        "member_2_prn": "25666666662",
+    }).json()
+    tid = r["team_id"]
+
+    # 2. Advance without authentication via /api/transition/skip
+    skip_res = client.post("/api/transition/skip", json={"team_id": tid})
+    assert skip_res.status_code == 200
+    skip_data = skip_res.json()
+    assert skip_data["success"] is True
+    assert skip_data["is_completed"] is True
+    assert skip_data["can_proceed"] is True
+    assert skip_data["points_awarded"] == 0.0
+
+    # 3. Verify in team transition info
+    info = client.get(f"/api/transition/info?team_id={tid}").json()
+    assert info["is_completed"] is True
+    assert info["can_proceed"] is True
+    assert info["transition_score"] == 0.0
+
+    # 4. Check DB row directly
+    conn = get_connection()
+    try:
+        row = conn.execute("SELECT transition_score, total_score, transition_status FROM teams WHERE id = ?", (tid,)).fetchone()
+        assert row["transition_status"] == "COMPLETED"
+        assert row["transition_score"] == 0.0
+        assert row["total_score"] == 0.0
+    finally:
+        conn.close()
+
+    # 5. Check master leaderboard API contains transition_score / lobby_score
+    lb_res = client.get("/api/admin/leaderboard", headers=admin_headers)
+    assert lb_res.status_code == 200
+    lb_list = lb_res.json()
+    skip_entry = next((item for item in lb_list if item["team_name"] == "TEST_TRANS_SKIP"), None)
+    assert skip_entry is not None
+    assert skip_entry["transition_score"] == 0.0
+    assert skip_entry["lobby_score"] == 0.0
+    assert skip_entry["total_score"] == 0.0
+
+    # 6. Check CSV export contains Lobby Score column
+    csv_res = client.get("/api/admin/export-csv", headers=admin_headers)
+    assert csv_res.status_code == 200
+    assert "Lobby Score (Max 20)" in csv_res.text
+    assert "TEST_TRANS_SKIP" in csv_res.text
+
+

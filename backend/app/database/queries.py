@@ -52,18 +52,21 @@ def update_team_scores(connection: sqlite3.Connection, team_id: int):
 
     # Enforce authoritative grading system:
     # Round 1: 50 maximum, -25 minimum
+    # Lobby / Transition: 20 maximum, 0 minimum
     # Round 2: 20 maximum, 0 minimum
-    # Round 3: 30 maximum, 0 minimum
+    # Round 3: 10 maximum, 0 minimum
     s1 = max(-25.0, min(50.0, s1))
+    s_trans = max(0.0, min(20.0, s_trans))
     s2 = max(0.0, min(20.0, s2))
-    s3 = max(0.0, min(30.0, s3))
-    total = round(s1 + s2 + s3 + s_trans, 2)
+    s3 = max(0.0, min(10.0, s3))
+    total = round(s1 + s_trans + s2 + s3, 2)
 
     cursor.execute("""
         UPDATE teams
         SET round1_score = ?,
             r1_score = ?,
             r1_scaled = ?,
+            transition_score = ?,
             round2_score = ?,
             r2_score = ?,
             round3_score = ?,
@@ -71,7 +74,7 @@ def update_team_scores(connection: sqlite3.Connection, team_id: int):
             total_score = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    """, (s1, s1, s1, s2, s2, s3, s3, total, team_id))
+    """, (s1, s1, s1, s_trans, s2, s2, s3, s3, total, team_id))
     connection.commit()
 
 

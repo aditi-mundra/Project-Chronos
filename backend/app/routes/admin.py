@@ -117,6 +117,7 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 round1_score,
                 r1_score,
                 round1_auth_code,
+                transition_score,
                 round2_score,
                 r2_score,
                 round3_score,
@@ -133,7 +134,7 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 created_at,
                 updated_at
             FROM teams
-            ORDER BY total_score DESC, (round1_score + round2_score + round3_score) DESC, id ASC
+            ORDER BY total_score DESC, (round1_score + COALESCE(transition_score, 0) + round2_score + round3_score) DESC, id ASC
         """)
         rows = cursor.fetchall()
 
@@ -143,19 +144,23 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
             
             # Preserve negative Round 1 scores and enforce authoritative grading bounds:
             # Round 1: 50.0 maximum, -25.0 minimum
+            # Lobby / Transition: 20.0 maximum, 0.0 minimum
             # Round 2: 20.0 maximum, 0.0 minimum
-            # Round 3: 30.0 maximum, 0.0 minimum
+            # Round 3: 10.0 maximum, 0.0 minimum
             r1_val = r["round1_score"] if r["round1_score"] is not None else r["r1_score"]
             r1_score_val = max(-25.0, min(50.0, float(r1_val))) if r1_val is not None else 0.0
+
+            trans_val = r["transition_score"]
+            trans_score_val = max(0.0, min(20.0, float(trans_val))) if trans_val is not None else 0.0
 
             r2_val = r["round2_score"] if r["round2_score"] is not None else r["r2_score"]
             r2_score_val = max(0.0, min(20.0, float(r2_val))) if r2_val is not None else 0.0
 
             r3_val = r["round3_score"] if r["round3_score"] is not None else r["r3_score"]
-            r3_score_val = max(0.0, min(30.0, float(r3_val))) if r3_val is not None else 0.0
+            r3_score_val = max(0.0, min(10.0, float(r3_val))) if r3_val is not None else 0.0
 
-            # Direct mathematical total of Round 1 + Round 2 + Round 3 scores (Max 100, Min -25)
-            calc_total = round(r1_score_val + r2_score_val + r3_score_val, 2)
+            # Direct mathematical total of Round 1 + Lobby + Round 2 + Round 3 scores
+            calc_total = round(r1_score_val + trans_score_val + r2_score_val + r3_score_val, 2)
 
             status_val = "FINISHED" if r["current_state"] in ("COMPLETED", "DECISION_SUBMITTED", "FINAL_REVEAL") else (r["current_state"] or "ACTIVE")
 
@@ -179,6 +184,8 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 "r1_score": r1_score_val,
                 "r1_scaled": r1_score_val,
                 "round1_score": r1_score_val,
+                "transition_score": trans_score_val,
+                "lobby_score": trans_score_val,
                 "r2_score": r2_score_val,
                 "round2_score": r2_score_val,
                 "r3_score": r3_score_val,
@@ -186,9 +193,13 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 "total_score": calc_total,
                 "r1_max": 50.0,
                 "r1_min": -25.0,
+                "lobby_max": 20.0,
+                "lobby_min": 0.0,
+                "transition_max": 20.0,
+                "transition_min": 0.0,
                 "r2_max": 20.0,
                 "r2_min": 0.0,
-                "r3_max": 30.0,
+                "r3_max": 10.0,
                 "r3_min": 0.0,
                 "total_max": 100.0,
                 "total_min": -25.0,
@@ -242,8 +253,9 @@ def export_leaderboard_csv(request: Request):
         "Round 1 Time (s)",
         "Round 1 Time Formatted",
         "Round 1 Auth Code",
+        "Lobby Score (Max 20)",
         "Round 2 Score (Max 20)",
-        "Round 3 Score (Max 30)",
+        "Round 3 Score (Max 10)",
         "Total Score (Max 100)",
         "AI Model Used",
         "AI API Live"
@@ -262,6 +274,7 @@ def export_leaderboard_csv(request: Request):
             t["r1_time_diff"] if t["r1_time_diff"] is not None else "",
             t["r1_time_formatted"],
             t["round1_auth_code"],
+            t.get("transition_score", 0.0),
             t["round2_score"],
             t["round3_score"],
             t["total_score"],

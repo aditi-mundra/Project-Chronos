@@ -55,10 +55,11 @@ Participants are mobilized as **Temporal Engineers**. Operating from forensic fi
 * **Team Composition**: Exactly **2 members per team** (Primary Operator & Co-Pilot).
 * **Identifier Constraints**: Unique **Callsign (Team Name)** and verified institutional **PRNs (Permanent Registration Numbers)** for both members.
 * **Scoring Ceiling**:
-  * **Round 1**: Up to **50.0 Points** ($25 \text{ items} \times 2 \text{ pts}$, $-1 \text{ pt}$ penalty for errors).
-  * **Round 2**: Up to **50.0 Points** (Investigation audit logs & deduction-based AI analysis).
-  * **Round 3**: **30.0 Points** (Accusation decision & evidence corroboration).
-  * **Maximum Total**: **130.0 Points**.
+  * **Round 1**: Up to **50.0 Points** ($25 \text{ items} \times 2 \text{ pts}$, $-1 \text{ pt}$ penalty for errors; minimum **-25.0 Points**).
+  * **Round Transition (Lobby)**: Up to **20.0 Points** (+20 on 1st guess, +10 on 2nd, +5 on 3rd, +0 for skip).
+  * **Round 2**: Up to **20.0 Points** (Investigation audit logs & deduction-based AI analysis).
+  * **Round 3**: **10.0 Points** (+10 for correct accusation, 0 for wrong accusation).
+  * **Maximum Total**: **100.0 Points** (Minimum: **-25.0 Points**).
 
 ---
 
@@ -138,13 +139,19 @@ Project Chronos utilizes a **unified single-server architecture**. A single Fast
 ### Phase 3: Round 2 — CHRONOS Terminal Investigation
 1. **Round 2 Holding Lobby (`Round2Lobby.jsx`)**:
    - Displays Round 1 score, time taken, authentication code, and narrative clue.
-   - Clicking **PLAY ROUND 2** unlocks the forensic terminal.
+   - **Graded Token Authentication**:
+     * 1st Attempt: **+20.0 points**
+     * 2nd Attempt: **+10.0 points**
+     * 3rd Attempt: **+5.0 points**
+     * Skip / No Authentication: **0.0 points** (allows advancing via bypass/skip).
+     * **Stealth Scoring**: Marks awarded are hidden on the player terminal; displayed directly on the Host Leaderboard.
+   - Clicking **PLAY ROUND 2** (or skipping) unlocks the forensic terminal.
 2. **CHRONOS Terminal (`Round2.jsx`)**:
    - Unlocks three classified investigation files:
      * `alpha` (`future_audit.log`): Details parameter `T-17` modification committed at 21:11:02 UTC.
      * `beta` (`incident_report.txt`): Internal report on timeline projection breakdown and observed suspects.
      * `gamma` (`access_history.log`): Access audit cross-referencing biometric logins across Alpha, Beta, and Gamma resources.
-   - Teams analyze conflicting logs to deduce which actor tampered with the core configuration.
+   - Teams analyze conflicting logs to deduce which actor tampered with the core configuration (Max 20 AI points remaining).
 
 ### Phase 4: Round 3 — Final Decision / Wisdom Round
 1. **Anti-Collusion Dynamic Case Architecture**:
@@ -152,13 +159,13 @@ Project Chronos utilizes a **unified single-server architecture**. A single Fast
    - Each scenario presents 3 suspect candidates (e.g., Noah Vale, Aria Sen, Elias Voss) and an evidence pool.
 2. **Decision Submission (`Round3.jsx`)**:
    - Teams must select **1 suspect candidate** and at least **2 pieces of corroborating evidence**.
-   - **Correct Accusation**: $+30.0$ points.
+   - **Correct Accusation**: $+10.0$ points.
    - **Incorrect Accusation**: $0.0$ points.
    - Submissions are permanently locked upon receipt (`is_already_locked: true`).
 
 ### Phase 5: Mission Completion & Forensic Debrief
 1. **Debrief Interface (`Completion.jsx`)**:
-   - Displays final team ranking, cumulative total score (max 130), individual round score breakdown, and elapsed duration.
+   - Displays final team ranking, cumulative total score (max 100), individual round score breakdown, and elapsed duration.
    - Unlocks the comprehensive chronological post-mortem forensic narrative.
 
 ---
@@ -169,14 +176,14 @@ The Master Host Leaderboard is accessible directly within the application (via t
 
 ### Leaderboard Telemetry & Real-Time Sync
 * Displays real-time ranking computed dynamically by:
-  $$\text{total\_score} \downarrow, \quad (\text{round1\_score} + \text{round2\_score} + \text{round3\_score}) \downarrow, \quad \text{id} \uparrow$$
+  $$\text{total\_score} \downarrow, \quad (\text{round1\_score} + \text{COALESCE}(\text{transition\_score}, 0) + \text{round2\_score} + \text{round3\_score}) \downarrow, \quad \text{id} \uparrow$$
 * Automatically polls `/api/admin/leaderboard` every 5 seconds.
 * Displays:
   * Official Rank (`#1`, `#2`, `#3`, etc.)
   * Callsign & Operator Names
   * Both Operator PRNs
   * Round 1 Time Formatted (`MM:SS`)
-  * Individual Round Scores (`R1`, `R2`, `R3`)
+  * Individual Round Scores (`R1`, `LOBBY`, `R2`, `R3`)
   * Total Cumulative Score
   * Real-Time Unit Status (`ACTIVE` / `FINISHED`)
 
@@ -252,6 +259,7 @@ erDiagram
         float r1_time_diff "Round 1 Duration in Seconds"
         float round1_score "Round 1 Score"
         string round1_auth_code "Round 1 Completion Token"
+        float transition_score "Lobby Transition Score (Max 20)"
         float round2_score "Round 2 Score"
         float round3_score "Round 3 Score"
         float total_score "Total Computed Score"
@@ -304,8 +312,8 @@ erDiagram
         int team_id FK "Reference to teams.id"
         string selected_candidate_id "Target Accused"
         string selected_evidence_ids "JSON Array of Cited Evidence"
-        int is_correct "1 if correct (+30), 0 if wrong"
-        float points_awarded "30.0 or 0.0"
+        int is_correct "1 if correct (+10), 0 if wrong"
+        float points_awarded "10.0 or 0.0"
         datetime submitted_at "Submission Timestamp"
     }
 ```
@@ -316,6 +324,7 @@ Score updates execute server-side within transactions to maintain mathematical c
 UPDATE teams
 SET total_score = ROUND(
         COALESCE(round1_score, r1_score, 0.0) +
+        COALESCE(transition_score, 0.0) +
         COALESCE(round2_score, r2_score, 0.0) +
         COALESCE(round3_score, r3_score, 0.0),
         2
@@ -542,9 +551,9 @@ Submits the team's final culprit accusation and supporting evidence.
   {
     "status": "success",
     "is_correct": true,
-    "points_awarded": 30.0,
-    "round3_score": 30.0,
-    "total_score": 114.0,
+    "points_awarded": 10.0,
+    "round3_score": 10.0,
+    "total_score": 94.0,
     "status_state": "COMPLETED"
   }
   ```

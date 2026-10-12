@@ -99,6 +99,7 @@ export default function Leaderboard({ onBack, onLogout }) {
       'Round 1 Time (s)',
       'Round 1 Time Formatted',
       'Round 1 Auth Code',
+      'Lobby Score',
       'Round 2 Score',
       'Round 3 Score',
       'Total Score',
@@ -118,11 +119,13 @@ export default function Leaderboard({ onBack, onLogout }) {
       t.r1_time_diff != null ? t.r1_time_diff : '',
       `"${t.r1_time_formatted || '--:--'}"`,
       `"${t.round1_auth_code || ''}"`,
+      Number(t.transition_score ?? t.lobby_score ?? 0),
       Number(t.round2_score ?? t.r2_score ?? 0),
       Number(t.round3_score ?? t.r3_score ?? 0),
       t.total_score != null
         ? Number(t.total_score)
         : Number(t.round1_score ?? t.r1_score ?? 0) +
+          Number(t.transition_score ?? t.lobby_score ?? 0) +
           Number(t.round2_score ?? t.r2_score ?? 0) +
           Number(t.round3_score ?? t.r3_score ?? 0),
       `"${t.status || 'ACTIVE'}"`,
@@ -207,6 +210,7 @@ export default function Leaderboard({ onBack, onLogout }) {
           t.total_score != null
             ? Number(t.total_score)
             : Number(t.round1_score ?? t.r1_score ?? 0) +
+              Number(t.transition_score ?? t.lobby_score ?? 0) +
               Number(t.round2_score ?? t.r2_score ?? 0) +
               Number(t.round3_score ?? t.r3_score ?? 0)
         )
@@ -363,6 +367,7 @@ export default function Leaderboard({ onBack, onLogout }) {
                 <th className="py-3 px-4">OPERATORS & PRN</th>
                 <th className="py-3 px-4 text-center">R1 TIME</th>
                 <th className="py-3 px-4 text-center">R1 SCORE</th>
+                <th className="py-3 px-4 text-center">LOBBY</th>
                 <th className="py-3 px-4 text-center">R2 SCORE</th>
                 <th className="py-3 px-4 text-center">R3 SCORE</th>
                 <th className="py-3 px-4 text-center font-bold text-cyan-300">TOTAL</th>
@@ -372,7 +377,7 @@ export default function Leaderboard({ onBack, onLogout }) {
             <tbody className="divide-y divide-cyan-950/60">
               {filteredTeams.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-12 text-slate-500">
+                  <td colSpan="10" className="text-center py-12 text-slate-500">
                     No matching teams found in master database.
                   </td>
                 </tr>
@@ -423,6 +428,10 @@ export default function Leaderboard({ onBack, onLogout }) {
                         </span>
                       </td>
 
+                      <td className="py-3 px-4 text-center font-bold text-cyan-400">
+                        {Number(t.transition_score ?? t.lobby_score ?? 0).toFixed(1)}
+                      </td>
+
                       <td className="py-3 px-4 text-center font-bold text-slate-200">
                         {Number(t.round2_score ?? t.r2_score ?? 0).toFixed(1)}
                       </td>
@@ -436,6 +445,7 @@ export default function Leaderboard({ onBack, onLogout }) {
                           t.total_score != null
                             ? t.total_score
                             : Number(t.round1_score ?? t.r1_score ?? 0) +
+                                Number(t.transition_score ?? t.lobby_score ?? 0) +
                                 Number(t.round2_score ?? t.r2_score ?? 0) +
                                 Number(t.round3_score ?? t.r3_score ?? 0)
                         ).toFixed(1)}

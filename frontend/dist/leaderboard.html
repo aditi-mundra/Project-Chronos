@@ -658,6 +658,7 @@
             <th>Operators (Name &amp; PRN)</th>
             <th>R1 Time</th>
             <th style="text-align: right;">R1 Score</th>
+            <th style="text-align: right; color: #22d3ee;">Lobby Score</th>
             <th style="text-align: right;">R2 Score</th>
             <th style="text-align: right;">R3 Score</th>
             <th style="text-align: right; color: #67e8f9;">Total Score</th>
@@ -666,7 +667,7 @@
         </thead>
         <tbody id="leaderboard-body">
           <tr>
-            <td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">
+            <td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">
               Loading authoritative SQLite records...
             </td>
           </tr>
@@ -772,15 +773,16 @@
       // Rank 2 (Left Stair - Cyan / Blue)
       if (rank2) {
         const r2_r1 = rank2.round1_score != null ? Number(rank2.round1_score) : (rank2.r1_score != null ? Number(rank2.r1_score) : 0);
+        const r2_trans = rank2.transition_score != null ? Number(rank2.transition_score) : (rank2.lobby_score != null ? Number(rank2.lobby_score) : 0);
         const r2_r2 = rank2.round2_score != null ? Number(rank2.round2_score) : (rank2.r2_score != null ? Number(rank2.r2_score) : 0);
         const r2_r3 = rank2.round3_score != null ? Number(rank2.round3_score) : (rank2.r3_score != null ? Number(rank2.r3_score) : 0);
-        const r2_tot = rank2.total_score != null ? Number(rank2.total_score) : (r2_r1 + r2_r2 + r2_r3);
+        const r2_tot = rank2.total_score != null ? Number(rank2.total_score) : (r2_r1 + r2_trans + r2_r2 + r2_r3);
         html += `
           <div class="podium-card podium-rank-2">
             <div class="podium-badge-circle">02</div>
             <div class="podium-team-name" title="${escapeHtml(rank2.team_name)}">${escapeHtml(rank2.team_name)}</div>
             <div class="podium-score">${r2_tot.toFixed(1)}</div>
-            <div class="podium-pill">R1: ${r2_r1.toFixed(1)} | R2: ${r2_r2.toFixed(1)} | R3: ${r2_r3.toFixed(1)}</div>
+            <div class="podium-pill">R1: ${r2_r1.toFixed(1)} | Lobby: ${r2_trans.toFixed(1)} | R2: ${r2_r2.toFixed(1)} | R3: ${r2_r3.toFixed(1)}</div>
           </div>
         `;
       } else {
@@ -789,7 +791,7 @@
             <div class="podium-badge-circle">02</div>
             <div class="podium-team-name">WAITING...</div>
             <div class="podium-score">0.0</div>
-            <div class="podium-pill">R1: 0 | R2: 0 | R3: 0</div>
+            <div class="podium-pill">R1: 0 | Lobby: 0 | R2: 0 | R3: 0</div>
           </div>
         `;
       }
@@ -797,15 +799,16 @@
       // Rank 1 (Center Stair - Gold / Yellow with Crown, Tallest)
       if (rank1) {
         const r1_r1 = rank1.round1_score != null ? Number(rank1.round1_score) : (rank1.r1_score != null ? Number(rank1.r1_score) : 0);
+        const r1_trans = rank1.transition_score != null ? Number(rank1.transition_score) : (rank1.lobby_score != null ? Number(rank1.lobby_score) : 0);
         const r1_r2 = rank1.round2_score != null ? Number(rank1.round2_score) : (rank1.r2_score != null ? Number(rank1.r2_score) : 0);
         const r1_r3 = rank1.round3_score != null ? Number(rank1.round3_score) : (rank1.r3_score != null ? Number(rank1.r3_score) : 0);
-        const r1_tot = rank1.total_score != null ? Number(rank1.total_score) : (r1_r1 + r1_r2 + r1_r3);
+        const r1_tot = rank1.total_score != null ? Number(rank1.total_score) : (r1_r1 + r1_trans + r1_r2 + r1_r3);
         html += `
           <div class="podium-card podium-rank-1">
             <div class="podium-crown">👑</div>
             <div class="podium-team-name" title="${escapeHtml(rank1.team_name)}">${escapeHtml(rank1.team_name)}</div>
             <div class="podium-score">${r1_tot.toFixed(1)}</div>
-            <div class="podium-pill">R1: ${r1_r1.toFixed(1)} | R2: ${r1_r2.toFixed(1)} | R3: ${r1_r3.toFixed(1)}</div>
+            <div class="podium-pill">R1: ${r1_r1.toFixed(1)} | Lobby: ${r1_trans.toFixed(1)} | R2: ${r1_r2.toFixed(1)} | R3: ${r1_r3.toFixed(1)}</div>
           </div>
         `;
       } else {
@@ -814,7 +817,7 @@
             <div class="podium-crown">👑</div>
             <div class="podium-team-name">WAITING...</div>
             <div class="podium-score">0.0</div>
-            <div class="podium-pill">R1: 0 | R2: 0 | R3: 0</div>
+            <div class="podium-pill">R1: 0 | Lobby: 0 | R2: 0 | R3: 0</div>
           </div>
         `;
       }
@@ -822,15 +825,16 @@
       // Rank 3 (Right Stair - Orange / Bronze)
       if (rank3) {
         const r3_r1 = rank3.round1_score != null ? Number(rank3.round1_score) : (rank3.r1_score != null ? Number(rank3.r1_score) : 0);
+        const r3_trans = rank3.transition_score != null ? Number(rank3.transition_score) : (rank3.lobby_score != null ? Number(rank3.lobby_score) : 0);
         const r3_r2 = rank3.round2_score != null ? Number(rank3.round2_score) : (rank3.r2_score != null ? Number(rank3.r2_score) : 0);
         const r3_r3 = rank3.round3_score != null ? Number(rank3.round3_score) : (rank3.r3_score != null ? Number(rank3.r3_score) : 0);
-        const r3_tot = rank3.total_score != null ? Number(rank3.total_score) : (r3_r1 + r3_r2 + r3_r3);
+        const r3_tot = rank3.total_score != null ? Number(rank3.total_score) : (r3_r1 + r3_trans + r3_r2 + r3_r3);
         html += `
           <div class="podium-card podium-rank-3">
             <div class="podium-badge-circle">03</div>
             <div class="podium-team-name" title="${escapeHtml(rank3.team_name)}">${escapeHtml(rank3.team_name)}</div>
             <div class="podium-score">${r3_tot.toFixed(1)}</div>
-            <div class="podium-pill">R1: ${r3_r1.toFixed(1)} | R2: ${r3_r2.toFixed(1)} | R3: ${r3_r3.toFixed(1)}</div>
+            <div class="podium-pill">R1: ${r3_r1.toFixed(1)} | Lobby: ${r3_trans.toFixed(1)} | R2: ${r3_r2.toFixed(1)} | R3: ${r3_r3.toFixed(1)}</div>
           </div>
         `;
       } else {
@@ -839,7 +843,7 @@
             <div class="podium-badge-circle">03</div>
             <div class="podium-team-name">WAITING...</div>
             <div class="podium-score">0.0</div>
-            <div class="podium-pill">R1: 0 | R2: 0 | R3: 0</div>
+            <div class="podium-pill">R1: 0 | Lobby: 0 | R2: 0 | R3: 0</div>
           </div>
         `;
       }
@@ -887,7 +891,7 @@
       });
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">No matching teams found in master table.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">No matching teams found in master table.</td></tr>`;
         return;
       }
 
@@ -895,9 +899,10 @@
         const topClass = t.rank === 1 ? 'top-1' : t.rank <= 3 ? 'top-3' : '';
         const rankColor = t.rank === 1 ? 'rank-1' : t.rank === 2 ? 'rank-2' : t.rank === 3 ? 'rank-3' : '';
         const r1 = t.round1_score != null ? Number(t.round1_score) : (t.r1_score != null ? Number(t.r1_score) : 0);
+        const rLobby = t.transition_score != null ? Number(t.transition_score) : (t.lobby_score != null ? Number(t.lobby_score) : 0);
         const r2 = t.round2_score != null ? Number(t.round2_score) : (t.r2_score != null ? Number(t.r2_score) : 0);
         const r3 = t.round3_score != null ? Number(t.round3_score) : (t.r3_score != null ? Number(t.r3_score) : 0);
-        const total = t.total_score != null ? Number(t.total_score) : (r1 + r2 + r3);
+        const total = t.total_score != null ? Number(t.total_score) : (r1 + rLobby + r2 + r3);
         const statusClass = (t.status === 'FINISHED' || t.status === 'COMPLETED') ? 'status-finished' : 'status-active';
         const r1Color = r1 < 0 ? 'color: #f43f5e;' : '';
 
@@ -918,6 +923,9 @@
             <td>${t.r1_time_formatted || '--:--'}</td>
             <td class="score-cell" style="${r1Color}">
               <div>${r1.toFixed(1)}</div>
+            </td>
+            <td class="score-cell" style="color: #22d3ee;">
+              <div>${rLobby.toFixed(1)}</div>
             </td>
             <td class="score-cell">
               <div>${r2.toFixed(1)}</div>
@@ -952,6 +960,7 @@
         'R1 Time Diff (s)',
         'R1 Time Formatted',
         'Round 1 Score',
+        'Lobby Score',
         'Round 2 Score',
         'Round 3 Score',
         'Total Score',
@@ -962,9 +971,10 @@
 
       const rows = rawLeaderboard.map(t => {
         const r1 = t.round1_score != null ? Number(t.round1_score) : (t.r1_score != null ? Number(t.r1_score) : 0);
+        const rLobby = t.transition_score != null ? Number(t.transition_score) : (t.lobby_score != null ? Number(t.lobby_score) : 0);
         const r2 = t.round2_score != null ? Number(t.round2_score) : (t.r2_score != null ? Number(t.r2_score) : 0);
         const r3 = t.round3_score != null ? Number(t.round3_score) : (t.r3_score != null ? Number(t.r3_score) : 0);
-        const total = t.total_score != null ? Number(t.total_score) : (r1 + r2 + r3);
+        const total = t.total_score != null ? Number(t.total_score) : (r1 + rLobby + r2 + r3);
         return [
           t.rank,
           `"${(t.team_name || '').replace(/"/g, '""')}"`,
@@ -975,6 +985,7 @@
           t.r1_time_diff != null ? t.r1_time_diff : '',
           `"${t.r1_time_formatted || '--:--'}"`,
           r1,
+          rLobby,
           r2,
           r3,
           total,
