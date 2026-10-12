@@ -126,6 +126,52 @@ export const api = {
     }
   },
 
+  // --- Transition Round: clue id + attempts (first call allocates the team's clue) ---
+  async getTransitionState(teamId) {
+    return apiRequest(`/api/transition/state?${teamQuery(teamId)}`);
+  },
+
+  // --- Tester shortcut (only works when the server runs with CHRONOS_ENABLE_SKIP=1) ---
+  async devSkipRound(teamId) {
+    return apiRequest('/api/dev/skip-round', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId }),
+    });
+  },
+
+  // --- Transition Round: read-only position (clue assigned / stopwatch started / completed) ---
+  async getTransitionProgress(teamId) {
+    try {
+      return await apiRequest(`/api/transition/progress?${teamQuery(teamId)}`);
+    } catch {
+      return null;
+    }
+  },
+
+  // --- Transition Round: the team started the stopwatch (idempotent) ---
+  async startTransition(teamId) {
+    return apiRequest('/api/transition/start', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId }),
+    });
+  },
+
+  // --- Transition Round: END STOPWATCH, the duration is frozen on the server (idempotent) ---
+  async stopTransition(teamId) {
+    return apiRequest('/api/transition/stop', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId }),
+    });
+  },
+
+  // --- Transition Round: submit the password found at the physical destination ---
+  async verifyTransitionPassword(teamId, password) {
+    return apiRequest('/api/transition/verify', {
+      method: 'POST',
+      body: JSON.stringify({ team_id: teamId, password }),
+    });
+  },
+
   // --- Round 1: GET /api/round1/status (state, server-side remaining time, result once done) ---
   async getRound1Status(teamId) {
     const data = await apiRequest(`/api/round1/status?${teamQuery(teamId)}`);
@@ -210,6 +256,49 @@ export const api = {
 
   adminLogout() {
     setAdminToken('');
+  },
+
+  // 'master' | 'temp' (a one-time password session cannot manage passwords) | '' when invalid
+  async adminRole() {
+    try {
+      const data = await apiRequest('/api/admin/session', {}, 'admin');
+      return data?.role || 'master';
+    } catch {
+      return '';
+    }
+  },
+
+  // --- delete a team and all of its data (master only) ---
+  deleteAdminTeam(teamId) {
+    return apiRequest(`/api/admin/teams/${encodeURIComponent(teamId)}`, { method: 'DELETE' }, 'admin');
+  },
+
+  // --- tester skip shortcut switch (master only) ---
+  getAdminSkipSwitch() {
+    return apiRequest('/api/admin/dev-skip', {}, 'admin');
+  },
+
+  setAdminSkipSwitch(enabled) {
+    return apiRequest('/api/admin/dev-skip', {
+      method: 'POST',
+      body: JSON.stringify({ enabled }),
+    }, 'admin');
+  },
+
+  // --- access password control (master only) ---
+  listAdminPasswords() {
+    return apiRequest('/api/admin/passwords', {}, 'admin');
+  },
+
+  addAdminPasswords({ passwords = [], generate = 0 }) {
+    return apiRequest('/api/admin/passwords', {
+      method: 'POST',
+      body: JSON.stringify({ passwords, generate }),
+    }, 'admin');
+  },
+
+  deleteAdminPassword(id) {
+    return apiRequest(`/api/admin/passwords/${encodeURIComponent(id)}`, { method: 'DELETE' }, 'admin');
   },
 
   getAdminLeaderboard() {

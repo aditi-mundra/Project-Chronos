@@ -41,11 +41,14 @@ export default function Round3({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [scenarioData, setScenarioData] = useState(null);
+  const [round2Inquiries, setRound2Inquiries] = useState(null);
   const [teamInfo, setTeamInfo] = useState(null);
 
   // User Candidate Selection (Alpha, Beta, or Gamma)
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
   const [selectedEvidenceIds, setSelectedEvidenceIds] = useState([]);
+  // Right panel: 'evidence' (selectable archive) | 'inquiries' (Round 2 AI questions, review only)
+  const [rightTab, setRightTab] = useState('evidence');
 
   // UI States
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -85,6 +88,7 @@ export default function Round3({
         }
 
         setScenarioData(res.scenario);
+        setRound2Inquiries(res.round2_investigation || null);
         setTeamInfo({ id: res.team_id, name: res.team_name || teamName });
       } catch (err) {
         if (cancelled) return;
@@ -185,6 +189,7 @@ export default function Round3({
 
   const candidates = scenarioData?.candidates || [];
   const evidenceList = scenarioData?.evidence_archive || [];
+  const inquiries = round2Inquiries?.chat_messages || [];
   const activeCandidate = candidates.find((c) => c.id === selectedCandidateId);
   const canSubmit = Boolean(selectedCandidateId) && selectedEvidenceIds.length >= MIN_EVIDENCE;
 
@@ -203,11 +208,13 @@ export default function Round3({
               <ShieldAlert className="w-6 h-6 text-pink-400 animate-pulse" />
             </div>
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-slate-400 block">
-                PHASE 3 // TIME-LOCK CRITICAL
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold font-tech text-cyan-300 tracking-wide">
-                FINAL ACCUSATION // <span className="text-pink-400">CORRUPTED CORE IDENTIFICATION</span>
+              <div className="r3-eyebrow">
+                <span className="r3-phase"><b>03</b>Phase</span>
+                <span>Time-lock critical</span>
+              </div>
+              <h1 className="r3-title">
+                <span className="r3-title-main">Final accusation</span>
+                <span className="r3-title-sub">Identify the corrupted core</span>
               </h1>
             </div>
           </div>
@@ -320,17 +327,83 @@ export default function Round3({
           {/* RIGHT 5 COLUMNS: Carried Evidence Logs & Submit Button */}
           <div className="lg:col-span-5 space-y-3 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between px-1 mb-3">
-                <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold flex items-center gap-1.5">
-                  <FileCheck2 className="w-3.5 h-3.5 text-cyan-400" />
-                  SUPPORTING EVIDENCE ARCHIVE
-                </span>
-                <span className={`r3-count ${selectedEvidenceIds.length >= MIN_EVIDENCE ? 'ok' : ''}`}>
-                  <b>{selectedEvidenceIds.length}</b> SELECTED · MIN {MIN_EVIDENCE}
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1 mb-3">
+                <div className="flex items-center gap-1.5" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={rightTab === 'evidence'}
+                    onClick={() => setRightTab('evidence')}
+                    className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition ${
+                      rightTab === 'evidence'
+                        ? 'border-cyan-500 bg-cyan-950/60 text-cyan-200'
+                        : 'border-slate-700 bg-slate-900/50 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5" />
+                    EVIDENCE ({evidenceList.length})
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={rightTab === 'inquiries'}
+                    onClick={() => setRightTab('inquiries')}
+                    className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition ${
+                      rightTab === 'inquiries'
+                        ? 'border-pink-500 bg-pink-950/40 text-pink-200'
+                        : 'border-slate-700 bg-slate-900/50 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Cpu className="w-3.5 h-3.5" />
+                    AI INQUIRIES ({inquiries.length})
+                  </button>
+                </div>
+                {rightTab === 'evidence' && (
+                  <span className={`r3-count ${selectedEvidenceIds.length >= MIN_EVIDENCE ? 'ok' : ''}`}>
+                    <b>{selectedEvidenceIds.length}</b> SELECTED · MIN {MIN_EVIDENCE}
+                  </span>
+                )}
               </div>
 
-              <div className="space-y-2.5">
+              {rightTab === 'inquiries' && (
+                <div className="space-y-2.5" role="tabpanel">
+                  <p className="px-1 flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-widest text-slate-500">
+                    <span>Round 2 analyst questions</span>
+                    <span className="r3-tag">Review only</span>
+                  </p>
+                  {inquiries.length === 0 ? (
+                    <div className="p-4 rounded-xl border border-slate-800 bg-[#070c18]/80 text-[11px] font-mono text-slate-400">
+                      No AI questions were asked in Round 2.
+                    </div>
+                  ) : (
+                    inquiries.map((m) => (
+                      <div
+                        key={m.question_number}
+                        className="r3-card p-3.5 rounded-xl border border-cyan-900/40 bg-[#070c18]/80 space-y-2"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 shrink-0">
+                            Q{m.question_number}
+                          </span>
+                          <p className="text-[12px] font-mono text-slate-200 leading-relaxed whitespace-pre-wrap">
+                            {m.user_prompt}
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2 pl-0.5">
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-pink-950/60 border border-pink-900 text-pink-300 shrink-0">
+                            AI
+                          </span>
+                          <p className="text-[11px] font-mono text-slate-400 leading-relaxed whitespace-pre-wrap">
+                            {m.ai_response}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              <div className={`space-y-2.5 ${rightTab === 'evidence' ? '' : 'hidden'}`}>
                 {evidenceList.map((ev, idx) => {
                   const isChecked = selectedEvidenceIds.includes(ev.id);
                   return (

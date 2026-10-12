@@ -3,6 +3,7 @@ import { Trophy, RotateCcw, ShieldCheck, FileCheck2 } from 'lucide-react';
 import api from '../services/api.js';
 import { soundFx } from '../utils/audio.js';
 import ThemeSelector from '../components/ThemeSelector';
+import ChronosConclusion from '../components/ChronosConclusion.jsx';
 
 /**
  * Project Chronos — Final Mission Debrief & Completion Screen
@@ -15,6 +16,15 @@ export default function Completion({
 }) {
   const [loading, setLoading] = useState(true);
   const [verdictData, setVerdictData] = useState(null);
+  // The Timeline Convergence cinematic plays first (skippable), then the debrief appears.
+  const seenKey = `chronos_conclusion_seen_${teamId}`;
+  const [showCinematic, setShowCinematic] = useState(() => {
+    try {
+      return !localStorage.getItem(seenKey);
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
     async function loadVerdict() {
@@ -34,6 +44,21 @@ export default function Completion({
     }
     loadVerdict();
   }, [teamId]);
+
+  if (showCinematic) {
+    return (
+      <ChronosConclusion
+        onComplete={() => {
+          try {
+            localStorage.setItem(seenKey, '1');
+          } catch {
+            // storage unavailable: the cinematic may play again on reload
+          }
+          setShowCinematic(false);
+        }}
+      />
+    );
+  }
 
   if (loading) {
     return (

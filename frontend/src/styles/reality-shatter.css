@@ -1,0 +1,45 @@
+/* ==========================================================================
+   Reality Shatter: Round 1 lobby -> Physical Transition Round.
+   Everything animated is driven from components/RealityShatter.jsx.
+   ========================================================================== */
+.rs-root {
+  position: fixed; inset: 0; z-index: 400; overflow: hidden; pointer-events: auto;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: wait;
+}
+.rs-bg { position: absolute; inset: 0; background: #000; opacity: 0; }
+.rs-layer { position: absolute; inset: 0; pointer-events: none; }
+.rs-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* fragments: each wrap moves/rotates as a whole; the clip holds the cloned interface */
+.rs-frags { transform-style: flat; }
+.rs-frag { position: absolute; inset: 0; will-change: transform, opacity; backface-visibility: hidden; }
+.rs-clip { position: absolute; inset: 0; overflow: hidden; }
+.rs-edge { position: absolute; left: 0; top: 0; overflow: visible;  }
+
+/* thin shifted bands of the live interface (misalignment) */
+.rs-slice { position: absolute; inset: 0; overflow: hidden; will-change: transform; }
+
+.rs-scan {
+  position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, .0) 0, rgba(255, 255, 255, .0) 2px, rgba(0, 0, 0, .55) 3px, rgba(0, 0, 0, .55) 4px),
+    radial-gradient(ellipse at 50% 50%, rgba(80, 140, 255, .18), rgba(255, 40, 160, .12) 55%, transparent 80%);
+}
+
+.rs-msg {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  text-align: center; padding: 0 16px; opacity: 0; pointer-events: none;
+  font-size: clamp(14px, 2.6vw, 26px); letter-spacing: .38em; text-transform: uppercase;
+  color: #d9ecff; text-shadow: 0 0 12px rgba(80, 170, 255, .9), -2px 0 0 rgba(255, 40, 170, .6), 2px 0 0 rgba(0, 200, 255, .6);
+}
+.rs-flash {
+  position: absolute; inset: 0; opacity: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, rgba(205, 230, 255, .95) 35%, rgba(120, 180, 255, .55) 70%, rgba(90, 140, 255, .35) 100%);
+}
+
+/* Clones of the interface are painted dozens of times per frame: no blur, shadow or animation. */
+.rs-lite, .rs-lite * {
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+  box-shadow: none !important; text-shadow: none !important; filter: none !important;
+  animation: none !important; transition: none !important;
+}

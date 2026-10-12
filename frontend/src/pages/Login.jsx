@@ -10,6 +10,8 @@ import {
   Cpu
 } from 'lucide-react';
 
+const PRN_PATTERN = /^(24|25|26|27)\d{9}$/;
+
 export default function Login({ onLoginSuccess, onBackToLanding }) {
   const { loginTeamSession } = useAuth();
   const [formData, setFormData] = useState({
@@ -25,6 +27,8 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
 
   const handleInputChange = (field, value) => {
     soundFx.playKeystroke();
+    // PRN fields take digits only (at most 11).
+    if (field === 'member1_prn' || field === 'member2_prn') value = value.replace(/\D/g, '').slice(0, 11);
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errorMsg) setErrorMsg('');
   };
@@ -47,6 +51,12 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
     if (!formData.member1_prn.trim() || !formData.member2_prn.trim()) {
       soundFx.playGlitch();
       setErrorMsg('PRN credentials for both Member 1 and Member 2 are required.');
+      return;
+    }
+    // A PRN is exactly 11 digits and starts with 24, 25, 26 or 27.
+    if (!PRN_PATTERN.test(formData.member1_prn.trim()) || !PRN_PATTERN.test(formData.member2_prn.trim())) {
+      soundFx.playGlitch();
+      setErrorMsg('Each PRN must be exactly 11 digits and start with 24, 25, 26 or 27.');
       return;
     }
 
@@ -175,14 +185,15 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
                 {/* Field: Member 1 PRN */}
                 <div>
                   <label className="block text-xs sm:text-sm font-mono text-slate-300 mb-1">
-                    Member 1 PRN / Student ID
+                    Member 1 PRN
                   </label>
                   <input
                     type="text"
                     value={formData.member1_prn}
                     onChange={(e) => handleInputChange('member1_prn', e.target.value)}
-                    placeholder="e.g. 2140108920"
-                    maxLength={30}
+                    placeholder="e.g. 24070123456"
+                    inputMode="numeric"
+                    maxLength={11}
                     className="w-full bg-[#050814] border border-slate-800 focus:border-cyan-400 rounded-lg px-3 py-2 sm:py-2.5 text-sm sm:text-base font-mono text-white placeholder-slate-500 outline-none transition"
                     disabled={isSubmitting}
                   />
@@ -215,14 +226,15 @@ export default function Login({ onLoginSuccess, onBackToLanding }) {
                 {/* Field: Member 2 PRN */}
                 <div>
                   <label className="block text-xs sm:text-sm font-mono text-slate-300 mb-1">
-                    Member 2 PRN / Student ID
+                    Member 2 PRN
                   </label>
                   <input
                     type="text"
                     value={formData.member2_prn}
                     onChange={(e) => handleInputChange('member2_prn', e.target.value)}
-                    placeholder="e.g. 2140108921"
-                    maxLength={30}
+                    placeholder="e.g. 25070123456"
+                    inputMode="numeric"
+                    maxLength={11}
                     className="w-full bg-[#050814] border border-slate-800 focus:border-cyan-400 rounded-lg px-3 py-2 sm:py-2.5 text-sm sm:text-base font-mono text-white placeholder-slate-500 outline-none transition"
                     disabled={isSubmitting}
                   />

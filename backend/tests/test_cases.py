@@ -21,18 +21,20 @@ sys.path.insert(0, str(ROOT))
 CASES_DIR = ROOT / "round2_cases_all_24"
 R3_FILE = ROOT / "backend" / "app" / "data" / "round3_cases.json"
 
-FILE_NAMES = {"future_audit.log", "access_history.log", "system_auth_matrix.log", "incident_report.txt"}
+CHANGES, LOGINS, KEYS, INCIDENT = "system_changes.log", "login_records.log", "security_keys.log", "incident_report.txt"
+FILE_NAMES = {CHANGES, LOGINS, KEYS, INCIDENT}
 PROJECT_BY_NAME = {"Project Alpha": "alpha", "Project Beta": "beta", "Project Gamma": "gamma"}
 EV_BY_FILE = {
-    "future_audit.log": "ev_alpha_log",
-    "access_history.log": "ev_gamma_access",
-    "system_auth_matrix.log": "ev_system_auth",
-    "incident_report.txt": "ev_beta_incident",
+    CHANGES: "ev_changes",
+    LOGINS: "ev_logins",
+    KEYS: "ev_keys",
+    INCIDENT: "ev_incident",
 }
 
-HASH = re.compile(r"[A-Z]+-\d\d-0x[0-9A-F]{4}")
-CHG = re.compile(r"CHG-\d{4}")
-KEY = re.compile(r"KEY-[A-Z]+-\d{4}")
+BADGE = re.compile(r"B-\d{4}")
+CHG = re.compile(r"Change #\d{4}")
+KEY = re.compile(r"Key [A-Z]+-\d{4}")
+PROJECT_NAME = re.compile(r"Project (Alpha|Beta|Gamma)")
 
 
 def secs(hms: str) -> int:
@@ -51,44 +53,45 @@ def load_cases():
 
 def solve(files: dict) -> dict:
     """Return {project: number of independent files that point at it} using only the files,
-    the way a player has to: terminal codes via the registry, the matrix clock offset
-    corrected, credentials mapped through the project registry."""
-    access, auth, audit = files["access_history.log"], files["system_auth_matrix.log"], files["future_audit.log"]
-    registry = {m.group(2): m.group(1)
-                for m in re.finditer(r"^(Project \w+) \|.*Credential: (\S+)$", access, re.M)}
-    assert len(registry) == 3
-    to_project = {h: PROJECT_BY_NAME[n] for h, n in registry.items()}
+    the way a player has to: the badge registry (only in login_records.log), terminal codes via
+    the terminal list, the key log's fast clock corrected."""
+    logins, keys, changes = files[LOGINS], files[KEYS], files[CHANGES]
+    to_project = {m.group(1): PROJECT_BY_NAME[m.group(2)]
+                  for m in re.finditer(r"^(B-\d{4}) \| (Project \w+) \|", logins, re.M)}
+    assert len(to_project) == 3, "badge registry missing"
     code_to_name = {m.group(1): m.group(2).strip()
-                    for m in re.finditer(r"^(N-\d{4}) \| (.+)$", access, re.M)}
-    assert len(code_to_name) >= 5, "terminal registry missing"
+                    for m in re.finditer(r"^(T-\d{4}) \| (.+)$", logins, re.M)}
+    assert len(code_to_name) >= 5, "terminal list missing"
 
-    om = re.search(r"^CLOCK OFFSET: \+(\d+) s", auth, re.M)
+    om = re.search(r"^CLOCK NOTE: .*runs (\d+) seconds FAST", keys, re.M)
     assert om, "clock offset not stated"
     offset = int(om.group(1))
 
-    # the incident change: the only audit record that carries an ACTION line
-    m = re.search(r"^(\d\d:\d\d:\d\d) \| (CHG-\d{4}) \| NODE (N-\d{4})\n  ACTION: .+\n.+\n  STATUS: APPLIED \| (.+)$",
-                  audit, re.M)
-    assert m, "incident change not found"
-    t_change, chg, node_code, who = secs(m.group(1)), m.group(2), m.group(3), m.group(4)
+    # the incident change is the one a key was USED for
+    um = re.search(r"^(\d\d:\d\d:\d\d) \| Key (\S+) \| USED at terminal (T-\d{4}) \| Change #(\d{4})$",
+                   keys, re.M)
+    assert um, "key use not found"
+    t_change, key_name, node_code, chg = secs(um.group(1)) - offset, um.group(2), um.group(3), um.group(4)
     node = code_to_name[node_code]
 
+    m = re.search(rf"^(\d\d:\d\d:\d\d) \| Change #{chg} \| Terminal (T-\d{{4}})\n.+\n  Result: APPLIED \| Badge: (.+)$",
+                  changes, re.M)
+    assert m, "incident change not found"
+    assert secs(m.group(1)) == t_change, "key log clock offset does not line up with the change log"
+    assert m.group(2) == node_code
+
     votes = Counter()
-    # 1. the audit record names the credential (unless it was delegated)
-    h = HASH.search(who)
-    if h:
-        votes[to_project[h.group(0)]] += 1
-    # 2. an authenticated ROOT_WRITE session at that terminal in the minute before the change
-    for sm in re.finditer(r"^(\d\d:\d\d:\d\d) \| SESSION \S+ \| (\S+) \| (.+?) \| AUTHENTICATED \| ROOT_WRITE$",
-                          access, re.M):
+    # 1. the change log names the badge (unless it was run by a scheduled task)
+    b = BADGE.search(m.group(3))
+    if b:
+        votes[to_project[b.group(0)]] += 1
+    # 2. a FULL CONTROL login at that terminal in the minute before the change
+    for sm in re.finditer(r"^(\d\d:\d\d:\d\d) \| Badge (B-\d{4}) \| (.+?) \| LOGGED IN \| FULL CONTROL$",
+                          logins, re.M):
         if sm.group(3).strip() == node and 0 < t_change - secs(sm.group(1)) <= 60:
             votes[to_project[sm.group(2)]] += 1
-    # 3. the key used for that change (matrix clock corrected) was armed by a credential
-    um = re.search(rf"^(\d\d:\d\d:\d\d) \| ({KEY.pattern}) \| USED \| terminal (N-\d{{4}}) \| {chg}$", auth, re.M)
-    assert um, "key use not found"
-    assert secs(um.group(1)) - offset == t_change, "matrix clock offset does not line up with the audit log"
-    assert um.group(3) == node_code
-    am = re.search(rf"^\d\d:\d\d:\d\d \| {um.group(2)} \| ARMED \| BY (\S+) ", auth, re.M)
+    # 3. the key used for that change was armed by a badge (not a standing authorization)
+    am = re.search(rf"^\d\d:\d\d:\d\d \| Key {re.escape(key_name)} \| ARMED by badge (B-\d{{4}}) ", keys, re.M)
     if am:
         votes[to_project[am.group(1)]] += 1
     return votes
@@ -137,7 +140,7 @@ class CaseDataTests(unittest.TestCase):
             # every identifier an evidence item quotes really appears in its source file
             for e in c3["evidence_pool"]:
                 text = files[e["source_file"]]
-                for pattern in (HASH, CHG, KEY):
+                for pattern in (BADGE, CHG, KEY):
                     for token in pattern.findall(e["description"] + " " + e["label"]):
                         self.assertIn(token, text, f"{cid}: {token} not in {e['source_file']}")
 
@@ -158,19 +161,51 @@ class CaseDataTests(unittest.TestCase):
 
     def test_extra_difficulty_layers_present(self):
         for cid, (data, files) in self.cases.items():
-            access, auth, audit = files["access_history.log"], files["system_auth_matrix.log"], files["future_audit.log"]
-            incident = files["incident_report.txt"]
-            # terminal codes in audit/auth, names in access/incident, registry maps them
-            self.assertRegex(audit, r"NODE N-\d{4}", cid)
-            self.assertNotRegex(audit, r"NODE (Terminal|Console|Archive|Frequency|Anchor|Filter|Sync|Transit)", cid)
-            self.assertIn("TERMINAL REGISTRY", access, cid)
-            self.assertRegex(auth, r"CLOCK OFFSET: \+\d+ s", cid)
-            # decoys: an earlier change by another project at the incident terminal and a later mitigation hold
-            self.assertIn("mitigation hold", audit, cid)
+            logins, keys, changes = files[LOGINS], files[KEYS], files[CHANGES]
+            incident = files[INCIDENT]
+            # terminal codes in changes/keys, names in logins/incident, the terminal list maps them
+            self.assertRegex(changes, r"Terminal T-\d{4}", cid)
+            self.assertNotRegex(changes, r"Terminal (Node|Console|Archive|Frequency|Anchor|Filter|Sync|Transit)", cid)
+            self.assertIn("TERMINAL LIST", logins, cid)
+            self.assertRegex(keys, r"runs \d+ seconds FAST", cid)
+            # decoys: a later mitigation hold by another project and refused / extra FULL CONTROL logins
+            self.assertIn("mitigation hold", changes, cid)
             self.assertIn("mitigation hold", incident, cid)
-            roots = re.findall(r"\| AUTHENTICATED \| ROOT_WRITE$", access, re.M)
-            self.assertGreaterEqual(len(roots), 3 if "LOG BUFFER OVERFLOW" in access else 4, cid)
-            self.assertIn("DENIED", access, cid)
+            full = re.findall(r"\| LOGGED IN \| FULL CONTROL$", logins, re.M)
+            self.assertGreaterEqual(len(full), 3 if "RECORDS LOST" in logins else 4, cid)
+            self.assertIn("REFUSED", logins, cid)
+
+    def test_no_single_file_is_enough(self):
+        """The badge registry is the only place that links a badge to a project, so the
+        change / key / incident files cannot name a project on their own, and the login file
+        alone does not say which login is the incident."""
+        for cid, (data, files) in self.cases.items():
+            for name in (CHANGES, KEYS, INCIDENT):
+                self.assertIsNone(PROJECT_NAME.search(files[name]), f"{cid}/{name} names a project")
+                self.assertNotIn("BADGE REGISTRY (which", files[name], cid)
+            self.assertIn("BADGE REGISTRY", files[LOGINS], cid)
+            # login_records alone: at least two different projects have FULL CONTROL logins
+            registry = {m.group(1): m.group(2) for m in
+                        re.finditer(r"^(B-\d{4}) \| (Project \w+) \|", files[LOGINS], re.M)}
+            holders = {registry[m.group(1)] for m in
+                       re.finditer(r"Badge (B-\d{4}) \|.*\| LOGGED IN \| FULL CONTROL$", files[LOGINS], re.M)}
+            self.assertGreaterEqual(len(holders), 2, f"{cid}: login_records alone points at one project")
+            # and Round 3 evidence is split the same way: only the logins item has the registry
+            c3 = next(c for c in self.r3 if c["r2_case_id"] == cid)
+            for e in c3["evidence_pool"]:
+                has_registry = "registry" in e["description"].lower()
+                self.assertEqual(has_registry, e["source_file"] == LOGINS, f"{cid}: {e['id']}")
+                if e["source_file"] != LOGINS:
+                    self.assertIsNone(PROJECT_NAME.search(e["description"] + e["label"]), f"{cid}: {e['id']}")
+            for cand in c3["candidates"]:
+                self.assertNotRegex(json.dumps(cand), r"B-\d{4}")
+
+    def test_plain_language(self):
+        """No kernel / credential-hash / scope jargon in what players read."""
+        banned = re.compile(r"ROOT_WRITE|READ_ONLY|[Cc]redential|CREDENTIAL|0x[0-9A-F]{4}|NODE N-|CHG-|KEY-[A-Z]+-|AUTHENTICATED|s-\d{4}")
+        for cid, (data, files) in self.cases.items():
+            for name, text in files.items():
+                self.assertIsNone(banned.search(text), f"{cid}/{name}: {banned.search(text)}")
 
     def test_no_file_names_the_culprit_outright(self):
         for cid, (data, files) in self.cases.items():
@@ -181,7 +216,8 @@ class CaseDataTests(unittest.TestCase):
         for folder in CASES_DIR.glob("R2-*"):
             names = {p.name for p in folder.iterdir()}
             self.assertFalse(any(n.startswith(("alpha_", "beta_", "gamma_")) for n in names), folder.name)
-            self.assertFalse(any(n.startswith("future_") and n != "future_audit.log" for n in names), folder.name)
+            self.assertFalse(any(n.startswith("future_") for n in names), folder.name)
+            self.assertFalse({"future_audit.log", "access_history.log", "system_auth_matrix.log"} & names, folder.name)
 
 
 class LeakCheckTests(unittest.TestCase):

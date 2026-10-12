@@ -108,7 +108,7 @@ class IntegrationTests(unittest.TestCase):
 
     def player(self, label):
         n = len(db("SELECT id FROM teams")) + 1
-        return Player(self.client, f"{label}-{n}", f"PRN-A{n:04d}", f"PRN-B{n:04d}")
+        return Player(self.client, f"{label}-{n}", f"24{n:09d}", f"25{n:09d}")
 
     # ------------------------------------------------------------- login / sessions
     def test_01_login_and_session_token(self):
@@ -123,7 +123,7 @@ class IntegrationTests(unittest.TestCase):
 
         wrong = self.client.post("/api/auth/login", json={
             "team_name": p.login["team_name"], "member_1_name": "x", "member_2_name": "y",
-            "member_1_prn": "nope", "member_2_prn": "nope2",
+            "member_1_prn": "26000000001", "member_2_prn": "27000000002",
         })
         self.assertEqual(wrong.status_code, 409)
 
@@ -163,7 +163,7 @@ class IntegrationTests(unittest.TestCase):
         files = p.get("/api/round2/files").json()
         self.assertEqual(len(files), 4)
         self.assertEqual({f['filename'] for f in files},
-                         {'future_audit.log', 'access_history.log', 'system_auth_matrix.log', 'incident_report.txt'})
+                         {'system_changes.log', 'login_records.log', 'security_keys.log', 'incident_report.txt'})
         opened = p.get(f"/api/round2/files/{files[0]['file_id']}")
         self.assertEqual(opened.status_code, 200)
         self.assertTrue(opened.json()["content_text"])
@@ -561,6 +561,171 @@ class IntegrationTests(unittest.TestCase):
             results.append((wrong, row["round3_score"]))
             self.assertEqual(row["total_score"], row["round1_score"] + row["round2_score"] + row["round3_score"])
         self.assertEqual([r for _, r in results], [10, 10, 0])
+
+    def test_16c_one_time_admin_passwords(self):
+        """Master password never expires; temp passwords work exactly once and are listed used."""
+        master = self._admin()
+        c = self.client
+        post = lambda pw: c.post("/api/admin/login", json={"password": pw})
+
+        # only the master password can manage passwords
+        self.assertEqual(c.get("/api/admin/passwords").status_code, 401)
+        res = c.post("/api/admin/passwords", json={"passwords": ["otp-one", "otp-two", "otp-one", "ab",
+                                                                  ADMIN_PASSWORD], "generate": 2},
+                     headers=master)
+        self.assertEqual(res.status_code, 200, res.text)
+        body = res.json()
+        self.assertEqual(sorted(a for a in body["added"] if a.startswith("otp")), ["otp-one", "otp-two"])
+        self.assertEqual(len(body["added"]), 4)                 # 2 typed + 2 generated
+        self.assertEqual(len(body["skipped"]), 3)               # duplicate, too short, master
+        listed = c.get("/api/admin/passwords", headers=master).json()
+        self.assertEqual(len(listed["unused"]), 4)
+        self.assertEqual(listed["used"], [])
+
+        # first login consumes it, second login with the same one fails
+        first = post("otp-one")
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual(first.json()["role"], "temp")
+        self.assertEqual(post("otp-one").status_code, 401)
+        temp = {"Authorization": "Bearer " + first.json()["token"]}
+
+        # a one-time session sees the leaderboard but cannot manage passwords
+        self.assertEqual(c.get("/api/admin/leaderboard", headers=temp).status_code, 200)
+        self.assertEqual(c.get("/api/admin/passwords", headers=temp).status_code, 403)
+        self.assertEqual(c.post("/api/admin/passwords", json={"generate": 1}, headers=temp).status_code, 403)
+
+        listed = c.get("/api/admin/passwords", headers=master).json()
+        self.assertEqual([p["password"] for p in listed["used"]], ["otp-one"])
+        self.assertNotIn("otp-one", [p["password"] for p in listed["unused"]])
+
+        # a used password cannot be added again; unused ones can be revoked
+        again = c.post("/api/admin/passwords", json={"passwords": ["otp-one"]}, headers=master).json()
+        self.assertEqual(again["added"], [])
+        two = next(p for p in listed["unused"] if p["password"] == "otp-two")
+        self.assertEqual(c.delete(f"/api/admin/passwords/{two['id']}", headers=master).status_code, 200)
+        self.assertEqual(post("otp-two").status_code, 401)
+
+        # master keeps working any number of times
+        self.assertEqual(post(ADMIN_PASSWORD).status_code, 200)
+        self.assertEqual(post(ADMIN_PASSWORD).status_code, 200)
+
+    def test_16d_round3_shows_own_round2_questions_without_points(self):
+        a, b = self._started_r2("inq_a"), self._started_r2("inq_b")
+        self.assertEqual(self._ask(a, "which terminal changed first?").status_code, 200)
+        for p in (a, b):
+            self.assertEqual(p.post("/api/round2/complete", {"team_id": p.id}).status_code, 200)
+        ra = a.post("/api/round3/start", {"team_id": a.id}).json()
+        rb = b.post("/api/round3/start", {"team_id": b.id}).json()
+        msgs = ra["round2_investigation"]["chat_messages"]
+        self.assertEqual([m["question_number"] for m in msgs], [1])
+        self.assertEqual(msgs[0]["user_prompt"], "which terminal changed first?")
+        self.assertNotIn("points", json.dumps(ra["round2_investigation"]).lower())
+        self.assertEqual(rb["round2_investigation"]["chat_messages"], [])   # only own questions
+        again = a.get("/api/round3/scenario").json()
+        self.assertEqual(len(again["round2_investigation"]["chat_messages"]), 1)
+
+    def test_16e_transition_progress_survives_a_reload(self):
+        p = self.player("resume")
+        play_round1(p)                                    # Round 1 finished, transition round not opened
+        prog = p.get(f"/api/transition/progress?team_id={p.id}").json()
+        self.assertEqual(prog, {"eligible": True, "clue_assigned": False, "started": False,
+                                "stopped": False, "completed": False})
+        # progress never allocates a clue
+        self.assertIsNone(db("SELECT transition_clue_id FROM teams WHERE id=?", (p.id,))[0]["transition_clue_id"])
+
+        state = p.get(f"/api/transition/state?team_id={p.id}").json()      # opens the briefing screen
+        self.assertFalse(state["started"])
+        self.assertTrue(p.get(f"/api/transition/progress?team_id={p.id}").json()["clue_assigned"])
+
+        started = p.post("/api/transition/start", {"team_id": p.id}).json()  # START STOPWATCH
+        self.assertTrue(started["started"])
+        self.assertTrue(started["started_at"])
+        reload_state = p.get(f"/api/transition/state?team_id={p.id}").json()
+        self.assertTrue(reload_state["started"])                            # reload -> passkey screen
+        self.assertEqual(reload_state["clue_id"], state["clue_id"])
+        self.assertEqual(reload_state["started_at"], started["started_at"])
+        self.assertTrue(p.get(f"/api/transition/progress?team_id={p.id}").json()["started"])
+        self.assertFalse(reload_state["stopped"])                           # still running after a reload
+        self.assertIsNotNone(reload_state["elapsed_ms"])
+
+        # END STOPWATCH: the duration is frozen on the server and a reload no longer counts
+        stopped = p.post("/api/transition/stop", {"team_id": p.id}).json()
+        self.assertTrue(stopped["stopped"])
+        after = p.get(f"/api/transition/state?team_id={p.id}").json()
+        self.assertTrue(after["stopped"])
+        self.assertEqual(after["elapsed_ms"], stopped["elapsed_ms"])
+        self.assertTrue(p.get(f"/api/transition/progress?team_id={p.id}").json()["stopped"])
+        # another team cannot read this team's progress
+        other = self.player("resume_other")
+        res = self.client.get("/api/transition/progress", params={"team_id": p.id}, headers=other.headers)
+        self.assertEqual(res.status_code, 401)
+
+    def test_16f_tester_skip_shortcut(self):
+        p = self.player("skipper")
+        saved = os.environ.pop("CHRONOS_ENABLE_SKIP", None)
+        admin = self._admin()
+        switch = lambda on: self.client.post("/api/admin/dev-skip", json={"enabled": on}, headers=admin)
+        try:
+            # off: the route behaves as if it did not exist
+            self.assertEqual(switch(False).json(), {"enabled": False})
+            self.assertEqual(p.post("/api/dev/skip-round", {"team_id": p.id}).status_code, 404)
+            # only the master admin can flip it; a team token cannot
+            self.assertEqual(self.client.post("/api/admin/dev-skip", json={"enabled": True},
+                                              headers=p.headers).status_code, 401)
+            self.assertEqual(self.client.get("/api/admin/dev-skip", headers=admin).json(), {"enabled": False})
+            self.assertEqual(switch(True).json(), {"enabled": True})
+            # another team's token cannot skip this team
+            other = self.player("skipper_other")
+            res = self.client.post("/api/dev/skip-round", json={"team_id": p.id}, headers=other.headers)
+            self.assertEqual(res.status_code, 401)
+
+            seq = []
+            for _ in range(5):
+                res = p.post("/api/dev/skip-round", {"team_id": p.id})
+                self.assertEqual(res.status_code, 200, res.text)
+                seq.append(res.json()["skipped"])
+            self.assertEqual(seq, ["round1", "transition", "round2", "round3", None])
+
+            row = db("SELECT * FROM teams WHERE id = ?", (p.id,))[0]
+            self.assertEqual(row["current_state"], "COMPLETED")
+            for col in ("round1_score", "transition_score", "round2_score", "round3_score", "total_score"):
+                self.assertEqual(row[col], 0, col)
+            board = self._board_row(self._admin(), p)
+            self.assertEqual((board["round1_score"], board["round2_score"], board["round3_score"],
+                              board["total_score"]), (0.0, 0.0, 0.0, 0.0))
+            self.assertEqual(p.get("/api/round3/verdict").status_code, 200)
+            self.assertEqual(len(db("SELECT 1 FROM game_logs WHERE team_id = ? AND event_type = 'DEV_SKIP'",
+                                    (p.id,))), 4)
+            self.assertEqual(switch(False).json(), {"enabled": False})
+            self.assertEqual(p.post("/api/dev/skip-round", {"team_id": p.id}).status_code, 404)
+        finally:
+            switch(False)
+            if saved is not None:
+                os.environ["CHRONOS_ENABLE_SKIP"] = saved
+
+    def test_16g_admin_can_delete_a_team(self):
+        keep, gone = self._started_r2("keep"), self._started_r2("gone")
+        self.assertEqual(self._ask(gone, "which terminal changed first?").status_code, 200)
+        admin = self._admin()
+        # teams cannot delete; unknown team 404
+        self.assertEqual(self.client.delete(f"/api/admin/teams/{gone.id}", headers=keep.headers).status_code, 401)
+        self.assertEqual(self.client.delete("/api/admin/teams/999999", headers=admin).status_code, 404)
+
+        res = self.client.delete(f"/api/admin/teams/{gone.id}", headers=admin)
+        self.assertEqual(res.status_code, 200, res.text)
+        self.assertEqual(res.json()["team_name"], gone.login["team_name"])
+        for table in ("teams", "round1_team_items", "round1_submissions", "round2_team_cases",
+                      "round2_chat_messages", "game_logs"):
+            col = "id" if table == "teams" else "team_id"
+            self.assertEqual(db(f"SELECT 1 FROM {table} WHERE {col} = ?", (gone.id,)), [], table)
+        # the other team and the catalogues are untouched; the deleted team's token is dead
+        self.assertEqual(len(db("SELECT 1 FROM teams WHERE id = ?", (keep.id,))), 1)
+        self.assertGreater(len(db("SELECT 1 FROM round1_team_items WHERE team_id = ?", (keep.id,))), 0)
+        self.assertGreater(db("SELECT COUNT(*) c FROM round2_cases")[0]["c"], 0)
+        self.assertEqual(gone.get("/api/round2/progress").status_code, 401)
+        ids = [r["team_id"] for r in self.client.get("/api/admin/leaderboard", headers=admin).json()]
+        self.assertNotIn(gone.id, ids)
+        self.assertIn(keep.id, ids)
 
     def test_17_admin_authorization_for_scores(self):
         p = self._started_r2("authz")

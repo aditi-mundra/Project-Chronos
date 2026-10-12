@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 
@@ -35,6 +36,15 @@ def _team_payload(row, message, session_token=""):
         "current_state": row["current_state"] or DEFAULT_STATE,
         "message": message,
     }
+
+
+# A PRN is exactly 11 digits and starts with the batch prefix 24, 25, 26 or 27.
+PRN_PATTERN = re.compile(r"^(24|25|26|27)\d{9}$")
+PRN_RULE = "A PRN must be exactly 11 digits and start with 24, 25, 26 or 27."
+
+
+def is_valid_prn(value: str) -> bool:
+    return bool(PRN_PATTERN.fullmatch((value or "").strip()))
 
 
 def _prns_match(row, prn_1, prn_2):
@@ -112,6 +122,10 @@ def login_team(team_name, member_1_name, member_2_name, member_1_prn, member_2_p
             status_code=400,
             detail="PRN credentials for both Member 1 and Member 2 are required.",
         )
+
+    for label, value in (("Member 1", prn_1), ("Member 2", prn_2)):
+        if not is_valid_prn(value):
+            raise HTTPException(status_code=400, detail=f"{label} PRN is not valid. {PRN_RULE}")
 
     connection = get_connection()
     try:

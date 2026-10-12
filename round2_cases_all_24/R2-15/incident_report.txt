@@ -1,24 +1,23 @@
-CHRONOS // INCIDENT REPORT // incident_report.txt
-CASE R2-15
-INCIDENT: Cross-Timeline Sync Governor Shutdown
+INCIDENT REPORT
+Case R2-15 | Incident: Cross-Timeline Sync Shutdown
 
-SUMMARY
-The cross-timeline sync governor was halted. The effect spread across the timeline network.
+WHAT HAPPENED
+The cross-timeline sync controller was stopped. The effect spread across the timeline network.
 
-INCIDENT TIMELINE
-23:15:13 | First abnormal reading: desynchronisation of 10 timeline channels
+TIMELINE OF EVENTS
+23:15:13 | First abnormal reading: 10 timeline channels out of sync
 23:15:34 | Monitoring reports a sustained inconsistency
-23:16:19 | Automatic reconciliation fails to restore the baseline
-23:16:59 | Cross-timeline results leave the normal operating range
+23:16:19 | Automatic recovery fails to restore normal readings
+23:16:59 | Results across timelines leave the normal range
 
-ORIGIN ANALYSIS
-The first abnormal reading originates at Sync Governor SG-7.
-It matches change CHG-5983 applied at 23:14:56 (shutdown of the cross-timeline sync governor).
-No other change within the incident window touched the sync governor state.
+WHERE IT STARTED
+The first abnormal reading came from Sync Controller SG-7.
+It lines up with Change #2832 made at 23:14:56 (shutdown of the cross-timeline sync controller).
+No other change in this period touched the sync controller state.
 
-OBSERVATIONS
-A mitigation hold was applied at Sync Governor SG-7 at 23:15:48; it did not restore the baseline.
-Baseline checks before the incident were within their normal range.
-Operators on shift reported no scheduled maintenance for this subsystem.
+OTHER NOTES
+A mitigation hold was applied at Sync Controller SG-7 at 23:15:57; it did not restore normal readings.
+Readings before the incident were in their normal range.
+Operators on shift reported no scheduled maintenance for this system.
 
 END OF REPORT

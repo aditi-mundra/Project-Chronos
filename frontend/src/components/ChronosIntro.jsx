@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
+import '../styles/glossy-skip.css';
 
 /**
  * ChronosIntro
@@ -14,10 +15,14 @@ export default function ChronosIntro({ onComplete }) {
   const iframeRef   = useRef(null);
   const overlayRef  = useRef(null);
   const doneRef     = useRef(false);   // guard against double-fire
+  const skipBtnRef  = useRef(null);
 
   const finish = useCallback(() => {
     if (doneRef.current) return;
     doneRef.current = true;
+
+    // the SKIP button fades away together with the intro
+    skipBtnRef.current?.classList.add('is-leaving');
 
     // The HTML intro already fades to black — we just wait a tiny beat then
     // fade our overlay in (extra safety black layer) and call onComplete.
@@ -33,8 +38,15 @@ export default function ChronosIntro({ onComplete }) {
     const handler = (e) => {
       if (e.data === 'CHRONOS_INTRO_DONE') finish();
     };
+    const onKey = (e) => {
+      if (e.key === 'Escape') finish();
+    };
     window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('message', handler);
+      window.removeEventListener('keydown', onKey);
+    };
   }, [finish]);
 
   return (
@@ -65,6 +77,14 @@ export default function ChronosIntro({ onComplete }) {
         }}
         allowFullScreen
       />
+
+      {/* SKIP: jumps straight to the login screen */}
+      <button ref={skipBtnRef} type="button" className="chronos-skip" onClick={finish} title="Skip the intro (Esc)">
+        <span className="chronos-skip__in">
+          <span>Skip</span>
+          <span className="chronos-skip__chev" aria-hidden="true"><i /><i /></span>
+        </span>
+      </button>
 
       {/* Black overlay — starts transparent, snaps to opaque on finish for a
           seamless cut into the Register screen */}

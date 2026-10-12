@@ -1,0 +1,52 @@
+/* SKIP button on the intro cinematic (top-right).
+   A flat, high-contrast label plate: slanted frame, Super Sliced type, one pink corner notch.
+   No glow, blur or gradients: it should read like part of a game HUD, not a web button. */
+.chronos-skip {
+  --skip-ink: #03060f;
+  --skip-plate: #e8fdff;
+  --skip-accent: #22d3ee;
+  --skip-notch: #f472b6;
+  position: absolute; top: 20px; right: 22px; z-index: 5;
+  padding: 0; border: 0; background: none; cursor: pointer;
+  transform: skewX(-16deg);
+  font-family: 'Super Sliced', 'Share Tech', sans-serif; text-transform: uppercase;
+  animation: chronos-skip-in 0.45s ease 0.8s backwards;
+  transition: transform 0.12s steps(3);
+}
+.chronos-skip__in {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  padding: 11px 28px 11px 30px;
+  background: var(--skip-plate); color: var(--skip-ink);
+  font-size: 15px; letter-spacing: 0.26em; line-height: 1;
+  transition: background-color 0.12s steps(3);
+}
+/* pink notch in the lower-right corner */
+.chronos-skip__in::after {
+  content: ''; position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; background: var(--skip-notch);
+}
+/* keep the label upright inside the slanted plate */
+.chronos-skip__in > span { display: inline-block; transform: skewX(16deg); }
+.chronos-skip__chev { display: inline-flex !important; gap: 3px; }
+.chronos-skip__chev i { display: block; width: 5px; height: 14px; background: currentColor; transform: skewX(-20deg); }
+
+.chronos-skip:hover .chronos-skip__in,
+.chronos-skip:focus-visible .chronos-skip__in { background: var(--skip-accent); }
+.chronos-skip:focus-visible { outline: 2px solid var(--skip-accent); outline-offset: 4px; }
+.chronos-skip:active { transform: skewX(-16deg) translate(2px, 2px); }
+
+@keyframes chronos-skip-in {
+  from { opacity: 0; transform: skewX(-16deg) translateX(14px); }
+  to { opacity: 1; transform: skewX(-16deg) translateX(0); }
+}
+
+/* fades out with the intro (added when the intro ends or SKIP / Esc is used) */
+.chronos-skip.is-leaving {
+  opacity: 0; transform: skewX(-16deg) translateX(10px); pointer-events: none; animation: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@media (max-width: 480px) {
+  .chronos-skip { top: 12px; right: 14px; }
+  .chronos-skip__in { padding: 9px 22px 9px 24px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { .chronos-skip { animation: none; } }

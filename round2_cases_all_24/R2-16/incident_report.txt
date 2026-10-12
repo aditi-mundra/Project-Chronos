@@ -1,24 +1,23 @@
-CHRONOS // INCIDENT REPORT // incident_report.txt
-CASE R2-16
-INCIDENT: Transit Buffer Emergency Flush
+INCIDENT REPORT
+Case R2-16 | Incident: Transit Buffer Emergency Flush
 
-SUMMARY
+WHAT HAPPENED
 The transit buffer was flushed outside its maintenance window. The effect spread across the timeline network.
 
-INCIDENT TIMELINE
+TIMELINE OF EVENTS
 23:27:10 | First abnormal reading: transit buffer overrun of 222 MB
 23:27:27 | Monitoring reports a sustained inconsistency
-23:28:05 | Automatic reconciliation fails to restore the baseline
-23:29:39 | Cross-timeline results leave the normal operating range
+23:28:05 | Automatic recovery fails to restore normal readings
+23:29:39 | Results across timelines leave the normal range
 
-ORIGIN ANALYSIS
-The first abnormal reading originates at Transit Buffer TB-2.
-It matches change CHG-8196 applied at 23:27:00 (forced flush of the transit buffer).
-No other change within the incident window touched the transit buffer content.
+WHERE IT STARTED
+The first abnormal reading came from Transit Buffer TB-2.
+It lines up with Change #4915 made at 23:27:00 (forced flush of the transit buffer).
+No other change in this period touched the transit buffer content.
 
-OBSERVATIONS
-A mitigation hold was applied at Transit Buffer TB-2 at 23:27:57; it did not restore the baseline.
-Baseline checks before the incident were within their normal range.
-Operators on shift reported no scheduled maintenance for this subsystem.
+OTHER NOTES
+A mitigation hold was applied at Transit Buffer TB-2 at 23:28:02; it did not restore normal readings.
+Readings before the incident were in their normal range.
+Operators on shift reported no scheduled maintenance for this system.
 
 END OF REPORT

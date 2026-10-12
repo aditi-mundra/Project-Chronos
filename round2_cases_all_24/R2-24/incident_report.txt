@@ -1,23 +1,22 @@
-CHRONOS // INCIDENT REPORT // incident_report.txt
-CASE R2-24
-INCIDENT: Transit Buffer Emergency Flush
+INCIDENT REPORT
+Case R2-24 | Incident: Transit Buffer Emergency Flush
 
-SUMMARY
+WHAT HAPPENED
 The transit buffer was flushed outside its maintenance window. The effect spread across the timeline network.
 
-INCIDENT TIMELINE
+TIMELINE OF EVENTS
 18:45:31 | First abnormal reading: transit buffer overrun of 328 MB
 18:45:49 | Monitoring reports a sustained inconsistency
-18:46:14 | Automatic reconciliation fails to restore the baseline
-18:47:12 | Cross-timeline results leave the normal operating range
+18:46:14 | Automatic recovery fails to restore normal readings
+18:47:12 | Results across timelines leave the normal range
 
-ORIGIN ANALYSIS
-The first abnormal reading cannot be traced to a single source. Candidate nodes: Transit Buffer TB-1 and Transit Buffer TB-7.
+WHERE IT STARTED
+The first abnormal reading cannot be traced to a single source. Possible terminals: Transit Buffer TB-1 and Transit Buffer TB-7.
 No change record could be matched to the reading with certainty.
 
-OBSERVATIONS
-A mitigation hold was applied at Transit Buffer TB-1 at 18:46:01; it did not restore the baseline.
-Baseline checks before the incident were within their normal range.
-Operators on shift reported no scheduled maintenance for this subsystem.
+OTHER NOTES
+A mitigation hold was applied at Transit Buffer TB-1 at 18:46:02; it did not restore normal readings.
+Readings before the incident were in their normal range.
+Operators on shift reported no scheduled maintenance for this system.
 
 END OF REPORT

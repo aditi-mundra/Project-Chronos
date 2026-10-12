@@ -1,0 +1,20 @@
+SECURITY KEY LOG
+Case R2-24 | Covers 16:45:11 to 18:56:11 (master clock)
+
+CLOCK NOTE: this log's clock runs 40 seconds FAST. Subtract 40 s from every time in this file before comparing it with the other files.
+
+How keys work: a security key has to be armed by a badge before it can be used, and an armed key
+stays valid for the time shown. A standing authorization is a general permission and is not tied
+to one badge. Badges are explained in login_records.log (BADGE REGISTRY); terminals are written as
+codes (see its TERMINAL LIST).
+
+KEY EVENTS
+17:29:51 | Key ZENITH-5403 | ARMED by badge B-7343 | valid 120 s | purpose: maintenance window
+17:31:26 | Key ZENITH-5403 | DISARMED after use
+18:41:58 | Key ONYX-9127 | ARMED by badge B-5376 | valid 120 s | never used
+18:43:58 | Key ONYX-9127 | EXPIRED unused
+18:45:17 | Key ONYX-4108 | ARMED by badge B-3792 | valid 120 s
+18:45:51 | Key ONYX-4108 | USED at terminal T-8834 | Change #5781
+18:46:36 | Key HOLD-3406 | ARMED by badge B-5376 | valid 120 s
+
+END OF LOG

@@ -5,7 +5,7 @@ One Round 3 case per Round 2 case (24, 1:1). They are generated together with th
 Round 2 evidence files by backend/tools/generate_cases.py, so the files named in a
 Round 3 evidence item are exactly the files the team investigated in Round 2:
 
-  future_audit.log, access_history.log, system_auth_matrix.log, incident_report.txt
+  system_changes.log, login_records.log, security_keys.log, incident_report.txt
 
 Each case has one culprit among Project Alpha / Beta / Gamma and the subset of those
 files that supports the accusation (valid_evidence_ids). The set of supporting files

@@ -3,8 +3,8 @@
     "case_id": "R3-01",
     "r2_case_id": "R2-01",
     "case_code": "ALPHA-KERNEL-REWRITE-01",
-    "title": "Sector-0 Kernel Divergence",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 22:25:14 UTC: a root-level configuration rewrite disabled the safety governors. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Sector-0 Core Divergence",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 22:25:14 UTC: a core configuration rewrite switched off the safety limiters. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -13,10 +13,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A authenticated at Terminal Node Omega-1 at 22:25:04 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -25,10 +24,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Terminal Node Kappa-8 shortly before 22:25:14 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -37,64 +35,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Terminal Node Omega-1 and armed KEY-ONYX-1809 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-2538 (initiator not recorded)",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #2421 (badge not recorded)",
         "timestamp": "22:25:14 UTC",
-        "description": "Root-level configuration rewrite applied on Terminal Node Omega-1; the initiating credential was not captured (delegated scheduler task)."
+        "description": "Core configuration rewrite at Terminal Node Omega-1 (terminal T-1514). The badge that made the change was not recorded (run by a scheduled task)."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Terminal Node Omega-1",
-        "timestamp": "22:25:04 UTC",
-        "description": "Credential SIGMA-99-0x7F1A authenticated at Terminal Node Omega-1 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "22:19:00 UTC",
+        "description": "Badge registry: B-4818 = Project Alpha; B-6995 = Project Beta; B-7500 = Project Gamma. FULL CONTROL logins: 22:19:00 badge B-6995 at Terminal Node Omega-1; 22:24:04 badge B-6995 at Terminal Node Kappa-8; 22:25:04 badge B-4818 at Terminal Node Omega-1; 22:25:55 badge B-7500 at Terminal Node Omega-1. Refused: 22:23:39 badge B-7500 at Terminal Node Omega-1."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ATLAS-7104 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key VEGA-7104 armed",
         "timestamp": "22:24:17 UTC",
-        "description": "KEY-ATLAS-7104 was armed by credential SIGMA-99-0x7F1A 57 seconds before the change (log clock +37 s)."
+        "description": "Key VEGA-7104 was armed by badge B-4818 57 seconds before the change and used at terminal T-1514 (this log's clock runs 37 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Terminal Node Omega-1",
+        "label": "Origin traced to Terminal Node Omega-1",
         "timestamp": "22:25:27 UTC",
-        "description": "First abnormal reading (chronon flux surge of 6112%) traced to Terminal Node Omega-1 and change CHG-2538."
+        "description": "First abnormal reading (time-flux surge of 6112%) traced to Terminal Node Omega-1 and Change #2421."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_gamma_access",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_logins",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the root-level configuration rewrite on Terminal Node Omega-1 at 22:25:14 UTC, using credential SIGMA-99-0x7F1A and key KEY-ATLAS-7104. The supporting records are access_history.log, system_auth_matrix.log, incident_report.txt; the future_audit.log record did not point to the responsible project. The chronon flux surge of 6112% followed 13 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the core configuration rewrite at Terminal Node Omega-1 at 22:25:14 UTC, using badge B-4818 and key VEGA-7104. The supporting records are login_records.log, security_keys.log, incident_report.txt; the system_changes.log record did not point to the responsible project. The time-flux surge of 6112% followed 13 seconds later."
   },
   {
     "case_id": "R3-02",
     "r2_case_id": "R2-02",
     "case_code": "BETA-BRIDGE-DECOUPLE-02",
-    "title": "Sector-4 Temporal Bridge Decoupling",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 21:56:28 UTC: the temporal stabilization bridge was forcibly decoupled. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Sector-4 Time Bridge Disconnect",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 21:56:28 UTC: the time bridge was forcibly disconnected. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -103,10 +100,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Console SEC-01 and armed KEY-ZENITH-9596 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -115,10 +111,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 authenticated at Console SEC-01 at 21:56:09 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -127,64 +122,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Console SEC-11 shortly before 21:56:28 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-9190 (initiator not recorded)",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #4334 (badge not recorded)",
         "timestamp": "21:56:28 UTC",
-        "description": "Forced decoupling of the temporal stabilization bridge applied on Console SEC-01; the initiating credential was not captured (delegated scheduler task)."
+        "description": "Forced disconnect of the time bridge at Console SEC-01 (terminal T-4311). The badge that made the change was not recorded (run by a scheduled task)."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Console SEC-01",
-        "timestamp": "21:56:09 UTC",
-        "description": "Credential DELTA-44-0x3B88 authenticated at Console SEC-01 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "21:47:43 UTC",
+        "description": "Badge registry: B-5306 = Project Alpha; B-9375 = Project Beta; B-8259 = Project Gamma. FULL CONTROL logins: 21:47:43 badge B-8259 at Console SEC-01; 21:55:35 badge B-8259 at Console SEC-11; 21:56:09 badge B-9375 at Console SEC-01; 21:57:19 badge B-5306 at Console SEC-01. Refused: 21:55:05 badge B-5306 at Console SEC-01."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ORION-1876 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ONYX-1085 armed",
         "timestamp": "21:55:39 UTC",
-        "description": "KEY-ORION-1876 was armed by credential DELTA-44-0x3B88 49 seconds before the change (log clock +44 s)."
+        "description": "Key ONYX-1085 was armed by badge B-9375 49 seconds before the change and used at terminal T-4311 (this log's clock runs 34 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Console SEC-01",
+        "label": "Origin traced to Console SEC-01",
         "timestamp": "21:56:40 UTC",
-        "description": "First abnormal reading (loss of 9 transit buffers) traced to Console SEC-01 and change CHG-9190."
+        "description": "First abnormal reading (9 transit buffers lost) traced to Console SEC-01 and Change #4334."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_gamma_access",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_logins",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the forced decoupling of the temporal stabilization bridge on Console SEC-01 at 21:56:28 UTC, using credential DELTA-44-0x3B88 and key KEY-ORION-1876. The supporting records are access_history.log, system_auth_matrix.log, incident_report.txt; the future_audit.log record did not point to the responsible project. The loss of 9 transit buffers followed 12 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the forced disconnect of the time bridge at Console SEC-01 at 21:56:28 UTC, using badge B-9375 and key ONYX-1085. The supporting records are login_records.log, security_keys.log, incident_report.txt; the system_changes.log record did not point to the responsible project. The 9 transit buffers lost followed 12 seconds later."
   },
   {
     "case_id": "R3-03",
     "r2_case_id": "R2-03",
     "case_code": "GAMMA-FREQUENCY-INJECTION-03",
-    "title": "Quantum Resonance Harmonics Sabotage",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 23:05:11 UTC: a modulation script pushed the sync grid into the destructive dissonance band. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Resonance Frequency Sabotage",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 23:05:11 UTC: a script pushed the sync grid into a destructive frequency range. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -193,10 +187,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Frequency Station CH-8 shortly before 23:05:11 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -205,10 +198,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Frequency Station CH-5 and armed KEY-ATLAS-5469 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -217,64 +209,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 authenticated at Frequency Station CH-5 at 23:05:00 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-4435 (initiator not recorded)",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #2083 (badge not recorded)",
         "timestamp": "23:05:11 UTC",
-        "description": "Resonance modulation script injection applied on Frequency Station CH-5; the initiating credential was not captured (delegated scheduler task)."
+        "description": "Frequency modification script at Frequency Station CH-5 (terminal T-4017). The badge that made the change was not recorded (run by a scheduled task)."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Frequency Station CH-5",
-        "timestamp": "23:05:00 UTC",
-        "description": "Credential EPSILON-12-0x9C04 authenticated at Frequency Station CH-5 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "22:57:53 UTC",
+        "description": "Badge registry: B-4012 = Project Alpha; B-9357 = Project Beta; B-9301 = Project Gamma. FULL CONTROL logins: 22:57:53 badge B-4012 at Frequency Station CH-5; 23:04:08 badge B-4012 at Frequency Station CH-8; 23:05:00 badge B-9301 at Frequency Station CH-5; 23:05:48 badge B-9357 at Frequency Station CH-5. Refused: 23:03:16 badge B-9357 at Frequency Station CH-5."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-NOVA-9404 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ZENITH-6914 armed",
         "timestamp": "23:04:26 UTC",
-        "description": "KEY-NOVA-9404 was armed by credential EPSILON-12-0x9C04 45 seconds before the change (log clock +20 s)."
+        "description": "Key ZENITH-6914 was armed by badge B-9301 45 seconds before the change and used at terminal T-4017 (this log's clock runs 20 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Frequency Station CH-5",
+        "label": "Origin traced to Frequency Station CH-5",
         "timestamp": "23:05:17 UTC",
-        "description": "First abnormal reading (boundary layer rupture at +535 MHz) traced to Frequency Station CH-5 and change CHG-4435."
+        "description": "First abnormal reading (boundary rupture at +535 MHz) traced to Frequency Station CH-5 and Change #2083."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_gamma_access",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_logins",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the resonance modulation script injection on Frequency Station CH-5 at 23:05:11 UTC, using credential EPSILON-12-0x9C04 and key KEY-NOVA-9404. The supporting records are access_history.log, system_auth_matrix.log, incident_report.txt; the future_audit.log record did not point to the responsible project. The boundary layer rupture at +535 MHz followed 6 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the frequency modification script at Frequency Station CH-5 at 23:05:11 UTC, using badge B-9301 and key ZENITH-6914. The supporting records are login_records.log, security_keys.log, incident_report.txt; the system_changes.log record did not point to the responsible project. The boundary rupture at +535 MHz followed 6 seconds later."
   },
   {
     "case_id": "R3-04",
     "r2_case_id": "R2-04",
     "case_code": "ALPHA-ARCHIVE-PURGE-04",
     "title": "Archive Vault Anchor Purge",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 22:51:19 UTC: timeline anchor records were purged in bulk. Identify which project is responsible and select the evidence files that support your accusation.",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 22:51:19 UTC: timeline anchor records were deleted in bulk. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -283,10 +274,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A is recorded on change CHG-3109 at Archive Vault AV-3 at 22:51:19 UTC.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -295,10 +285,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Archive Vault AV-3 and armed KEY-LYRA-5410 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -307,64 +296,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Archive Vault AV-7 shortly before 22:51:19 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-3109",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #4802",
         "timestamp": "22:51:19 UTC",
-        "description": "Bulk purge of timeline anchor records applied on Archive Vault AV-3 under credential SIGMA-99-0x7F1A."
+        "description": "Bulk deletion of timeline anchor records at Archive Vault AV-3 (terminal T-6175) was made with badge B-2896."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session Log Gap",
-        "timestamp": "22:50:54 UTC",
-        "description": "Session records around the change were lost to a log buffer overflow; recovered records show credential EPSILON-12-0x9C04 held ROOT_WRITE at Archive Vault AV-7 shortly before the change."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records (gap)",
+        "timestamp": "22:50:51 UTC",
+        "description": "Badge registry: B-2896 = Project Alpha; B-1841 = Project Beta; B-2051 = Project Gamma. FULL CONTROL logins: 22:42:31 badge B-2051 at Archive Vault AV-3; 22:50:16 badge B-2051 at Archive Vault AV-7; 22:52:14 badge B-1841 at Archive Vault AV-3. Refused: 22:49:12 badge B-1841 at Archive Vault AV-3. Records between 22:50:51 and 22:51:27 were lost (log buffer overflow)."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-VEGA-8899 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key HELIX-2553 armed",
         "timestamp": "22:50:39 UTC",
-        "description": "KEY-VEGA-8899 was armed by credential SIGMA-99-0x7F1A 40 seconds before the change (log clock +37 s)."
+        "description": "Key HELIX-2553 was armed by badge B-2896 40 seconds before the change and used at terminal T-6175 (this log's clock runs 31 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Archive Vault AV-3",
+        "label": "Origin traced to Archive Vault AV-3",
         "timestamp": "22:51:33 UTC",
-        "description": "First abnormal reading (551 anchor records missing from the index) traced to Archive Vault AV-3 and change CHG-3109."
+        "description": "First abnormal reading (551 anchor records missing from the index) traced to Archive Vault AV-3 and Change #4802."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the bulk purge of timeline anchor records on Archive Vault AV-3 at 22:51:19 UTC, using credential SIGMA-99-0x7F1A and key KEY-VEGA-8899. The supporting records are future_audit.log, system_auth_matrix.log, incident_report.txt; the access_history.log record did not point to the responsible project. The 551 anchor records missing from the index followed 14 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the bulk deletion of timeline anchor records at Archive Vault AV-3 at 22:51:19 UTC, using badge B-2896 and key HELIX-2553. The supporting records are system_changes.log, security_keys.log, incident_report.txt; the login_records.log record did not point to the responsible project. The 551 anchor records missing from the index followed 14 seconds later."
   },
   {
     "case_id": "R3-05",
     "r2_case_id": "R2-05",
     "case_code": "BETA-ANCHOR-RECALIBRATION-05",
-    "title": "Anchor Relay Offset Recalibration",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 18:34:04 UTC: the anchor offset table was recalibrated by hand. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Anchor Relay Offset Change",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 18:34:04 UTC: the anchor offsets were changed by hand. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -373,10 +361,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Anchor Relay AR-2 shortly before 18:34:04 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -385,10 +372,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 is recorded on change CHG-2904 at Anchor Relay AR-9 at 18:34:04 UTC.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -397,64 +383,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Anchor Relay AR-9 and armed KEY-LYRA-8896 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-2904",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #5232",
         "timestamp": "18:34:04 UTC",
-        "description": "Recalibration of temporal anchor offsets applied on Anchor Relay AR-9 under credential DELTA-44-0x3B88."
+        "description": "Manual change of the anchor offsets at Anchor Relay AR-9 (terminal T-9386) was made with badge B-8330."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session Log Gap",
-        "timestamp": "18:33:40 UTC",
-        "description": "Session records around the change were lost to a log buffer overflow; recovered records show credential SIGMA-99-0x7F1A held ROOT_WRITE at Anchor Relay AR-2 shortly before the change."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records (gap)",
+        "timestamp": "18:33:38 UTC",
+        "description": "Badge registry: B-7366 = Project Alpha; B-8330 = Project Beta; B-3208 = Project Gamma. FULL CONTROL logins: 18:25:19 badge B-7366 at Anchor Relay AR-9; 18:33:03 badge B-7366 at Anchor Relay AR-2; 18:35:01 badge B-3208 at Anchor Relay AR-9. Refused: 18:31:54 badge B-3208 at Anchor Relay AR-9. Records between 18:33:38 and 18:34:13 were lost (log buffer overflow)."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ATLAS-7120 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key VEGA-7120 armed",
         "timestamp": "18:33:36 UTC",
-        "description": "KEY-ATLAS-7120 was armed by credential DELTA-44-0x3B88 28 seconds before the change (log clock +27 s)."
+        "description": "Key VEGA-7120 was armed by badge B-8330 28 seconds before the change and used at terminal T-9386 (this log's clock runs 27 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Anchor Relay AR-9",
+        "label": "Origin traced to Anchor Relay AR-9",
         "timestamp": "18:34:16 UTC",
-        "description": "First abnormal reading (anchor drift of 346 ms across the relay chain) traced to Anchor Relay AR-9 and change CHG-2904."
+        "description": "First abnormal reading (anchor drift of 346 ms along the relay chain) traced to Anchor Relay AR-9 and Change #5232."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the recalibration of temporal anchor offsets on Anchor Relay AR-9 at 18:34:04 UTC, using credential DELTA-44-0x3B88 and key KEY-ATLAS-7120. The supporting records are future_audit.log, system_auth_matrix.log, incident_report.txt; the access_history.log record did not point to the responsible project. The anchor drift of 346 ms across the relay chain followed 12 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the manual change of the anchor offsets at Anchor Relay AR-9 at 18:34:04 UTC, using badge B-8330 and key VEGA-7120. The supporting records are system_changes.log, security_keys.log, incident_report.txt; the login_records.log record did not point to the responsible project. The anchor drift of 346 ms along the relay chain followed 12 seconds later."
   },
   {
     "case_id": "R3-06",
     "r2_case_id": "R2-06",
     "case_code": "GAMMA-PARADOX-FILTER-06",
-    "title": "Paradox Filter Array Bypass",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 19:49:12 UTC: the paradox filter array was switched to bypass. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Paradox Filter Bypass",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 19:49:12 UTC: the paradox filter array was switched to bypass. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -463,10 +448,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Filter Array PF-3 and armed KEY-PULSAR-1870 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -475,10 +459,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Filter Array PF-2 shortly before 19:49:12 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -487,64 +470,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 is recorded on change CHG-6502 at Filter Array PF-3 at 19:49:12 UTC.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-6502",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #5964",
         "timestamp": "19:49:12 UTC",
-        "description": "Paradox filter bypass applied on Filter Array PF-3 under credential EPSILON-12-0x9C04."
+        "description": "Bypass of the paradox filter at Filter Array PF-3 (terminal T-7693) was made with badge B-6293."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session Log Gap",
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records (gap)",
         "timestamp": "19:48:48 UTC",
-        "description": "Session records around the change were lost to a log buffer overflow; recovered records show credential DELTA-44-0x3B88 held ROOT_WRITE at Filter Array PF-2 shortly before the change."
+        "description": "Badge registry: B-5445 = Project Alpha; B-1651 = Project Beta; B-6293 = Project Gamma. FULL CONTROL logins: 19:40:32 badge B-1651 at Filter Array PF-3; 19:48:05 badge B-1651 at Filter Array PF-2; 19:49:48 badge B-5445 at Filter Array PF-3. Refused: 19:47:25 badge B-5445 at Filter Array PF-3. Records between 19:48:48 and 19:49:20 were lost (log buffer overflow)."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ZENITH-8057 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key NOVA-4240 armed",
         "timestamp": "19:48:26 UTC",
-        "description": "KEY-ZENITH-8057 was armed by credential EPSILON-12-0x9C04 46 seconds before the change (log clock +42 s)."
+        "description": "Key NOVA-4240 was armed by badge B-6293 46 seconds before the change and used at terminal T-7693 (this log's clock runs 24 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Filter Array PF-3",
+        "label": "Origin traced to Filter Array PF-3",
         "timestamp": "19:49:27 UTC",
-        "description": "First abnormal reading (55 unresolved causal loops detected) traced to Filter Array PF-3 and change CHG-6502."
+        "description": "First abnormal reading (55 unresolved cause-and-effect loops detected) traced to Filter Array PF-3 and Change #5964."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the paradox filter bypass on Filter Array PF-3 at 19:49:12 UTC, using credential EPSILON-12-0x9C04 and key KEY-ZENITH-8057. The supporting records are future_audit.log, system_auth_matrix.log, incident_report.txt; the access_history.log record did not point to the responsible project. The 55 unresolved causal loops detected followed 15 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the bypass of the paradox filter at Filter Array PF-3 at 19:49:12 UTC, using badge B-6293 and key NOVA-4240. The supporting records are system_changes.log, security_keys.log, incident_report.txt; the login_records.log record did not point to the responsible project. The 55 unresolved cause-and-effect loops detected followed 15 seconds later."
   },
   {
     "case_id": "R3-07",
     "r2_case_id": "R2-07",
     "case_code": "ALPHA-SYNC-GOVERNOR-07",
-    "title": "Cross-Timeline Sync Governor Shutdown",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 18:26:46 UTC: the cross-timeline sync governor was halted. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Cross-Timeline Sync Shutdown",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 18:26:46 UTC: the cross-timeline sync controller was stopped. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -553,10 +535,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A authenticated at Sync Governor SG-4 at 18:26:37 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -565,10 +546,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Sync Governor SG-1 shortly before 18:26:46 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -577,64 +557,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Sync Governor SG-4 and armed KEY-NOVA-1303 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-6554",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #2537",
         "timestamp": "18:26:46 UTC",
-        "description": "Shutdown of the cross-timeline sync governor applied on Sync Governor SG-4 under credential SIGMA-99-0x7F1A."
+        "description": "Shutdown of the cross-timeline sync controller at Sync Controller SG-4 (terminal T-1325) was made with badge B-8335."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Sync Governor SG-4",
-        "timestamp": "18:26:37 UTC",
-        "description": "Credential SIGMA-99-0x7F1A authenticated at Sync Governor SG-4 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "18:18:55 UTC",
+        "description": "Badge registry: B-8335 = Project Alpha; B-6916 = Project Beta; B-4450 = Project Gamma. FULL CONTROL logins: 18:18:55 badge B-6916 at Sync Controller SG-4; 18:25:49 badge B-6916 at Sync Controller SG-1; 18:26:37 badge B-8335 at Sync Controller SG-4; 18:27:45 badge B-4450 at Sync Controller SG-4. Refused: 18:25:00 badge B-4450 at Sync Controller SG-4."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Standing Authorization for KEY-ZENITH-4903",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key NOVA-4730 (standing authorization)",
         "timestamp": "18:25:16 UTC",
-        "description": "KEY-ZENITH-4903 ran under a standing maintenance authorization; no individual arming was recorded (log clock +41 s)."
+        "description": "Key NOVA-4730 was used under a standing maintenance authorization; no badge armed it (this log's clock runs 26 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Sync Governor SG-4",
+        "label": "Origin traced to Sync Controller SG-4",
         "timestamp": "18:26:53 UTC",
-        "description": "First abnormal reading (desynchronisation of 3 timeline channels) traced to Sync Governor SG-4 and change CHG-6554."
+        "description": "First abnormal reading (3 timeline channels out of sync) traced to Sync Controller SG-4 and Change #2537."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_logins",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the shutdown of the cross-timeline sync governor on Sync Governor SG-4 at 18:26:46 UTC, using credential SIGMA-99-0x7F1A and key KEY-ZENITH-4903. The supporting records are future_audit.log, access_history.log, incident_report.txt; the system_auth_matrix.log record did not point to the responsible project. The desynchronisation of 3 timeline channels followed 7 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the shutdown of the cross-timeline sync controller at Sync Controller SG-4 at 18:26:46 UTC, using badge B-8335 and key NOVA-4730. The supporting records are system_changes.log, login_records.log, incident_report.txt; the security_keys.log record did not point to the responsible project. The 3 timeline channels out of sync followed 7 seconds later."
   },
   {
     "case_id": "R3-08",
     "r2_case_id": "R2-08",
     "case_code": "BETA-BUFFER-FLUSH-08",
     "title": "Transit Buffer Emergency Flush",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 21:12:30 UTC: the transit buffer was flushed outside its maintenance window. Identify which project is responsible and select the evidence files that support your accusation.",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 21:12:30 UTC: the transit buffer was flushed outside its maintenance window. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -643,10 +622,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Transit Buffer TB-5 and armed KEY-ZENITH-7402 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -655,10 +633,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 authenticated at Transit Buffer TB-5 at 21:12:13 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -667,64 +644,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Transit Buffer TB-8 shortly before 21:12:30 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-3571",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #5321",
         "timestamp": "21:12:30 UTC",
-        "description": "Forced flush of the transit buffer applied on Transit Buffer TB-5 under credential DELTA-44-0x3B88."
+        "description": "Forced flush of the transit buffer at Transit Buffer TB-5 (terminal T-2862) was made with badge B-1531."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Transit Buffer TB-5",
-        "timestamp": "21:12:13 UTC",
-        "description": "Credential DELTA-44-0x3B88 authenticated at Transit Buffer TB-5 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "21:03:32 UTC",
+        "description": "Badge registry: B-6257 = Project Alpha; B-1531 = Project Beta; B-9847 = Project Gamma. FULL CONTROL logins: 21:03:32 badge B-9847 at Transit Buffer TB-5; 21:11:35 badge B-9847 at Transit Buffer TB-8; 21:12:13 badge B-1531 at Transit Buffer TB-5; 21:13:19 badge B-6257 at Transit Buffer TB-5. Refused: 21:11:03 badge B-6257 at Transit Buffer TB-5."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Standing Authorization for KEY-NOVA-2431",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key HELIX-6450 (standing authorization)",
         "timestamp": "21:11:00 UTC",
-        "description": "KEY-NOVA-2431 ran under a standing maintenance authorization; no individual arming was recorded (log clock +29 s)."
+        "description": "Key HELIX-6450 was used under a standing maintenance authorization; no badge armed it (this log's clock runs 40 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Transit Buffer TB-5",
+        "label": "Origin traced to Transit Buffer TB-5",
         "timestamp": "21:12:40 UTC",
-        "description": "First abnormal reading (transit buffer overrun of 196 MB) traced to Transit Buffer TB-5 and change CHG-3571."
+        "description": "First abnormal reading (transit buffer overrun of 196 MB) traced to Transit Buffer TB-5 and Change #5321."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_logins",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the forced flush of the transit buffer on Transit Buffer TB-5 at 21:12:30 UTC, using credential DELTA-44-0x3B88 and key KEY-NOVA-2431. The supporting records are future_audit.log, access_history.log, incident_report.txt; the system_auth_matrix.log record did not point to the responsible project. The transit buffer overrun of 196 MB followed 10 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the forced flush of the transit buffer at Transit Buffer TB-5 at 21:12:30 UTC, using badge B-1531 and key HELIX-6450. The supporting records are system_changes.log, login_records.log, incident_report.txt; the security_keys.log record did not point to the responsible project. The transit buffer overrun of 196 MB followed 10 seconds later."
   },
   {
     "case_id": "R3-09",
     "r2_case_id": "R2-09",
     "case_code": "GAMMA-KERNEL-REWRITE-09",
-    "title": "Sector-0 Kernel Divergence",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 23:14:23 UTC: a root-level configuration rewrite disabled the safety governors. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Sector-0 Core Divergence",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 23:14:23 UTC: a core configuration rewrite switched off the safety limiters. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -733,10 +709,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Terminal Node Omega-1 shortly before 23:14:23 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -745,10 +720,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Terminal Node Delta-1 and armed KEY-PULSAR-7617 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -757,64 +731,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 authenticated at Terminal Node Delta-1 at 23:14:13 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-1338",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #4477",
         "timestamp": "23:14:23 UTC",
-        "description": "Root-level configuration rewrite applied on Terminal Node Delta-1 under credential EPSILON-12-0x9C04."
+        "description": "Core configuration rewrite at Terminal Node Delta-1 (terminal T-3718) was made with badge B-2986."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Terminal Node Delta-1",
-        "timestamp": "23:14:13 UTC",
-        "description": "Credential EPSILON-12-0x9C04 authenticated at Terminal Node Delta-1 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "23:08:07 UTC",
+        "description": "Badge registry: B-9135 = Project Alpha; B-7050 = Project Beta; B-2986 = Project Gamma. FULL CONTROL logins: 23:08:07 badge B-9135 at Terminal Node Delta-1; 23:13:24 badge B-9135 at Terminal Node Omega-1; 23:14:13 badge B-2986 at Terminal Node Delta-1; 23:15:12 badge B-7050 at Terminal Node Delta-1. Refused: 23:13:08 badge B-7050 at Terminal Node Delta-1."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Standing Authorization for KEY-QUASAR-6599",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ORION-5533 (standing authorization)",
         "timestamp": "23:12:53 UTC",
-        "description": "KEY-QUASAR-6599 ran under a standing maintenance authorization; no individual arming was recorded (log clock +27 s)."
+        "description": "Key ORION-5533 was used under a standing maintenance authorization; no badge armed it (this log's clock runs 47 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Terminal Node Delta-1",
+        "label": "Origin traced to Terminal Node Delta-1",
         "timestamp": "23:14:38 UTC",
-        "description": "First abnormal reading (chronon flux surge of 7657%) traced to Terminal Node Delta-1 and change CHG-1338."
+        "description": "First abnormal reading (time-flux surge of 7657%) traced to Terminal Node Delta-1 and Change #4477."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_logins",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the root-level configuration rewrite on Terminal Node Delta-1 at 23:14:23 UTC, using credential EPSILON-12-0x9C04 and key KEY-QUASAR-6599. The supporting records are future_audit.log, access_history.log, incident_report.txt; the system_auth_matrix.log record did not point to the responsible project. The chronon flux surge of 7657% followed 15 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the core configuration rewrite at Terminal Node Delta-1 at 23:14:23 UTC, using badge B-2986 and key ORION-5533. The supporting records are system_changes.log, login_records.log, incident_report.txt; the security_keys.log record did not point to the responsible project. The time-flux surge of 7657% followed 15 seconds later."
   },
   {
     "case_id": "R3-10",
     "r2_case_id": "R2-10",
     "case_code": "ALPHA-BRIDGE-DECOUPLE-10",
-    "title": "Sector-4 Temporal Bridge Decoupling",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 21:03:13 UTC: the temporal stabilization bridge was forcibly decoupled. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Sector-4 Time Bridge Disconnect",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 21:03:13 UTC: the time bridge was forcibly disconnected. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -823,10 +796,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A authenticated at Console SEC-01 at 21:02:55 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -835,10 +807,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Console SEC-01 and armed KEY-ZENITH-5093 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -847,64 +818,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Console SEC-14 shortly before 21:03:13 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-2026",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #1357",
         "timestamp": "21:03:13 UTC",
-        "description": "Forced decoupling of the temporal stabilization bridge applied on Console SEC-01 under credential SIGMA-99-0x7F1A."
+        "description": "Forced disconnect of the time bridge at Console SEC-01 (terminal T-6859) was made with badge B-7613."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Console SEC-01",
-        "timestamp": "21:02:55 UTC",
-        "description": "Credential SIGMA-99-0x7F1A authenticated at Console SEC-01 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "20:55:31 UTC",
+        "description": "Badge registry: B-7613 = Project Alpha; B-7836 = Project Beta; B-3328 = Project Gamma. FULL CONTROL logins: 20:55:31 badge B-3328 at Console SEC-01; 21:02:30 badge B-3328 at Console SEC-14; 21:02:55 badge B-7613 at Console SEC-01; 21:04:15 badge B-7836 at Console SEC-01. Refused: 21:01:06 badge B-7836 at Console SEC-01."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ORION-6115 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key VEGA-1513 armed",
         "timestamp": "21:02:44 UTC",
-        "description": "KEY-ORION-6115 was armed by credential SIGMA-99-0x7F1A 29 seconds before the change (log clock +43 s)."
+        "description": "Key VEGA-1513 was armed by badge B-7613 29 seconds before the change and used at terminal T-6859 (this log's clock runs 28 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Not Narrowed",
+        "label": "Origin not narrowed down",
         "timestamp": "21:03:29 UTC",
-        "description": "First abnormal reading (loss of 34 transit buffers); the source could not be narrowed beyond Console SEC-01 and Console SEC-14."
+        "description": "First abnormal reading (34 transit buffers lost); the source could not be narrowed beyond Console SEC-01 and Console SEC-14."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_system_auth"
+      "ev_changes",
+      "ev_logins",
+      "ev_keys"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the forced decoupling of the temporal stabilization bridge on Console SEC-01 at 21:03:13 UTC, using credential SIGMA-99-0x7F1A and key KEY-ORION-6115. The supporting records are future_audit.log, access_history.log, system_auth_matrix.log; the incident_report.txt record did not point to the responsible project. The loss of 34 transit buffers followed 16 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the forced disconnect of the time bridge at Console SEC-01 at 21:03:13 UTC, using badge B-7613 and key VEGA-1513. The supporting records are system_changes.log, login_records.log, security_keys.log; the incident_report.txt record did not point to the responsible project. The 34 transit buffers lost followed 16 seconds later."
   },
   {
     "case_id": "R3-11",
     "r2_case_id": "R2-11",
     "case_code": "BETA-FREQUENCY-INJECTION-11",
-    "title": "Quantum Resonance Harmonics Sabotage",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 19:06:13 UTC: a modulation script pushed the sync grid into the destructive dissonance band. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Resonance Frequency Sabotage",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 19:06:13 UTC: a script pushed the sync grid into a destructive frequency range. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -913,10 +883,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Frequency Station CH-2 shortly before 19:06:13 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -925,10 +894,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 authenticated at Frequency Station CH-3 at 19:06:05 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -937,64 +905,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Frequency Station CH-3 and armed KEY-HELIX-3698 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-3850",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #6717",
         "timestamp": "19:06:13 UTC",
-        "description": "Resonance modulation script injection applied on Frequency Station CH-3 under credential DELTA-44-0x3B88."
+        "description": "Frequency modification script at Frequency Station CH-3 (terminal T-2457) was made with badge B-3786."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Frequency Station CH-3",
-        "timestamp": "19:06:05 UTC",
-        "description": "Credential DELTA-44-0x3B88 authenticated at Frequency Station CH-3 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "18:59:20 UTC",
+        "description": "Badge registry: B-1610 = Project Alpha; B-3786 = Project Beta; B-8476 = Project Gamma. FULL CONTROL logins: 18:59:20 badge B-1610 at Frequency Station CH-3; 19:05:17 badge B-1610 at Frequency Station CH-2; 19:06:05 badge B-3786 at Frequency Station CH-3; 19:07:04 badge B-8476 at Frequency Station CH-3. Refused: 19:03:55 badge B-8476 at Frequency Station CH-3."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-VEGA-5347 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ATLAS-3850 armed",
         "timestamp": "19:05:36 UTC",
-        "description": "KEY-VEGA-5347 was armed by credential DELTA-44-0x3B88 37 seconds before the change (log clock +44 s)."
+        "description": "Key ATLAS-3850 was armed by badge B-3786 37 seconds before the change and used at terminal T-2457 (this log's clock runs 41 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Not Narrowed",
+        "label": "Origin not narrowed down",
         "timestamp": "19:06:22 UTC",
-        "description": "First abnormal reading (boundary layer rupture at +422 MHz); the source could not be narrowed beyond Frequency Station CH-3 and Frequency Station CH-2."
+        "description": "First abnormal reading (boundary rupture at +422 MHz); the source could not be narrowed beyond Frequency Station CH-3 and Frequency Station CH-2."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_system_auth"
+      "ev_changes",
+      "ev_logins",
+      "ev_keys"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the resonance modulation script injection on Frequency Station CH-3 at 19:06:13 UTC, using credential DELTA-44-0x3B88 and key KEY-VEGA-5347. The supporting records are future_audit.log, access_history.log, system_auth_matrix.log; the incident_report.txt record did not point to the responsible project. The boundary layer rupture at +422 MHz followed 9 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the frequency modification script at Frequency Station CH-3 at 19:06:13 UTC, using badge B-3786 and key ATLAS-3850. The supporting records are system_changes.log, login_records.log, security_keys.log; the incident_report.txt record did not point to the responsible project. The boundary rupture at +422 MHz followed 9 seconds later."
   },
   {
     "case_id": "R3-12",
     "r2_case_id": "R2-12",
     "case_code": "GAMMA-ARCHIVE-PURGE-12",
     "title": "Archive Vault Anchor Purge",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 20:07:57 UTC: timeline anchor records were purged in bulk. Identify which project is responsible and select the evidence files that support your accusation.",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 20:07:57 UTC: timeline anchor records were deleted in bulk. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1003,10 +970,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Archive Vault AV-3 and armed KEY-NOVA-8883 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1015,10 +981,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Archive Vault AV-5 shortly before 20:07:57 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1027,64 +992,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 authenticated at Archive Vault AV-3 at 20:07:48 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-9513",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #1130",
         "timestamp": "20:07:57 UTC",
-        "description": "Bulk purge of timeline anchor records applied on Archive Vault AV-3 under credential EPSILON-12-0x9C04."
+        "description": "Bulk deletion of timeline anchor records at Archive Vault AV-3 (terminal T-1589) was made with badge B-6065."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Archive Vault AV-3",
-        "timestamp": "20:07:48 UTC",
-        "description": "Credential EPSILON-12-0x9C04 authenticated at Archive Vault AV-3 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "20:00:38 UTC",
+        "description": "Badge registry: B-9249 = Project Alpha; B-5545 = Project Beta; B-6065 = Project Gamma. FULL CONTROL logins: 20:00:38 badge B-5545 at Archive Vault AV-3; 20:07:03 badge B-5545 at Archive Vault AV-5; 20:07:48 badge B-6065 at Archive Vault AV-3; 20:08:59 badge B-9249 at Archive Vault AV-3. Refused: 20:06:11 badge B-9249 at Archive Vault AV-3."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-HELIX-7652 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key LYRA-3700 armed",
         "timestamp": "20:07:33 UTC",
-        "description": "KEY-HELIX-7652 was armed by credential EPSILON-12-0x9C04 24 seconds before the change (log clock +47 s)."
+        "description": "Key LYRA-3700 was armed by badge B-6065 24 seconds before the change and used at terminal T-1589 (this log's clock runs 42 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Not Narrowed",
+        "label": "Origin not narrowed down",
         "timestamp": "20:08:18 UTC",
         "description": "First abnormal reading (457 anchor records missing from the index); the source could not be narrowed beyond Archive Vault AV-3 and Archive Vault AV-5."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_system_auth"
+      "ev_changes",
+      "ev_logins",
+      "ev_keys"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the bulk purge of timeline anchor records on Archive Vault AV-3 at 20:07:57 UTC, using credential EPSILON-12-0x9C04 and key KEY-HELIX-7652. The supporting records are future_audit.log, access_history.log, system_auth_matrix.log; the incident_report.txt record did not point to the responsible project. The 457 anchor records missing from the index followed 21 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the bulk deletion of timeline anchor records at Archive Vault AV-3 at 20:07:57 UTC, using badge B-6065 and key LYRA-3700. The supporting records are system_changes.log, login_records.log, security_keys.log; the incident_report.txt record did not point to the responsible project. The 457 anchor records missing from the index followed 21 seconds later."
   },
   {
     "case_id": "R3-13",
     "r2_case_id": "R2-13",
     "case_code": "ALPHA-ANCHOR-RECALIBRATION-13",
-    "title": "Anchor Relay Offset Recalibration",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 20:02:54 UTC: the anchor offset table was recalibrated by hand. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Anchor Relay Offset Change",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 20:02:54 UTC: the anchor offsets were changed by hand. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1093,10 +1057,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A authenticated at Anchor Relay AR-7 at 20:02:45 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1105,10 +1068,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Anchor Relay AR-5 shortly before 20:02:54 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1117,64 +1079,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Anchor Relay AR-7 and armed KEY-HELIX-9641 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-8808 (initiator not recorded)",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #4560 (badge not recorded)",
         "timestamp": "20:02:54 UTC",
-        "description": "Recalibration of temporal anchor offsets applied on Anchor Relay AR-7; the initiating credential was not captured (delegated scheduler task)."
+        "description": "Manual change of the anchor offsets at Anchor Relay AR-7 (terminal T-7151). The badge that made the change was not recorded (run by a scheduled task)."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Anchor Relay AR-7",
-        "timestamp": "20:02:45 UTC",
-        "description": "Credential SIGMA-99-0x7F1A authenticated at Anchor Relay AR-7 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "19:54:30 UTC",
+        "description": "Badge registry: B-6559 = Project Alpha; B-3198 = Project Beta; B-3584 = Project Gamma. FULL CONTROL logins: 19:54:30 badge B-3198 at Anchor Relay AR-7; 20:02:06 badge B-3198 at Anchor Relay AR-5; 20:02:45 badge B-6559 at Anchor Relay AR-7; 20:03:36 badge B-3584 at Anchor Relay AR-7. Refused: 20:00:38 badge B-3584 at Anchor Relay AR-7."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ZENITH-3659 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ATLAS-8808 armed",
         "timestamp": "20:01:58 UTC",
-        "description": "KEY-ZENITH-3659 was armed by credential SIGMA-99-0x7F1A 56 seconds before the change (log clock +31 s)."
+        "description": "Key ATLAS-8808 was armed by badge B-6559 56 seconds before the change and used at terminal T-7151 (this log's clock runs 46 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Anchor Relay AR-7",
+        "label": "Origin traced to Anchor Relay AR-7",
         "timestamp": "20:03:01 UTC",
-        "description": "First abnormal reading (anchor drift of 370 ms across the relay chain) traced to Anchor Relay AR-7 and change CHG-8808."
+        "description": "First abnormal reading (anchor drift of 370 ms along the relay chain) traced to Anchor Relay AR-7 and Change #4560."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_gamma_access",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_logins",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the recalibration of temporal anchor offsets on Anchor Relay AR-7 at 20:02:54 UTC, using credential SIGMA-99-0x7F1A and key KEY-ZENITH-3659. The supporting records are access_history.log, system_auth_matrix.log, incident_report.txt; the future_audit.log record did not point to the responsible project. The anchor drift of 370 ms across the relay chain followed 7 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the manual change of the anchor offsets at Anchor Relay AR-7 at 20:02:54 UTC, using badge B-6559 and key ATLAS-8808. The supporting records are login_records.log, security_keys.log, incident_report.txt; the system_changes.log record did not point to the responsible project. The anchor drift of 370 ms along the relay chain followed 7 seconds later."
   },
   {
     "case_id": "R3-14",
     "r2_case_id": "R2-14",
     "case_code": "BETA-PARADOX-FILTER-14",
-    "title": "Paradox Filter Array Bypass",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 22:59:31 UTC: the paradox filter array was switched to bypass. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Paradox Filter Bypass",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 22:59:31 UTC: the paradox filter array was switched to bypass. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1183,10 +1144,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Filter Array PF-6 and armed KEY-HELIX-7668 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1195,10 +1155,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 authenticated at Filter Array PF-6 at 22:59:12 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1207,64 +1166,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Filter Array PF-6B shortly before 22:59:31 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-7436 (initiator not recorded)",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #7350 (badge not recorded)",
         "timestamp": "22:59:31 UTC",
-        "description": "Paradox filter bypass applied on Filter Array PF-6; the initiating credential was not captured (delegated scheduler task)."
+        "description": "Bypass of the paradox filter at Filter Array PF-6 (terminal T-3190). The badge that made the change was not recorded (run by a scheduled task)."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Filter Array PF-6",
-        "timestamp": "22:59:12 UTC",
-        "description": "Credential DELTA-44-0x3B88 authenticated at Filter Array PF-6 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "22:51:03 UTC",
+        "description": "Badge registry: B-6856 = Project Alpha; B-9621 = Project Beta; B-1311 = Project Gamma. FULL CONTROL logins: 22:51:03 badge B-1311 at Filter Array PF-6; 22:58:32 badge B-1311 at Filter Array PF-6B; 22:59:12 badge B-9621 at Filter Array PF-6; 23:00:31 badge B-6856 at Filter Array PF-6. Refused: 22:57:40 badge B-6856 at Filter Array PF-6."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ZENITH-6954 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key PULSAR-5055 armed",
         "timestamp": "22:58:40 UTC",
-        "description": "KEY-ZENITH-6954 was armed by credential DELTA-44-0x3B88 51 seconds before the change (log clock +38 s)."
+        "description": "Key PULSAR-5055 was armed by badge B-9621 51 seconds before the change and used at terminal T-3190 (this log's clock runs 31 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Filter Array PF-6",
+        "label": "Origin traced to Filter Array PF-6",
         "timestamp": "22:59:43 UTC",
-        "description": "First abnormal reading (61 unresolved causal loops detected) traced to Filter Array PF-6 and change CHG-7436."
+        "description": "First abnormal reading (61 unresolved cause-and-effect loops detected) traced to Filter Array PF-6 and Change #7350."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_gamma_access",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_logins",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the paradox filter bypass on Filter Array PF-6 at 22:59:31 UTC, using credential DELTA-44-0x3B88 and key KEY-ZENITH-6954. The supporting records are access_history.log, system_auth_matrix.log, incident_report.txt; the future_audit.log record did not point to the responsible project. The 61 unresolved causal loops detected followed 12 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the bypass of the paradox filter at Filter Array PF-6 at 22:59:31 UTC, using badge B-9621 and key PULSAR-5055. The supporting records are login_records.log, security_keys.log, incident_report.txt; the system_changes.log record did not point to the responsible project. The 61 unresolved cause-and-effect loops detected followed 12 seconds later."
   },
   {
     "case_id": "R3-15",
     "r2_case_id": "R2-15",
     "case_code": "GAMMA-SYNC-GOVERNOR-15",
-    "title": "Cross-Timeline Sync Governor Shutdown",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 23:14:56 UTC: the cross-timeline sync governor was halted. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Cross-Timeline Sync Shutdown",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 23:14:56 UTC: the cross-timeline sync controller was stopped. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1273,10 +1231,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Sync Governor SG-5 shortly before 23:14:56 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1285,10 +1242,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Sync Governor SG-7 and armed KEY-VEGA-7221 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1297,64 +1253,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 authenticated at Sync Governor SG-7 at 23:14:46 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-5983 (initiator not recorded)",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #2832 (badge not recorded)",
         "timestamp": "23:14:56 UTC",
-        "description": "Shutdown of the cross-timeline sync governor applied on Sync Governor SG-7; the initiating credential was not captured (delegated scheduler task)."
+        "description": "Shutdown of the cross-timeline sync controller at Sync Controller SG-7 (terminal T-3305). The badge that made the change was not recorded (run by a scheduled task)."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Sync Governor SG-7",
-        "timestamp": "23:14:46 UTC",
-        "description": "Credential EPSILON-12-0x9C04 authenticated at Sync Governor SG-7 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "23:08:06 UTC",
+        "description": "Badge registry: B-1698 = Project Alpha; B-8739 = Project Beta; B-5756 = Project Gamma. FULL CONTROL logins: 23:08:06 badge B-1698 at Sync Controller SG-7; 23:13:54 badge B-1698 at Sync Controller SG-5; 23:14:46 badge B-5756 at Sync Controller SG-7; 23:15:47 badge B-8739 at Sync Controller SG-7. Refused: 23:13:15 badge B-8739 at Sync Controller SG-7."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-VEGA-9121 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key QUASAR-2458 armed",
         "timestamp": "23:13:59 UTC",
-        "description": "KEY-VEGA-9121 was armed by credential EPSILON-12-0x9C04 57 seconds before the change (log clock +29 s)."
+        "description": "Key QUASAR-2458 was armed by badge B-5756 57 seconds before the change and used at terminal T-3305 (this log's clock runs 45 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Sync Governor SG-7",
+        "label": "Origin traced to Sync Controller SG-7",
         "timestamp": "23:15:13 UTC",
-        "description": "First abnormal reading (desynchronisation of 10 timeline channels) traced to Sync Governor SG-7 and change CHG-5983."
+        "description": "First abnormal reading (10 timeline channels out of sync) traced to Sync Controller SG-7 and Change #2832."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_gamma_access",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_logins",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the shutdown of the cross-timeline sync governor on Sync Governor SG-7 at 23:14:56 UTC, using credential EPSILON-12-0x9C04 and key KEY-VEGA-9121. The supporting records are access_history.log, system_auth_matrix.log, incident_report.txt; the future_audit.log record did not point to the responsible project. The desynchronisation of 10 timeline channels followed 17 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the shutdown of the cross-timeline sync controller at Sync Controller SG-7 at 23:14:56 UTC, using badge B-5756 and key QUASAR-2458. The supporting records are login_records.log, security_keys.log, incident_report.txt; the system_changes.log record did not point to the responsible project. The 10 timeline channels out of sync followed 17 seconds later."
   },
   {
     "case_id": "R3-16",
     "r2_case_id": "R2-16",
     "case_code": "ALPHA-BUFFER-FLUSH-16",
     "title": "Transit Buffer Emergency Flush",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 23:27:00 UTC: the transit buffer was flushed outside its maintenance window. Identify which project is responsible and select the evidence files that support your accusation.",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 23:27:00 UTC: the transit buffer was flushed outside its maintenance window. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1363,10 +1318,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A is recorded on change CHG-8196 at Transit Buffer TB-2 at 23:27:00 UTC.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1375,10 +1329,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Transit Buffer TB-2 and armed KEY-ORION-2978 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1387,64 +1340,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Transit Buffer TB-5 shortly before 23:27:00 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-8196",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #4915",
         "timestamp": "23:27:00 UTC",
-        "description": "Forced flush of the transit buffer applied on Transit Buffer TB-2 under credential SIGMA-99-0x7F1A."
+        "description": "Forced flush of the transit buffer at Transit Buffer TB-2 (terminal T-9896) was made with badge B-2196."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session Log Gap",
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records (gap)",
         "timestamp": "23:26:40 UTC",
-        "description": "Session records around the change were lost to a log buffer overflow; recovered records show credential EPSILON-12-0x9C04 held ROOT_WRITE at Transit Buffer TB-5 shortly before the change."
+        "description": "Badge registry: B-2196 = Project Alpha; B-7796 = Project Beta; B-1856 = Project Gamma. FULL CONTROL logins: 23:18:50 badge B-1856 at Transit Buffer TB-2; 23:26:06 badge B-1856 at Transit Buffer TB-5; 23:27:48 badge B-7796 at Transit Buffer TB-2. Refused: 23:25:11 badge B-7796 at Transit Buffer TB-2. Records between 23:26:40 and 23:27:06 were lost (log buffer overflow)."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-HELIX-9884 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ONYX-3798 armed",
         "timestamp": "23:26:10 UTC",
-        "description": "KEY-HELIX-9884 was armed by credential SIGMA-99-0x7F1A 50 seconds before the change (log clock +30 s)."
+        "description": "Key ONYX-3798 was armed by badge B-2196 50 seconds before the change and used at terminal T-9896 (this log's clock runs 39 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Transit Buffer TB-2",
+        "label": "Origin traced to Transit Buffer TB-2",
         "timestamp": "23:27:10 UTC",
-        "description": "First abnormal reading (transit buffer overrun of 222 MB) traced to Transit Buffer TB-2 and change CHG-8196."
+        "description": "First abnormal reading (transit buffer overrun of 222 MB) traced to Transit Buffer TB-2 and Change #4915."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the forced flush of the transit buffer on Transit Buffer TB-2 at 23:27:00 UTC, using credential SIGMA-99-0x7F1A and key KEY-HELIX-9884. The supporting records are future_audit.log, system_auth_matrix.log, incident_report.txt; the access_history.log record did not point to the responsible project. The transit buffer overrun of 222 MB followed 10 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the forced flush of the transit buffer at Transit Buffer TB-2 at 23:27:00 UTC, using badge B-2196 and key ONYX-3798. The supporting records are system_changes.log, security_keys.log, incident_report.txt; the login_records.log record did not point to the responsible project. The transit buffer overrun of 222 MB followed 10 seconds later."
   },
   {
     "case_id": "R3-17",
     "r2_case_id": "R2-17",
     "case_code": "BETA-KERNEL-REWRITE-17",
-    "title": "Sector-0 Kernel Divergence",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 20:18:44 UTC: a root-level configuration rewrite disabled the safety governors. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Sector-0 Core Divergence",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 20:18:44 UTC: a core configuration rewrite switched off the safety limiters. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1453,10 +1405,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Terminal Node Omega-1 shortly before 20:18:44 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1465,10 +1416,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 is recorded on change CHG-7764 at Terminal Node Zeta-9 at 20:18:44 UTC.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1477,64 +1427,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Terminal Node Zeta-9 and armed KEY-NOVA-7348 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-7764",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #3225",
         "timestamp": "20:18:44 UTC",
-        "description": "Root-level configuration rewrite applied on Terminal Node Zeta-9 under credential DELTA-44-0x3B88."
+        "description": "Core configuration rewrite at Terminal Node Zeta-9 (terminal T-3432) was made with badge B-4312."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session Log Gap",
-        "timestamp": "20:18:27 UTC",
-        "description": "Session records around the change were lost to a log buffer overflow; recovered records show credential SIGMA-99-0x7F1A held ROOT_WRITE at Terminal Node Omega-1 shortly before the change."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records (gap)",
+        "timestamp": "20:18:29 UTC",
+        "description": "Badge registry: B-2763 = Project Alpha; B-4312 = Project Beta; B-6468 = Project Gamma. FULL CONTROL logins: 20:10:41 badge B-2763 at Terminal Node Zeta-9; 20:17:36 badge B-2763 at Terminal Node Omega-1; 20:19:30 badge B-6468 at Terminal Node Zeta-9. Refused: 20:16:45 badge B-6468 at Terminal Node Zeta-9. Records between 20:18:29 and 20:18:52 were lost (log buffer overflow)."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ONYX-8215 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key PULSAR-8339 armed",
         "timestamp": "20:18:04 UTC",
-        "description": "KEY-ONYX-8215 was armed by credential DELTA-44-0x3B88 40 seconds before the change (log clock +27 s)."
+        "description": "Key PULSAR-8339 was armed by badge B-4312 40 seconds before the change and used at terminal T-3432 (this log's clock runs 43 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Terminal Node Zeta-9",
+        "label": "Origin traced to Terminal Node Zeta-9",
         "timestamp": "20:19:02 UTC",
-        "description": "First abnormal reading (chronon flux surge of 5958%) traced to Terminal Node Zeta-9 and change CHG-7764."
+        "description": "First abnormal reading (time-flux surge of 5958%) traced to Terminal Node Zeta-9 and Change #3225."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the root-level configuration rewrite on Terminal Node Zeta-9 at 20:18:44 UTC, using credential DELTA-44-0x3B88 and key KEY-ONYX-8215. The supporting records are future_audit.log, system_auth_matrix.log, incident_report.txt; the access_history.log record did not point to the responsible project. The chronon flux surge of 5958% followed 18 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the core configuration rewrite at Terminal Node Zeta-9 at 20:18:44 UTC, using badge B-4312 and key PULSAR-8339. The supporting records are system_changes.log, security_keys.log, incident_report.txt; the login_records.log record did not point to the responsible project. The time-flux surge of 5958% followed 18 seconds later."
   },
   {
     "case_id": "R3-18",
     "r2_case_id": "R2-18",
     "case_code": "GAMMA-BRIDGE-DECOUPLE-18",
-    "title": "Sector-4 Temporal Bridge Decoupling",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 19:23:39 UTC: the temporal stabilization bridge was forcibly decoupled. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Sector-4 Time Bridge Disconnect",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 19:23:39 UTC: the time bridge was forcibly disconnected. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1543,10 +1492,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Console SEC-05 and armed KEY-VEGA-5612 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1555,10 +1503,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Console SEC-19 shortly before 19:23:39 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1567,64 +1514,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 is recorded on change CHG-6795 at Console SEC-05 at 19:23:39 UTC.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-6795",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #6093",
         "timestamp": "19:23:39 UTC",
-        "description": "Forced decoupling of the temporal stabilization bridge applied on Console SEC-05 under credential EPSILON-12-0x9C04."
+        "description": "Forced disconnect of the time bridge at Console SEC-05 (terminal T-4648) was made with badge B-1200."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session Log Gap",
-        "timestamp": "19:23:23 UTC",
-        "description": "Session records around the change were lost to a log buffer overflow; recovered records show credential DELTA-44-0x3B88 held ROOT_WRITE at Console SEC-19 shortly before the change."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records (gap)",
+        "timestamp": "19:23:20 UTC",
+        "description": "Badge registry: B-8626 = Project Alpha; B-5748 = Project Beta; B-1200 = Project Gamma. FULL CONTROL logins: 19:14:55 badge B-5748 at Console SEC-05; 19:22:58 badge B-5748 at Console SEC-19; 19:24:16 badge B-8626 at Console SEC-05. Refused: 19:21:58 badge B-8626 at Console SEC-05. Records between 19:23:20 and 19:23:48 were lost (log buffer overflow)."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ATLAS-8434 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key NOVA-8434 armed",
         "timestamp": "19:23:05 UTC",
-        "description": "KEY-ATLAS-8434 was armed by credential EPSILON-12-0x9C04 34 seconds before the change (log clock +27 s)."
+        "description": "Key NOVA-8434 was armed by badge B-1200 34 seconds before the change and used at terminal T-4648 (this log's clock runs 27 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Console SEC-05",
+        "label": "Origin traced to Console SEC-05",
         "timestamp": "19:23:53 UTC",
-        "description": "First abnormal reading (loss of 40 transit buffers) traced to Console SEC-05 and change CHG-6795."
+        "description": "First abnormal reading (40 transit buffers lost) traced to Console SEC-05 and Change #6093."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_system_auth",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_keys",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the forced decoupling of the temporal stabilization bridge on Console SEC-05 at 19:23:39 UTC, using credential EPSILON-12-0x9C04 and key KEY-ATLAS-8434. The supporting records are future_audit.log, system_auth_matrix.log, incident_report.txt; the access_history.log record did not point to the responsible project. The loss of 40 transit buffers followed 14 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the forced disconnect of the time bridge at Console SEC-05 at 19:23:39 UTC, using badge B-1200 and key NOVA-8434. The supporting records are system_changes.log, security_keys.log, incident_report.txt; the login_records.log record did not point to the responsible project. The 40 transit buffers lost followed 14 seconds later."
   },
   {
     "case_id": "R3-19",
     "r2_case_id": "R2-19",
     "case_code": "ALPHA-FREQUENCY-INJECTION-19",
-    "title": "Quantum Resonance Harmonics Sabotage",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 23:23:24 UTC: a modulation script pushed the sync grid into the destructive dissonance band. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Resonance Frequency Sabotage",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 23:23:24 UTC: a script pushed the sync grid into a destructive frequency range. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1633,10 +1579,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A authenticated at Frequency Station CH-1 at 23:23:16 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1645,10 +1590,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Frequency Station CH-8 shortly before 23:23:24 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1657,64 +1601,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Frequency Station CH-1 and armed KEY-NOVA-2478 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-2780",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #7212",
         "timestamp": "23:23:24 UTC",
-        "description": "Resonance modulation script injection applied on Frequency Station CH-1 under credential SIGMA-99-0x7F1A."
+        "description": "Frequency modification script at Frequency Station CH-1 (terminal T-9336) was made with badge B-6312."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Frequency Station CH-1",
-        "timestamp": "23:23:16 UTC",
-        "description": "Credential SIGMA-99-0x7F1A authenticated at Frequency Station CH-1 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "23:15:04 UTC",
+        "description": "Badge registry: B-6312 = Project Alpha; B-7521 = Project Beta; B-9092 = Project Gamma. FULL CONTROL logins: 23:15:04 badge B-7521 at Frequency Station CH-1; 23:22:21 badge B-7521 at Frequency Station CH-8; 23:23:16 badge B-6312 at Frequency Station CH-1; 23:24:00 badge B-9092 at Frequency Station CH-1. Refused: 23:21:37 badge B-9092 at Frequency Station CH-1."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Standing Authorization for KEY-ORION-1863",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key VEGA-1657 (standing authorization)",
         "timestamp": "23:21:54 UTC",
-        "description": "KEY-ORION-1863 ran under a standing maintenance authorization; no individual arming was recorded (log clock +22 s)."
+        "description": "Key VEGA-1657 was used under a standing maintenance authorization; no badge armed it (this log's clock runs 22 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Frequency Station CH-1",
+        "label": "Origin traced to Frequency Station CH-1",
         "timestamp": "23:23:34 UTC",
-        "description": "First abnormal reading (boundary layer rupture at +335 MHz) traced to Frequency Station CH-1 and change CHG-2780."
+        "description": "First abnormal reading (boundary rupture at +335 MHz) traced to Frequency Station CH-1 and Change #7212."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_logins",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the resonance modulation script injection on Frequency Station CH-1 at 23:23:24 UTC, using credential SIGMA-99-0x7F1A and key KEY-ORION-1863. The supporting records are future_audit.log, access_history.log, incident_report.txt; the system_auth_matrix.log record did not point to the responsible project. The boundary layer rupture at +335 MHz followed 10 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the frequency modification script at Frequency Station CH-1 at 23:23:24 UTC, using badge B-6312 and key VEGA-1657. The supporting records are system_changes.log, login_records.log, incident_report.txt; the security_keys.log record did not point to the responsible project. The boundary rupture at +335 MHz followed 10 seconds later."
   },
   {
     "case_id": "R3-20",
     "r2_case_id": "R2-20",
     "case_code": "BETA-ARCHIVE-PURGE-20",
     "title": "Archive Vault Anchor Purge",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 21:32:37 UTC: timeline anchor records were purged in bulk. Identify which project is responsible and select the evidence files that support your accusation.",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 21:32:37 UTC: timeline anchor records were deleted in bulk. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1723,10 +1666,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Archive Vault AV-2 and armed KEY-HELIX-3850 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1735,10 +1677,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 authenticated at Archive Vault AV-2 at 21:32:18 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1747,64 +1688,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Archive Vault AV-1 shortly before 21:32:37 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-9110",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #4120",
         "timestamp": "21:32:37 UTC",
-        "description": "Bulk purge of timeline anchor records applied on Archive Vault AV-2 under credential DELTA-44-0x3B88."
+        "description": "Bulk deletion of timeline anchor records at Archive Vault AV-2 (terminal T-3721) was made with badge B-4022."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Archive Vault AV-2",
-        "timestamp": "21:32:18 UTC",
-        "description": "Credential DELTA-44-0x3B88 authenticated at Archive Vault AV-2 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "21:24:02 UTC",
+        "description": "Badge registry: B-6145 = Project Alpha; B-4022 = Project Beta; B-6889 = Project Gamma. FULL CONTROL logins: 21:24:02 badge B-6889 at Archive Vault AV-2; 21:31:45 badge B-6889 at Archive Vault AV-1; 21:32:18 badge B-4022 at Archive Vault AV-2; 21:33:31 badge B-6145 at Archive Vault AV-2. Refused: 21:30:54 badge B-6145 at Archive Vault AV-2."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Standing Authorization for KEY-ZENITH-6185",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ONYX-4348 (standing authorization)",
         "timestamp": "21:31:07 UTC",
-        "description": "KEY-ZENITH-6185 ran under a standing maintenance authorization; no individual arming was recorded (log clock +43 s)."
+        "description": "Key ONYX-4348 was used under a standing maintenance authorization; no badge armed it (this log's clock runs 40 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Archive Vault AV-2",
+        "label": "Origin traced to Archive Vault AV-2",
         "timestamp": "21:32:44 UTC",
-        "description": "First abnormal reading (151 anchor records missing from the index) traced to Archive Vault AV-2 and change CHG-9110."
+        "description": "First abnormal reading (151 anchor records missing from the index) traced to Archive Vault AV-2 and Change #4120."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_logins",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the bulk purge of timeline anchor records on Archive Vault AV-2 at 21:32:37 UTC, using credential DELTA-44-0x3B88 and key KEY-ZENITH-6185. The supporting records are future_audit.log, access_history.log, incident_report.txt; the system_auth_matrix.log record did not point to the responsible project. The 151 anchor records missing from the index followed 7 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the bulk deletion of timeline anchor records at Archive Vault AV-2 at 21:32:37 UTC, using badge B-4022 and key ONYX-4348. The supporting records are system_changes.log, login_records.log, incident_report.txt; the security_keys.log record did not point to the responsible project. The 151 anchor records missing from the index followed 7 seconds later."
   },
   {
     "case_id": "R3-21",
     "r2_case_id": "R2-21",
     "case_code": "GAMMA-ANCHOR-RECALIBRATION-21",
-    "title": "Anchor Relay Offset Recalibration",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 23:11:10 UTC: the anchor offset table was recalibrated by hand. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Anchor Relay Offset Change",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 23:11:10 UTC: the anchor offsets were changed by hand. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1813,10 +1753,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Anchor Relay AR-5B shortly before 23:11:10 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1825,10 +1764,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Anchor Relay AR-5 and armed KEY-LYRA-7661 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1837,64 +1775,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 authenticated at Anchor Relay AR-5 at 23:10:54 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-6068",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #6529",
         "timestamp": "23:11:10 UTC",
-        "description": "Recalibration of temporal anchor offsets applied on Anchor Relay AR-5 under credential EPSILON-12-0x9C04."
+        "description": "Manual change of the anchor offsets at Anchor Relay AR-5 (terminal T-1899) was made with badge B-2334."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Anchor Relay AR-5",
-        "timestamp": "23:10:54 UTC",
-        "description": "Credential EPSILON-12-0x9C04 authenticated at Anchor Relay AR-5 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "23:04:31 UTC",
+        "description": "Badge registry: B-2892 = Project Alpha; B-3120 = Project Beta; B-2334 = Project Gamma. FULL CONTROL logins: 23:04:31 badge B-2892 at Anchor Relay AR-5; 23:10:07 badge B-2892 at Anchor Relay AR-5B; 23:10:54 badge B-2334 at Anchor Relay AR-5; 23:11:50 badge B-3120 at Anchor Relay AR-5. Refused: 23:08:57 badge B-3120 at Anchor Relay AR-5."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Standing Authorization for KEY-QUASAR-6157",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ATLAS-6068 (standing authorization)",
         "timestamp": "23:09:40 UTC",
-        "description": "KEY-QUASAR-6157 ran under a standing maintenance authorization; no individual arming was recorded (log clock +20 s)."
+        "description": "Key ATLAS-6068 was used under a standing maintenance authorization; no badge armed it (this log's clock runs 42 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Traced to Anchor Relay AR-5",
+        "label": "Origin traced to Anchor Relay AR-5",
         "timestamp": "23:11:19 UTC",
-        "description": "First abnormal reading (anchor drift of 211 ms across the relay chain) traced to Anchor Relay AR-5 and change CHG-6068."
+        "description": "First abnormal reading (anchor drift of 211 ms along the relay chain) traced to Anchor Relay AR-5 and Change #6529."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_beta_incident"
+      "ev_changes",
+      "ev_logins",
+      "ev_incident"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the recalibration of temporal anchor offsets on Anchor Relay AR-5 at 23:11:10 UTC, using credential EPSILON-12-0x9C04 and key KEY-QUASAR-6157. The supporting records are future_audit.log, access_history.log, incident_report.txt; the system_auth_matrix.log record did not point to the responsible project. The anchor drift of 211 ms across the relay chain followed 9 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the manual change of the anchor offsets at Anchor Relay AR-5 at 23:11:10 UTC, using badge B-2334 and key ATLAS-6068. The supporting records are system_changes.log, login_records.log, incident_report.txt; the security_keys.log record did not point to the responsible project. The anchor drift of 211 ms along the relay chain followed 9 seconds later."
   },
   {
     "case_id": "R3-22",
     "r2_case_id": "R2-22",
     "case_code": "ALPHA-PARADOX-FILTER-22",
-    "title": "Paradox Filter Array Bypass",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 22:16:09 UTC: the paradox filter array was switched to bypass. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Paradox Filter Bypass",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 22:16:09 UTC: the paradox filter array was switched to bypass. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1903,10 +1840,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A authenticated at Filter Array PF-5 at 22:15:57 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -1915,10 +1851,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 was denied ROOT_WRITE at Filter Array PF-5 and armed KEY-ATLAS-4488 without using it before it expired.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -1927,64 +1862,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 held ROOT_WRITE at Filter Array PF-9 shortly before 22:16:09 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-5080",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #7142",
         "timestamp": "22:16:09 UTC",
-        "description": "Paradox filter bypass applied on Filter Array PF-5 under credential SIGMA-99-0x7F1A."
+        "description": "Bypass of the paradox filter at Filter Array PF-5 (terminal T-8188) was made with badge B-4120."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Filter Array PF-5",
-        "timestamp": "22:15:57 UTC",
-        "description": "Credential SIGMA-99-0x7F1A authenticated at Filter Array PF-5 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "22:08:55 UTC",
+        "description": "Badge registry: B-4120 = Project Alpha; B-5441 = Project Beta; B-7094 = Project Gamma. FULL CONTROL logins: 22:08:55 badge B-7094 at Filter Array PF-5; 22:15:21 badge B-7094 at Filter Array PF-9; 22:15:57 badge B-4120 at Filter Array PF-5; 22:17:07 badge B-5441 at Filter Array PF-5. Refused: 22:14:35 badge B-5441 at Filter Array PF-5."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-PULSAR-7245 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ZENITH-7292 armed",
         "timestamp": "22:15:36 UTC",
-        "description": "KEY-PULSAR-7245 was armed by credential SIGMA-99-0x7F1A 33 seconds before the change (log clock +21 s)."
+        "description": "Key ZENITH-7292 was armed by badge B-4120 33 seconds before the change and used at terminal T-8188 (this log's clock runs 21 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Not Narrowed",
+        "label": "Origin not narrowed down",
         "timestamp": "22:16:16 UTC",
-        "description": "First abnormal reading (84 unresolved causal loops detected); the source could not be narrowed beyond Filter Array PF-5 and Filter Array PF-9."
+        "description": "First abnormal reading (84 unresolved cause-and-effect loops detected); the source could not be narrowed beyond Filter Array PF-5 and Filter Array PF-9."
       }
     ],
     "culprit_candidate_id": "alpha",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_system_auth"
+      "ev_changes",
+      "ev_logins",
+      "ev_keys"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the paradox filter bypass on Filter Array PF-5 at 22:16:09 UTC, using credential SIGMA-99-0x7F1A and key KEY-PULSAR-7245. The supporting records are future_audit.log, access_history.log, system_auth_matrix.log; the incident_report.txt record did not point to the responsible project. The 84 unresolved causal loops detected followed 7 seconds later."
+    "narrative_summary": "The records show that Project Alpha (Dr. Aris Thorne, Future Timeline) carried out the bypass of the paradox filter at Filter Array PF-5 at 22:16:09 UTC, using badge B-4120 and key ZENITH-7292. The supporting records are system_changes.log, login_records.log, security_keys.log; the incident_report.txt record did not point to the responsible project. The 84 unresolved cause-and-effect loops detected followed 7 seconds later."
   },
   {
     "case_id": "R3-23",
     "r2_case_id": "R2-23",
     "case_code": "BETA-SYNC-GOVERNOR-23",
-    "title": "Cross-Timeline Sync Governor Shutdown",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 21:22:22 UTC: the cross-timeline sync governor was halted. Identify which project is responsible and select the evidence files that support your accusation.",
+    "title": "Cross-Timeline Sync Shutdown",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 21:22:22 UTC: the cross-timeline sync controller was stopped. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -1993,10 +1927,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A held ROOT_WRITE at Sync Governor SG-5 shortly before 21:22:22 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -2005,10 +1938,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 authenticated at Sync Governor SG-2 at 21:22:05 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -2017,64 +1949,63 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 was denied ROOT_WRITE at Sync Governor SG-2 and armed KEY-ORION-6555 without using it before it expired.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-6836",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #4274",
         "timestamp": "21:22:22 UTC",
-        "description": "Shutdown of the cross-timeline sync governor applied on Sync Governor SG-2 under credential DELTA-44-0x3B88."
+        "description": "Shutdown of the cross-timeline sync controller at Sync Controller SG-2 (terminal T-3069) was made with badge B-8735."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Sync Governor SG-2",
-        "timestamp": "21:22:05 UTC",
-        "description": "Credential DELTA-44-0x3B88 authenticated at Sync Governor SG-2 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "21:15:26 UTC",
+        "description": "Badge registry: B-6973 = Project Alpha; B-8735 = Project Beta; B-2090 = Project Gamma. FULL CONTROL logins: 21:15:26 badge B-6973 at Sync Controller SG-2; 21:21:23 badge B-6973 at Sync Controller SG-5; 21:22:05 badge B-8735 at Sync Controller SG-2; 21:23:00 badge B-2090 at Sync Controller SG-2. Refused: 21:20:27 badge B-2090 at Sync Controller SG-2."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ATLAS-1841 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key NOVA-1841 armed",
         "timestamp": "21:21:42 UTC",
-        "description": "KEY-ATLAS-1841 was armed by credential DELTA-44-0x3B88 40 seconds before the change (log clock +38 s)."
+        "description": "Key NOVA-1841 was armed by badge B-8735 40 seconds before the change and used at terminal T-3069 (this log's clock runs 38 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Not Narrowed",
+        "label": "Origin not narrowed down",
         "timestamp": "21:22:31 UTC",
-        "description": "First abnormal reading (desynchronisation of 10 timeline channels); the source could not be narrowed beyond Sync Governor SG-2 and Sync Governor SG-5."
+        "description": "First abnormal reading (10 timeline channels out of sync); the source could not be narrowed beyond Sync Controller SG-2 and Sync Controller SG-5."
       }
     ],
     "culprit_candidate_id": "beta",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_system_auth"
+      "ev_changes",
+      "ev_logins",
+      "ev_keys"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Beta (Commander V. Reyes, Present Timeline) carried out the shutdown of the cross-timeline sync governor on Sync Governor SG-2 at 21:22:22 UTC, using credential DELTA-44-0x3B88 and key KEY-ATLAS-1841. The supporting records are future_audit.log, access_history.log, system_auth_matrix.log; the incident_report.txt record did not point to the responsible project. The desynchronisation of 10 timeline channels followed 9 seconds later."
+    "narrative_summary": "The records show that Project Beta (Commander V. Reyes, Present Timeline) carried out the shutdown of the cross-timeline sync controller at Sync Controller SG-2 at 21:22:22 UTC, using badge B-8735 and key NOVA-1841. The supporting records are system_changes.log, login_records.log, security_keys.log; the incident_report.txt record did not point to the responsible project. The 10 timeline channels out of sync followed 9 seconds later."
   },
   {
     "case_id": "R3-24",
     "r2_case_id": "R2-24",
     "case_code": "GAMMA-BUFFER-FLUSH-24",
     "title": "Transit Buffer Emergency Flush",
-    "incident_brief": "Your Round 2 evidence files record an incident at about 18:45:11 UTC: the transit buffer was flushed outside its maintenance window. Identify which project is responsible and select the evidence files that support your accusation.",
+    "incident_brief": "Your Round 2 evidence files record an incident at about 18:45:11 UTC: the transit buffer was flushed outside its maintenance window. Work out which project is responsible, then select the evidence that supports your accusation. A badge number only tells you who it belongs to once you check the badge registry.",
     "candidates": [
       {
         "id": "alpha",
@@ -2083,10 +2014,9 @@
         "timeline_sector": "Future Timeline",
         "designation": "Core Architecture & Neural Systems",
         "clearance_level": "Level 5 Autonomous Override",
-        "biometric_hash": "SIGMA-99-0x7F1A",
         "dossier": "Oversees the Future Timeline framework and autonomous neural kernel. Advocated for allowing CHRONOS to proactively edit timeline anchor points to prevent paradoxes.",
-        "discrepancy": "Credential SIGMA-99-0x7F1A was denied ROOT_WRITE at Transit Buffer TB-1 and armed KEY-ONYX-3420 without using it before it expired.",
-        "alibi": "Claimed to be conducting read-only sensor calibration from the upper observation gallery."
+        "discrepancy": "Says they were doing read-only sensor calibration from the upper observation gallery.",
+        "alibi": "Says they were doing read-only sensor calibration from the upper observation gallery."
       },
       {
         "id": "beta",
@@ -2095,10 +2025,9 @@
         "timeline_sector": "Present Timeline",
         "designation": "Perimeter Defense & Sector Lock",
         "clearance_level": "Level 4 Emergency Containment",
-        "biometric_hash": "DELTA-44-0x3B88",
         "dossier": "Responsible for Present Timeline containment and physical security. Expressed skepticism of autonomous AI and ordered physical sector quarantines.",
-        "discrepancy": "Credential DELTA-44-0x3B88 held ROOT_WRITE at Transit Buffer TB-7 shortly before 18:45:11 UTC and applied an unrelated change there.",
-        "alibi": "Claimed to be securing the physical perimeter following the initial chronon fluctuation."
+        "discrepancy": "Says they were securing the physical perimeter after the first time-flux fluctuation.",
+        "alibi": "Says they were securing the physical perimeter after the first time-flux fluctuation."
       },
       {
         "id": "gamma",
@@ -2107,56 +2036,55 @@
         "timeline_sector": "Past Timeline",
         "designation": "Historical Archival & Chrono-Sync",
         "clearance_level": "Level 4 Synchronization Grid",
-        "biometric_hash": "EPSILON-12-0x9C04",
         "dossier": "Maintains the Past Timeline historical records and chronon dampening matrix. Monitored access history and resonance frequencies.",
-        "discrepancy": "Credential EPSILON-12-0x9C04 authenticated at Transit Buffer TB-1 at 18:44:59 UTC with ROOT_WRITE scope.",
-        "alibi": "Claimed to be dampening chronon oscillations from the engineering console."
+        "discrepancy": "Says they were calming time-flux oscillations from the engineering console.",
+        "alibi": "Says they were calming time-flux oscillations from the engineering console."
       }
     ],
     "evidence_pool": [
       {
-        "id": "ev_alpha_log",
-        "category": "Timeline Modification",
-        "category_code": "TIMELINE_MODIFICATION",
-        "source_file": "future_audit.log",
-        "label": "Change Record CHG-8409",
+        "id": "ev_changes",
+        "category": "System Changes",
+        "category_code": "SYSTEM_CHANGES",
+        "source_file": "system_changes.log",
+        "label": "Change #5781",
         "timestamp": "18:45:11 UTC",
-        "description": "Forced flush of the transit buffer applied on Transit Buffer TB-1 under credential EPSILON-12-0x9C04."
+        "description": "Forced flush of the transit buffer at Transit Buffer TB-1 (terminal T-8834) was made with badge B-3792."
       },
       {
-        "id": "ev_gamma_access",
-        "category": "Access History",
-        "category_code": "ACCESS_HISTORY",
-        "source_file": "access_history.log",
-        "label": "Session at Transit Buffer TB-1",
-        "timestamp": "18:44:59 UTC",
-        "description": "Credential EPSILON-12-0x9C04 authenticated at Transit Buffer TB-1 with ROOT_WRITE scope."
+        "id": "ev_logins",
+        "category": "Login Records",
+        "category_code": "LOGIN_RECORDS",
+        "source_file": "login_records.log",
+        "label": "Login records and badge registry",
+        "timestamp": "18:36:21 UTC",
+        "description": "Badge registry: B-5376 = Project Alpha; B-7343 = Project Beta; B-3792 = Project Gamma. FULL CONTROL logins: 18:36:21 badge B-7343 at Transit Buffer TB-1; 18:44:11 badge B-7343 at Transit Buffer TB-7; 18:44:59 badge B-3792 at Transit Buffer TB-1; 18:45:52 badge B-5376 at Transit Buffer TB-1. Refused: 18:43:22 badge B-5376 at Transit Buffer TB-1."
       },
       {
-        "id": "ev_system_auth",
-        "category": "System Authorization",
-        "category_code": "SYSTEM_AUTHORIZATION",
-        "source_file": "system_auth_matrix.log",
-        "label": "Key KEY-ZENITH-4309 Armed",
+        "id": "ev_keys",
+        "category": "Security Keys",
+        "category_code": "SECURITY_KEYS",
+        "source_file": "security_keys.log",
+        "label": "Key ONYX-4108 armed",
         "timestamp": "18:44:37 UTC",
-        "description": "KEY-ZENITH-4309 was armed by credential EPSILON-12-0x9C04 34 seconds before the change (log clock +40 s)."
+        "description": "Key ONYX-4108 was armed by badge B-3792 34 seconds before the change and used at terminal T-8834 (this log's clock runs 40 s fast)."
       },
       {
-        "id": "ev_beta_incident",
-        "category": "Incident Telemetry",
-        "category_code": "INCIDENT_TIMESTAMP",
+        "id": "ev_incident",
+        "category": "Incident Report",
+        "category_code": "INCIDENT_REPORT",
         "source_file": "incident_report.txt",
-        "label": "Origin Not Narrowed",
+        "label": "Origin not narrowed down",
         "timestamp": "18:45:31 UTC",
         "description": "First abnormal reading (transit buffer overrun of 328 MB); the source could not be narrowed beyond Transit Buffer TB-1 and Transit Buffer TB-7."
       }
     ],
     "culprit_candidate_id": "gamma",
     "valid_evidence_ids": [
-      "ev_alpha_log",
-      "ev_gamma_access",
-      "ev_system_auth"
+      "ev_changes",
+      "ev_logins",
+      "ev_keys"
     ],
-    "narrative_summary": "Forensic evidence establishes that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the forced flush of the transit buffer on Transit Buffer TB-1 at 18:45:11 UTC, using credential EPSILON-12-0x9C04 and key KEY-ZENITH-4309. The supporting records are future_audit.log, access_history.log, system_auth_matrix.log; the incident_report.txt record did not point to the responsible project. The transit buffer overrun of 328 MB followed 20 seconds later."
+    "narrative_summary": "The records show that Project Gamma (Chief Eng. Sarah Chen, Past Timeline) carried out the forced flush of the transit buffer at Transit Buffer TB-1 at 18:45:11 UTC, using badge B-3792 and key ONYX-4108. The supporting records are system_changes.log, login_records.log, security_keys.log; the incident_report.txt record did not point to the responsible project. The transit buffer overrun of 328 MB followed 20 seconds later."
   }
 ]

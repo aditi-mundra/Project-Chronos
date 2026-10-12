@@ -163,7 +163,8 @@ function pump(){if(busy||!Q.length)return;const e=Q.shift();busy=1;
  if(e.t===2){$('#ct').textContent=e.a;$('#cs').textContent=e.b;const c=$('#cin'),g=$('#og');c.classList.add('s');g.style.animation='none';void g.getBoundingClientRect();g.style.animation='';
   const end=()=>{c.classList.remove('s');c.onclick=null;busy=0;if(e.then)e.then();setTimeout(pump,300)};c.onclick=end;setTimeout(()=>busy&&end(),3500)}
  else{const b=$('#bn');b.textContent=e.a;if(e.b){const s=el('small','',e.b);b.append(s)}b.classList.add('s');setTimeout(()=>{b.classList.remove('s');setTimeout(()=>{busy=0;pump()},400)},2200)}}
-addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#cin').onclick)$('#cin').onclick()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#cin').onclick)$('#cin').onclick();
+ if(e.ctrlKey&&e.shiftKey&&e.altKey&&(e.code==='KeyK'||String(e.key).toLowerCase()==='k')){e.preventDefault();try{parent.postMessage({type:'chronos-dev-skip'},location.origin)}catch(_){}}});
 
 /* ---------- apply a server progress snapshot (the server is the source of truth) ---------- */
 function sync(p){S.prog=p;S.state=p.state;S.welcome=p.welcome;S.dl=p.seconds_left!=null?Date.now()+p.seconds_left*1000:0;meter();aiUi();completeUi()}
@@ -195,7 +196,7 @@ async function openFile(F){S.last=Date.now();
  if(!S.tabs.includes(F.file_id))S.tabs.push(F.file_id);S.open=F.file_id;renderAll()}
 
 /* light syntax colouring for the log files (purely visual) */
-const TOK=/(\b\d{2}:\d{2}:\d{2}\b)|(\b[A-Z]+-\d\d-0x[0-9A-F]{4}\b)|(\bCHG-\d{4}\b|\bKEY-[A-Z]+-\d{4}\b|\bs-\d{4}\b|\bMW-\d+\b)|\b(AUTHENTICATED|APPLIED|ARMED|USED)\b|\b(DENIED|EXPIRED|REVERTED|OVERFLOW|DISARMED|HALTED|PURGED|DISABLED|BYPASS|FLUSHED|FORCED_DECOUPLE)\b|\b(ROOT_WRITE|READ_ONLY|DIAGNOSTIC)\b|(Project (?:Alpha|Beta|Gamma))|(\b[A-Z][A-Z_ ]{2,}:)/g;
+const TOK=/(\b\d{2}:\d{2}:\d{2}\b)|(\bB-\d{4}\b)|(\bChange #\d{4}\b|\bKey [A-Z]+-\d{4}\b|\bT-\d{4}\b|\bMW-\d+\b)|\b(LOGGED IN|APPLIED|ARMED|USED)\b|\b(REFUSED|EXPIRED|UNDONE|DISARMED|RECORDS LOST|STOPPED|DELETED|DISABLED|BYPASSED|FLUSHED|FORCED OFF)\b|\b(FULL CONTROL|TEST ONLY|VIEW ONLY)\b|(Project (?:Alpha|Beta|Gamma))|(\b[A-Z][A-Z_ ]{2,}:)/g;
 const TCLS=[null,'k-time','k-cred','k-id','k-ok','k-bad','k-scope','k-proj','k-key'];
 function highlight(line){const out=document.createDocumentFragment();
  if(/^CHRONOS \/\//.test(line)){out.append(el('span','k-h1',line));return out}

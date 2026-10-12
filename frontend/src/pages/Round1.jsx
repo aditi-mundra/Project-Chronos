@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import api, { assetUrl } from '../services/api.js';
 import '../styles/round1.css';
@@ -153,6 +154,24 @@ export default function Round1({ onComplete }) {
     setSuccessFlash(true);
     addLog(`${fragment.fragmentCode} routed to ${era} sector`, 'success');
     window.setTimeout(() => setSuccessFlash(false), 400);
+  };
+
+  // Return a placed fragment to the recovery field when its thumbnail is double-clicked.
+  const unplaceFragment = (fragmentId) => {
+    if (finishingRef.current || timeUp) return;
+    const wasPlaced = Object.values(zones).some((ids) => ids.includes(fragmentId));
+    if (!wasPlaced) return;
+
+    setZones((current) => ({
+      PAST: current.PAST.filter((id) => id !== fragmentId),
+      PRESENT: current.PRESENT.filter((id) => id !== fragmentId),
+      FUTURE: current.FUTURE.filter((id) => id !== fragmentId),
+    }));
+    setSelectedId(null);
+    const remainingPlacedCount = Math.max(0, placedIds.size - 1);
+    const nextIntegrity = fragments.length ? 42 + (58 * remainingPlacedCount / fragments.length) : 42;
+    setIntegrity(Math.min(100, nextIntegrity));
+    addLog(`TF-${fragmentId} returned to recovery field`, 'info');
   };
 
   // Pointer-based drag: a ghost follows the pointer via transform inside a
@@ -376,6 +395,7 @@ export default function Round1({ onComplete }) {
               onBeginDrag={beginDrag}
               onPlace={placeFragment}
               onSelect={setSelectedId}
+              onUnplace={unplaceFragment}
             />
           ))}
         </section>
@@ -415,23 +435,63 @@ export default function Round1({ onComplete }) {
 function FragmentCard({ fragment, index, selected, dragging, onSelect, onPointerDown }) {
   const rotation = ((index * 17) % 9) - 4;
   const y = ((index * 13) % 7) - 3;
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const hoverTimerRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (dragging) return;
+    window.clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = window.setTimeout(() => setPreviewOpen(true), 2000);
+  };
+
+  const handleMouseLeave = () => {
+    window.clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = null;
+    setPreviewOpen(false);
+  };
+
+  useEffect(() => () => window.clearTimeout(hoverTimerRef.current), []);
+  useEffect(() => {
+    if (dragging) {
+      window.clearTimeout(hoverTimerRef.current);
+      setPreviewOpen(false);
+    }
+  }, [dragging]);
+
   return (
-    <article
-      className={`fragment-card ${selected ? 'selected' : ''} ${dragging ? 'dragging' : ''}`}
-      style={{ '--rot': `${rotation}deg`, '--float': `${y}px` }}
-      onClick={onSelect}
-      onPointerDown={onPointerDown}
-      title="Drag to a temporal sector, or select then click a sector"
-    >
-      <div className="fragment-corner">◈ {fragment.fragmentCode}</div>
-      <div className="fragment-image-wrap"><img src={fragment.image} alt="Recovered technology fragment" draggable={false} /><div className="scan-line" /><div className="image-noise" /></div>
-      <div className="fragment-meta"><span>UNKNOWN</span><b>{String(fragment.id).padStart(3, '0')}</b></div>
-      <div className="fragment-footer"><span>TM-SIGNATURE</span><strong>20██</strong></div>
-    </article>
+    <>
+      <article
+        className={`fragment-card ${selected ? 'selected' : ''} ${dragging ? 'dragging' : ''}`}
+        style={{ '--rot': `${rotation}deg`, '--float': `${y}px` }}
+        onClick={onSelect}
+        onPointerDown={onPointerDown}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        title="Drag to a temporal sector, or select then click a sector. Hover for 2 seconds to inspect."
+      >
+        <div className="fragment-corner">◈ {fragment.fragmentCode}</div>
+        <div className="fragment-image-wrap"><img src={fragment.image} alt="Recovered technology fragment" draggable={false} /><div className="scan-line" /><div className="image-noise" /></div>
+        <div className="fragment-meta"><span>UNKNOWN</span><b>{String(fragment.id).padStart(3, '0')}</b></div>
+        <div className="fragment-footer"><span>TM-SIGNATURE</span><strong>20██</strong></div>
+      </article>
+      {previewOpen && !dragging && createPortal(
+        <div className="r1-fragment-preview" aria-hidden="true">
+          <div className="r1-fragment-preview-card">
+            <div className="fragment-corner">◈ {fragment.fragmentCode}</div>
+            <div className="r1-fragment-preview-image">
+              <img src={fragment.image} alt="" draggable={false} />
+            </div>
+            <div className="fragment-meta"><span>UNKNOWN</span><b>{String(fragment.id).padStart(3, '0')}</b></div>
+            <div className="fragment-footer"><span>TM-SIGNATURE</span><strong>20██</strong></div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 
-function DropZone({ era, ids, fragments, selectedId, draggingId, isOver, onBeginDrag, onPlace, onSelect }) {
+function DropZone({ era, ids, fragments, selectedId, draggingId, isOver, onBeginDrag, onPlace, onSelect, onUnplace }) {
   const meta = ERA_META[era];
   const selectedInZone = selectedId && ids.includes(selectedId);
   // Sector name grows with the number of fragments it holds (19px empty → 40px at 12+).
@@ -457,7 +517,13 @@ function DropZone({ era, ids, fragments, selectedId, draggingId, isOver, onBegin
               alt="Placed fragment"
               draggable={false}
               onClick={(event) => { event.stopPropagation(); onSelect(id); }}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onUnplace(id);
+              }}
               onPointerDown={(event) => { event.stopPropagation(); onBeginDrag(event, id); }}
+              title="Double-click to return this fragment to the recovery field"
             />
           ) : null;
         })}

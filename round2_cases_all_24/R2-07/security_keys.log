@@ -1,0 +1,20 @@
+SECURITY KEY LOG
+Case R2-07 | Covers 16:26:46 to 18:35:46 (master clock)
+
+CLOCK NOTE: this log's clock runs 26 seconds FAST. Subtract 26 s from every time in this file before comparing it with the other files.
+
+How keys work: a security key has to be armed by a badge before it can be used, and an armed key
+stays valid for the time shown. A standing authorization is a general permission and is not tied
+to one badge. Badges are explained in login_records.log (BADGE REGISTRY); terminals are written as
+codes (see its TERMINAL LIST).
+
+KEY EVENTS
+17:01:12 | Key ZENITH-8995 | ARMED by badge B-6916 | valid 120 s | purpose: maintenance window
+17:02:47 | Key ZENITH-8995 | DISARMED after use
+18:24:39 | Key PULSAR-6146 | ARMED by badge B-4450 | valid 120 s | never used
+18:25:42 | Key NOVA-4730 | STANDING AUTHORIZATION | maintenance window MW-17 | not tied to any one badge
+18:26:39 | Key PULSAR-6146 | EXPIRED unused
+18:27:12 | Key NOVA-4730 | USED at terminal T-1325 | Change #2537
+18:28:17 | Key HOLD-8782 | ARMED by badge B-4450 | valid 120 s
+
+END OF LOG

@@ -1,24 +1,23 @@
-CHRONOS // INCIDENT REPORT // incident_report.txt
-CASE R2-05
-INCIDENT: Anchor Relay Offset Recalibration
+INCIDENT REPORT
+Case R2-05 | Incident: Anchor Relay Offset Change
 
-SUMMARY
-The anchor offset table was recalibrated by hand. The effect spread across the timeline network.
+WHAT HAPPENED
+The anchor offsets were changed by hand. The effect spread across the timeline network.
 
-INCIDENT TIMELINE
-18:34:16 | First abnormal reading: anchor drift of 346 ms across the relay chain
+TIMELINE OF EVENTS
+18:34:16 | First abnormal reading: anchor drift of 346 ms along the relay chain
 18:34:30 | Monitoring reports a sustained inconsistency
-18:35:01 | Automatic reconciliation fails to restore the baseline
-18:36:06 | Cross-timeline results leave the normal operating range
+18:35:01 | Automatic recovery fails to restore normal readings
+18:36:06 | Results across timelines leave the normal range
 
-ORIGIN ANALYSIS
-The first abnormal reading originates at Anchor Relay AR-9.
-It matches change CHG-2904 applied at 18:34:04 (recalibration of temporal anchor offsets).
-No other change within the incident window touched the anchor offset table.
+WHERE IT STARTED
+The first abnormal reading came from Anchor Relay AR-9.
+It lines up with Change #5232 made at 18:34:04 (manual change of the anchor offsets).
+No other change in this period touched the anchor offset table.
 
-OBSERVATIONS
-A mitigation hold was applied at Anchor Relay AR-9 at 18:35:18; it did not restore the baseline.
-Baseline checks before the incident were within their normal range.
-Operators on shift reported no scheduled maintenance for this subsystem.
+OTHER NOTES
+A mitigation hold was applied at Anchor Relay AR-9 at 18:35:18; it did not restore normal readings.
+Readings before the incident were in their normal range.
+Operators on shift reported no scheduled maintenance for this system.
 
 END OF REPORT

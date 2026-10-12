@@ -1,24 +1,23 @@
-CHRONOS // INCIDENT REPORT // incident_report.txt
-CASE R2-09
-INCIDENT: Sector-0 Kernel Divergence
+INCIDENT REPORT
+Case R2-09 | Incident: Sector-0 Core Divergence
 
-SUMMARY
-A root-level configuration rewrite disabled the safety governors. The effect spread across the timeline network.
+WHAT HAPPENED
+A core configuration rewrite switched off the safety limiters. The effect spread across the timeline network.
 
-INCIDENT TIMELINE
-23:14:38 | First abnormal reading: chronon flux surge of 7657%
+TIMELINE OF EVENTS
+23:14:38 | First abnormal reading: time-flux surge of 7657%
 23:14:59 | Monitoring reports a sustained inconsistency
-23:15:43 | Automatic reconciliation fails to restore the baseline
-23:16:58 | Cross-timeline results leave the normal operating range
+23:15:43 | Automatic recovery fails to restore normal readings
+23:16:58 | Results across timelines leave the normal range
 
-ORIGIN ANALYSIS
-The first abnormal reading originates at Terminal Node Delta-1.
-It matches change CHG-1338 applied at 23:14:23 (root-level configuration rewrite).
-No other change within the incident window touched the safety governor policy.
+WHERE IT STARTED
+The first abnormal reading came from Terminal Node Delta-1.
+It lines up with Change #4477 made at 23:14:23 (core configuration rewrite).
+No other change in this period touched the safety limiter policy.
 
-OBSERVATIONS
-A mitigation hold was applied at Terminal Node Delta-1 at 23:15:17; it did not restore the baseline.
-Baseline checks before the incident were within their normal range.
-Operators on shift reported no scheduled maintenance for this subsystem.
+OTHER NOTES
+A mitigation hold was applied at Terminal Node Delta-1 at 23:15:22; it did not restore normal readings.
+Readings before the incident were in their normal range.
+Operators on shift reported no scheduled maintenance for this system.
 
 END OF REPORT

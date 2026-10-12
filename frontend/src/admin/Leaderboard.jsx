@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../services/api.js';
+import PasswordControl from './PasswordControl.jsx';
 import '../styles/leaderboard.css';
 
 /**
@@ -87,6 +88,12 @@ export default function Leaderboard({ onLogout }) {
   const [stage, setStage] = useState('all');
   const [sortBy, setSortBy] = useState('rank');
   const [projector, setProjector] = useState(false);
+  const [role, setRole] = useState('');
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [toDelete, setToDelete] = useState(null); // team being deleted (confirmation open)
+  const [confirmName, setConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [skipOn, setSkipOn] = useState(null); // tester shortcut Ctrl+Shift+Alt+K (null = unknown)
   const busy = useRef(false);
 
   const load = useCallback(async () => {
@@ -109,6 +116,50 @@ export default function Leaderboard({ onLogout }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    api.adminRole().then(setRole);
+  }, []);
+
+  useEffect(() => {
+    if (role !== 'master') return;
+    api.getAdminSkipSwitch().then((r) => setSkipOn(Boolean(r?.enabled))).catch(() => setSkipOn(null));
+  }, [role]);
+
+  const askDelete = (team) => {
+    setConfirmName('');
+    setToDelete(team);
+  };
+
+  const confirmDelete = async () => {
+    if (!toDelete || deleting) return;
+    setDeleting(true);
+    try {
+      await api.deleteAdminTeam(toDelete.team_id);
+      setRows((prev) => prev.filter((r) => r.team_id !== toDelete.team_id));
+      setToDelete(null);
+      setError('');
+      load();
+    } catch (err) {
+      setError(err?.message || 'Could not delete the team.');
+      setToDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleSkip = async () => {
+    if (skipOn === null) return;
+    const next = !skipOn;
+    setSkipOn(next);
+    try {
+      const r = await api.setAdminSkipSwitch(next);
+      setSkipOn(Boolean(r?.enabled));
+    } catch (err) {
+      setSkipOn(!next);
+      setError(err?.message || 'Could not change the skip shortcut.');
+    }
+  };
 
   useEffect(() => {
     if (!auto) return undefined;
@@ -192,7 +243,7 @@ export default function Leaderboard({ onLogout }) {
 
   const slot = (n) => podium[n - 1];
   const pill = (t) =>
-    `R1 ${fmt(t.round1_score)} · R2 ${fmt(t.round2_score)} · R3 ${fmt(t.round3_score)}${t.total_complete ? '' : ' · PARTIAL'}`;
+    `R1 ${fmt(t.round1_score)} · TR ${fmt(t.transition_score)} · R2 ${fmt(t.round2_score)} · R3 ${fmt(t.round3_score)}${t.total_complete ? '' : ' · PARTIAL'}`;
 
   return (
     <div className={`lb ${projector ? 'lb-projector' : ''}`}>
@@ -219,6 +270,18 @@ export default function Leaderboard({ onLogout }) {
           </button>
           <button className="lb-btn" onClick={toggleProjector}>⛶ Projector</button>
           <button className="lb-btn lb-btn-csv" onClick={exportCsv}>⤓ Export to CSV</button>
+          {role === 'master' && skipOn !== null && (
+            <button
+              className={`lb-btn ${skipOn ? 'on' : ''}`}
+              onClick={toggleSkip}
+              title="Tester shortcut Ctrl+Shift+Alt+K: skips the current stage with 0 points. Keep OFF for the real event."
+            >
+              ⌨ Skip shortcut: {skipOn ? 'ON' : 'OFF'}
+            </button>
+          )}
+          {role === 'master' && (
+            <button className="lb-btn" onClick={() => setShowPasswords(true)}>🔑 Passwords</button>
+          )}
           {onLogout && <button className="lb-btn lb-btn-lock" onClick={lock}>🔒 Lock Portal</button>}
         </div>
       </header>
@@ -297,6 +360,7 @@ export default function Leaderboard({ onLogout }) {
                 <th className="lb-sensitive">Operators (Name &amp; PRN)</th>
                 <th>R1 Time</th>
                 <th style={{ textAlign: 'right' }}>R1</th>
+                <th style={{ textAlign: 'right' }}>Transition</th>
                 <th style={{ textAlign: 'right' }}>R2</th>
                 <th style={{ textAlign: 'right' }}>R3</th>
                 <th style={{ textAlign: 'right', color: '#67e8f9' }}>Total</th>
@@ -307,7 +371,7 @@ export default function Leaderboard({ onLogout }) {
             <tbody>
               {visible.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="lb-empty">
+                  <td colSpan="11" className="lb-empty">
                     {loading ? 'Loading authoritative records...' : 'No matching teams found in master table.'}
                   </td>
                 </tr>
@@ -332,6 +396,7 @@ export default function Leaderboard({ onLogout }) {
                       </td>
                       <td>{t.r1_time_formatted || '--:--'}</td>
                       <td className="score-cell">{fmt(t.round1_score)}</td>
+                      <td className="score-cell">{fmt(t.transition_score)}</td>
                       <td className="score-cell">
                         {fmt(t.round2_score)}
                         {t.round2_questions_used !== null && t.round2_questions_used !== undefined && (
@@ -388,6 +453,7 @@ export default function Leaderboard({ onLogout }) {
                   </div>
                   <div className="lb-team-scores">
                     <span>R1 <b>{fmt(t.round1_score)}</b></span>
+                    <span>TR <b>{fmt(t.transition_score)}</b></span>
                     <span>R2 <b>{fmt(t.round2_score)}</b></span>
                     <span>R3 <b>{fmt(t.round3_score)}</b></span>
                     <span className="tot">TOTAL <b>{fmt(t.total_score)}</b></span>
@@ -401,12 +467,65 @@ export default function Leaderboard({ onLogout }) {
                         : 'In progress'}
                     </span>
                   </div>
+                  {role === 'master' && (
+                    <button
+                      type="button"
+                      className="lb-btn lb-btn-lock lb-team-del"
+                      onClick={() => askDelete(t)}
+                      title="Permanently delete this team and all of its data"
+                    >
+                      🗑 Delete team
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </section>
       </main>
+
+      {toDelete && role === 'master' && (
+        <div className="pw-overlay" role="dialog" aria-modal="true" aria-label="Delete team">
+          <div className="pw-panel" style={{ maxWidth: 520 }}>
+            <div className="pw-head">
+              <div>
+                <h2 style={{ color: '#fda4af' }}>DELETE TEAM</h2>
+                <p>
+                  This permanently deletes <b>{toDelete.team_name}</b> (#{toDelete.team_id}) and everything
+                  recorded for it: scores, answers, AI questions, Round 3 decision and logs. It cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="pw-add">
+              <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>
+                Type the team name to confirm: <code>{toDelete.team_name}</code>
+              </p>
+              <input
+                className="lb-input"
+                autoFocus
+                value={confirmName}
+                onChange={(e) => setConfirmName(e.target.value)}
+                placeholder="Team name"
+                disabled={deleting}
+              />
+              <div className="pw-add-actions">
+                <button
+                  className="lb-btn lb-btn-lock"
+                  onClick={confirmDelete}
+                  disabled={deleting || confirmName.trim().toLowerCase() !== toDelete.team_name.trim().toLowerCase()}
+                >
+                  {deleting ? 'Deleting...' : '🗑 Delete permanently'}
+                </button>
+                <button className="lb-btn" onClick={() => setToDelete(null)} disabled={deleting}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPasswords && role === 'master' && !projector && (
+        <PasswordControl onClose={() => setShowPasswords(false)} />
+      )}
     </div>
   );
 }

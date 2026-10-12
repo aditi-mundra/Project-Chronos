@@ -7,7 +7,6 @@ import {
   IdCard,
   LogOut,
   ShieldCheck,
-  KeyRound,
   Hourglass,
 } from 'lucide-react';
 
@@ -98,35 +97,10 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
               <span>Round 1 Complete: Timeline Stabilized</span>
             </div>
 
-            {result ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-[#050814] border border-cyan-950">
-                    <span className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-slate-400">
-                      <KeyRound className="w-3.5 h-3.5 text-cyan-400" />
-                      Authentication Code
-                    </span>
-                    <span className="block mt-1 text-2xl sm:text-3xl font-mono font-bold tracking-[0.3em] text-cyan-300">
-                      {result.auth_code}
-                    </span>
-                  </div>
-                  <div className="p-3 rounded-lg bg-[#050814] border border-cyan-950">
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-slate-400">
-                      Round 1 Score
-                    </span>
-                    <span className="block mt-1 text-2xl sm:text-3xl font-mono font-bold text-emerald-300">
-                      {result.score}
-                    </span>
-                  </div>
-                </div>
-                {result.clue && (
-                  <p className="text-slate-300 font-mono leading-relaxed text-xs sm:text-sm">
-                    <span className="text-cyan-400">CHRONOS CLUE:</span> “{result.clue}”
-                  </p>
-                )}
-              </>
-            ) : (
-              <p className="text-slate-400 font-mono text-xs sm:text-sm">Round 1 result unavailable. Contact the event host.</p>
+            {result?.clue && (
+              <p className="text-slate-300 font-mono leading-relaxed text-xs sm:text-sm">
+                <span className="text-cyan-400">CHRONOS CLUE:</span> “{result.clue}”
+              </p>
             )}
           </div>
 
@@ -139,7 +113,7 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
               >
                 <div className="flex items-center gap-3">
                   <Play className="w-5 h-5 text-slate-950 fill-current animate-pulse" />
-                  <span>CLICK TO PLAY ROUND 2</span>
+                  <span>CONTINUE</span>
                 </div>
               </button>
             ) : (

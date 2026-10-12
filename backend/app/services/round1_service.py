@@ -2,6 +2,7 @@ from ..database.connection import get_connection
 from datetime import datetime, timezone
 from pathlib import Path
 import json
+import random
 import secrets
 import string
 
@@ -13,12 +14,23 @@ ROUND1_CLUE = (
 
 # Round 1 time limit. The clock starts when the team's items are first fetched
 # (round1_started_at) and is enforced here, not in the browser.
-ROUND1_DURATION_SECONDS = 10 * 60
+ROUND1_DURATION_SECONDS = 5 * 60
 # Answers sent shortly after the limit (the browser auto-submits when time runs out)
 # are still accepted.
 ROUND1_SUBMIT_GRACE_SECONDS = 30
 # A finish request may arrive a moment before the browser's own clock reaches zero.
 ROUND1_FINISH_TOLERANCE_SECONDS = 3
+
+
+# Unbiased shuffling for the item draw.
+_RNG = random.SystemRandom()
+
+
+def _name_key(item):
+    """Items are the same object when their names match (the manifest holds several different
+    pictures of e.g. a gramophone). Fall back to the id for an item without a name."""
+    name = (item["item_name"] or "").strip().lower()
+    return name or f"#{item['item_id']}"
 
 
 # Small web copies of the Round 1 images (made by optimize_round1_images.py), named by
@@ -145,86 +157,56 @@ def get_round1_items(team_id):
         # ---------------------------------------------------------
         if assigned_count == 0:
 
-            # Get one random item from each era
+            # Draw the team's 25 items: one guaranteed item from each era, then a random
+            # fill. An object (item_name) is drawn at most once, so a team never sees the
+            # same thing twice, even though the manifest has several pictures of it.
             cursor.execute("""
-                SELECT item_id
+                SELECT item_id, item_name, correct_era
                 FROM round1_items
                 WHERE is_active = 1
-                  AND correct_era = 'PAST'
-                ORDER BY RANDOM()
-                LIMIT 1
             """)
-            past_item = cursor.fetchone()
+            pool = [dict(row) for row in cursor.fetchall()]
+            _RNG.shuffle(pool)
 
-            cursor.execute("""
-                SELECT item_id
-                FROM round1_items
-                WHERE is_active = 1
-                  AND correct_era = 'PRESENT'
-                ORDER BY RANDOM()
-                LIMIT 1
-            """)
-            present_item = cursor.fetchone()
+            chosen = []
+            used_names = set()
 
-            cursor.execute("""
-                SELECT item_id
-                FROM round1_items
-                WHERE is_active = 1
-                  AND correct_era = 'FUTURE'
-                ORDER BY RANDOM()
-                LIMIT 1
-            """)
-            future_item = cursor.fetchone()
+            for era in ("PAST", "PRESENT", "FUTURE"):
+                pick = next(
+                    (
+                        item for item in pool
+                        if item["correct_era"] == era and _name_key(item) not in used_names
+                    ),
+                    None,
+                )
+                if pick is None:
+                    return {
+                        "error": "Not enough items available from all three eras."
+                    }
+                chosen.append(pick)
+                used_names.add(_name_key(pick))
 
-            if not past_item or not present_item or not future_item:
-                return {
-                    "error": "Not enough items available from all three eras."
-                }
+            for item in pool:
+                if len(chosen) == 25:
+                    break
+                if _name_key(item) in used_names:
+                    continue
+                chosen.append(item)
+                used_names.add(_name_key(item))
 
-            # Store the guaranteed items
-            guaranteed_items = [
-                past_item["item_id"],
-                present_item["item_id"],
-                future_item["item_id"]
-            ]
-
-            for item_id in guaranteed_items:
-                cursor.execute("""
-                    INSERT INTO round1_team_items
-                    (team_id, item_id)
-                    VALUES (?, ?)
-                """, (team_id, item_id))
-
-            # Select remaining 22 random items
-            cursor.execute("""
-                SELECT item_id
-                FROM round1_items
-                WHERE is_active = 1
-                  AND item_id NOT IN (?, ?, ?)
-                ORDER BY RANDOM()
-                LIMIT 22
-            """, (
-                guaranteed_items[0],
-                guaranteed_items[1],
-                guaranteed_items[2]
-            ))
-
-            remaining_items = cursor.fetchall()
-
-            # Make sure we actually obtained 22 more items
-            if len(remaining_items) != 22:
+            if len(chosen) != 25:
                 connection.rollback()
 
                 return {
-                    "error": "Not enough active Round 1 items to create a set of 25."
+                    "error": "Not enough distinct active Round 1 items to create a set of 25."
                 }
 
-            for row in remaining_items:
+            for item in chosen:
                 cursor.execute("""
                     INSERT INTO round1_team_items
                     (team_id, item_id)
                     VALUES (?, ?)
-                """, (team_id, row["item_id"]))
+                """, (team_id, item["item_id"]))
 
             # Start Round 1 only after successful assignment
             cursor.execute("""

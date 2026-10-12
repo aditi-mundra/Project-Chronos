@@ -1,24 +1,23 @@
-CHRONOS // INCIDENT REPORT // incident_report.txt
-CASE R2-20
-INCIDENT: Archive Vault Anchor Purge
+INCIDENT REPORT
+Case R2-20 | Incident: Archive Vault Anchor Purge
 
-SUMMARY
-Timeline anchor records were purged in bulk. The effect spread across the timeline network.
+WHAT HAPPENED
+Timeline anchor records were deleted in bulk. The effect spread across the timeline network.
 
-INCIDENT TIMELINE
+TIMELINE OF EVENTS
 21:32:44 | First abnormal reading: 151 anchor records missing from the index
 21:32:55 | Monitoring reports a sustained inconsistency
-21:33:47 | Automatic reconciliation fails to restore the baseline
-21:34:28 | Cross-timeline results leave the normal operating range
+21:33:47 | Automatic recovery fails to restore normal readings
+21:34:28 | Results across timelines leave the normal range
 
-ORIGIN ANALYSIS
-The first abnormal reading originates at Archive Vault AV-2.
-It matches change CHG-9110 applied at 21:32:37 (bulk purge of timeline anchor records).
-No other change within the incident window touched the anchor record store.
+WHERE IT STARTED
+The first abnormal reading came from Archive Vault AV-2.
+It lines up with Change #4120 made at 21:32:37 (bulk deletion of timeline anchor records).
+No other change in this period touched the anchor record store.
 
-OBSERVATIONS
-A mitigation hold was applied at Archive Vault AV-2 at 21:33:54; it did not restore the baseline.
-Baseline checks before the incident were within their normal range.
-Operators on shift reported no scheduled maintenance for this subsystem.
+OTHER NOTES
+A mitigation hold was applied at Archive Vault AV-2 at 21:33:42; it did not restore normal readings.
+Readings before the incident were in their normal range.
+Operators on shift reported no scheduled maintenance for this system.
 
 END OF REPORT

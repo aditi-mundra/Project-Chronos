@@ -119,6 +119,7 @@ def create_tables():
 
         
         _migrate_teams_for_auth(connection)
+        _migrate_teams_for_transition(connection)
         connection.commit()
     finally:
         connection.close()
@@ -153,6 +154,27 @@ def _migrate_teams_for_auth(connection):
         # Pre-existing duplicate team names (old test data): skip the index rather
         # than fail startup. The login service still checks names case-insensitively.
         pass
+
+
+def _migrate_teams_for_transition(connection):
+    """
+    Additive, idempotent: the Transition Round (between Round 1 and Round 2) keeps its
+    result on the teams row, so no new table is needed.
+
+    - transition_clue_id: the clue allocated to the team (0..29), set on first use.
+    - transition_score: points won in the round (max 20); counted in total_score.
+    - transition_completed_at: set when the round ends (correct password, or 3 wrong).
+    """
+    existing_columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(teams)")
+    }
+    for column, col_type in (
+        ("transition_clue_id", "INTEGER"),
+        ("transition_score", "REAL DEFAULT 0"),
+        ("transition_completed_at", "TEXT"),
+    ):
+        if column not in existing_columns:
+            connection.execute(f"ALTER TABLE teams ADD COLUMN {column} {col_type}")
 
 
 def seed_round1_items_if_empty():

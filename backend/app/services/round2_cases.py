@@ -2,8 +2,8 @@
 Round 2 cases: 24 different investigations, one assigned per team per game.
 
 Case data lives in `round2_cases_all_24/R2-01 ... R2-24/` (case.json plus the four
-evidence files Round 3 refers to: future_audit.log, access_history.log,
-system_auth_matrix.log, incident_report.txt). The culprit of every case is one of
+evidence files Round 3 refers to: system_changes.log, login_records.log,
+security_keys.log, incident_report.txt). The culprit of every case is one of
 Project Alpha / Beta / Gamma. The files are produced by backend/tools/generate_cases.py. This module loads those folders into the
 database on first use and decides which case a team plays.
 
@@ -31,9 +31,9 @@ CASES_DIR = Path(__file__).resolve().parents[3] / "round2_cases_all_24"
 
 _seeded = set()   # database files already loaded by this process
 # file id (key of player_files in case.json) -> display name / tag
-_PROJECT_NAMES = {"audit": "Change audit", "access": "Access history",
-                  "auth": "Authorization matrix", "incident": "Incident report"}
-_TIMELINE_TAGS = {"audit": "audit", "access": "access", "auth": "authorization", "incident": "incident"}
+_PROJECT_NAMES = {"audit": "System changes", "access": "Login records",
+                  "auth": "Security keys", "incident": "Incident report"}
+_TIMELINE_TAGS = {"audit": "changes", "access": "logins", "auth": "keys", "incident": "incident"}
 
 
 def ensure_case_tables(connection) -> None:

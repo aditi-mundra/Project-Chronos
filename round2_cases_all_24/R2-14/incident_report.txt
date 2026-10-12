@@ -1,24 +1,23 @@
-CHRONOS // INCIDENT REPORT // incident_report.txt
-CASE R2-14
-INCIDENT: Paradox Filter Array Bypass
+INCIDENT REPORT
+Case R2-14 | Incident: Paradox Filter Bypass
 
-SUMMARY
+WHAT HAPPENED
 The paradox filter array was switched to bypass. The effect spread across the timeline network.
 
-INCIDENT TIMELINE
-22:59:43 | First abnormal reading: 61 unresolved causal loops detected
+TIMELINE OF EVENTS
+22:59:43 | First abnormal reading: 61 unresolved cause-and-effect loops detected
 22:59:54 | Monitoring reports a sustained inconsistency
-23:00:32 | Automatic reconciliation fails to restore the baseline
-23:02:08 | Cross-timeline results leave the normal operating range
+23:00:32 | Automatic recovery fails to restore normal readings
+23:02:08 | Results across timelines leave the normal range
 
-ORIGIN ANALYSIS
-The first abnormal reading originates at Filter Array PF-6.
-It matches change CHG-7436 applied at 22:59:31 (paradox filter bypass).
-No other change within the incident window touched the paradox filter mode.
+WHERE IT STARTED
+The first abnormal reading came from Filter Array PF-6.
+It lines up with Change #7350 made at 22:59:31 (bypass of the paradox filter).
+No other change in this period touched the paradox filter mode.
 
-OBSERVATIONS
-A mitigation hold was applied at Filter Array PF-6 at 23:00:50; it did not restore the baseline.
-Baseline checks before the incident were within their normal range.
-Operators on shift reported no scheduled maintenance for this subsystem.
+OTHER NOTES
+A mitigation hold was applied at Filter Array PF-6 at 23:00:49; it did not restore normal readings.
+Readings before the incident were in their normal range.
+Operators on shift reported no scheduled maintenance for this system.
 
 END OF REPORT

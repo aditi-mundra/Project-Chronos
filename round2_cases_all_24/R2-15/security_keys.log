@@ -1,0 +1,20 @@
+SECURITY KEY LOG
+Case R2-15 | Covers 21:14:56 to 23:29:56 (master clock)
+
+CLOCK NOTE: this log's clock runs 45 seconds FAST. Subtract 45 s from every time in this file before comparing it with the other files.
+
+How keys work: a security key has to be armed by a badge before it can be used, and an armed key
+stays valid for the time shown. A standing authorization is a general permission and is not tied
+to one badge. Badges are explained in login_records.log (BADGE REGISTRY); terminals are written as
+codes (see its TERMINAL LIST).
+
+KEY EVENTS
+21:48:41 | Key ONYX-6486 | ARMED by badge B-1698 | valid 120 s | purpose: maintenance window
+21:50:16 | Key ONYX-6486 | DISARMED after use
+23:12:55 | Key NOVA-2743 | ARMED by badge B-8739 | valid 120 s | never used
+23:14:44 | Key QUASAR-2458 | ARMED by badge B-5756 | valid 120 s
+23:14:55 | Key NOVA-2743 | EXPIRED unused
+23:15:41 | Key QUASAR-2458 | USED at terminal T-3305 | Change #2832
+23:16:36 | Key HOLD-2991 | ARMED by badge B-8739 | valid 120 s
+
+END OF LOG

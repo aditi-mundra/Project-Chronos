@@ -1,7 +1,7 @@
 {
   "case_id": "R2-02",
   "archetype": "bridge_decouple",
-  "incident": "Sector-4 Temporal Bridge Decoupling",
+  "incident": "Sector-4 Time Bridge Disconnect",
   "culprit": "Project Beta",
   "candidates": [
     {
@@ -21,15 +21,15 @@
     }
   ],
   "player_files": {
-    "audit": "future_audit.log",
-    "access": "access_history.log",
-    "auth": "system_auth_matrix.log",
+    "audit": "system_changes.log",
+    "access": "login_records.log",
+    "auth": "security_keys.log",
     "incident": "incident_report.txt"
   },
   "supporting_files": [
-    "access_history.log",
-    "system_auth_matrix.log",
+    "login_records.log",
+    "security_keys.log",
     "incident_report.txt"
   ],
-  "intended_deduction": "Match the incident change to its terminal (codes in the audit log, names elsewhere) and time (correct the matrix clock offset), then find which credential applied or authorised it. Three files point at the responsible project; one does not."
+  "intended_deduction": "Match the incident to its terminal (codes in the change and key logs, names elsewhere) and its time (correct the key log's fast clock), find the badge that made or armed that change, then look the badge up in the badge registry in login_records.log. Three files point at the responsible project; one does not, and no single file is enough on its own."
 }

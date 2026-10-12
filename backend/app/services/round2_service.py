@@ -165,11 +165,22 @@ class _Db:
         return self.connection
 
     def __exit__(self, exc_type, exc, tb):
-        if exc_type is None:
-            self.connection.commit()
-        else:
-            self.connection.rollback()
-        self.connection.close()
+        # The connection is ALWAYS closed, even when the commit itself fails (for example
+        # "database is locked"). A connection left open would keep its write lock and
+        # block every other request until the server is restarted.
+        try:
+            if exc_type is None:
+                self.connection.commit()
+            else:
+                self.connection.rollback()
+        except Exception:
+            try:
+                self.connection.rollback()
+            except Exception:
+                pass
+            raise
+        finally:
+            self.connection.close()
 
 
 def _log(connection, team_id, event_type, data) -> None:
@@ -269,7 +280,8 @@ def _sync_round2_score(connection, team_id) -> None:
     score = AI_BUDGET - lost
     connection.execute(
         "UPDATE teams SET round2_score = ?, "
-        "total_score = COALESCE(round1_score, 0) + ? + COALESCE(round3_score, 0) WHERE id = ?",
+        "total_score = COALESCE(round1_score, 0) + COALESCE(transition_score, 0) + ? "
+        "+ COALESCE(round3_score, 0) WHERE id = ?",
         (score, score, team_id),
     )
 
@@ -499,29 +511,32 @@ def _fallback_reply(message: str) -> str:
     q = message.lower()
     if re.search(r"who|culprit|guilty|responsible|suspect|blame|project", q):
         return ("I cannot name a responsible project. Work out which change started the incident, "
-                "where and when it was applied, and which credential the records tie to that moment.")
-    if re.search(r"access|session|login|authenticat|denied|scope|terminal", q):
-        return ("access_history.log lists who authenticated, at which terminal and with what scope. "
-                "Only ROOT_WRITE can apply a change, and a denied attempt is not a change. The header also "
-                "holds the TERMINAL REGISTRY, which maps terminal codes to names. Check the terminal and "
-                "the time against the change you are investigating.")
-    if re.search(r"key|auth|arm|matrix|standing|authoriz", q):
-        return ("system_auth_matrix.log shows which keys were armed by which credential and when they "
-                "were used. A key that expired unused, or a standing authorization, does not identify a "
-                "credential. Check the CLOCK OFFSET in this log's header before comparing its times "
-                "with the other logs.")
+                "where and when it was made, and which badge the records tie to that moment. "
+                "Then check which project owns that badge.")
+    if re.search(r"badge|login|logged|refused|access|terminal|registry", q):
+        return ("login_records.log lists who logged in, at which terminal and with what access level. "
+                "Only FULL CONTROL can change a setting, and a refused login is not a change. It also holds "
+                "the BADGE REGISTRY (which project owns which badge) and the TERMINAL LIST (what each "
+                "terminal code means). Check the terminal and the time against the change you are looking at.")
+    if re.search(r"key|arm|standing|authoriz|security", q):
+        return ("security_keys.log shows which badge armed which key and when the key was used. A key that "
+                "expired unused, or a standing authorization, does not point to a badge. Read the CLOCK NOTE "
+                "at the top: this log's clock runs fast, so correct its times before comparing them with "
+                "the other files.")
     if re.search(r"incident|symptom|report|origin|detect|first", q):
-        return ("incident_report.txt gives the first abnormal reading and where it originates. Use it to "
+        return ("incident_report.txt gives the first abnormal reading and where it started. Use it to "
                 "anchor the time and the terminal, then look for the change that matches both.")
-    if re.search(r"audit|change|config|setting|applied|revert|chg", q):
-        return ("future_audit.log lists applied changes with node, setting and credential. Several are "
-                "unrelated; find the change that matches the incident's origin and time.")
-    if re.search(r"time|when|:\d\d|before|after|order|gap", q):
-        return ("Line the timestamps up: the change, the session that preceded it, the key arming, and "
-                "the first symptom. Correct any clock offset stated in a log header, and note any gap "
-                "in a log and what the other files say about it.")
-    return ("Cross-reference the four files: what changed and where (audit), who was present "
-            "(access), what authorised it (authorization matrix), and what it caused (incident report).")
+    if re.search(r"change|config|setting|applied|undone|revert|changed", q):
+        return ("system_changes.log lists every setting change with its terminal code, the setting and the "
+                "badge that made it. Several are unrelated; find the change that matches the incident's "
+                "terminal and time.")
+    if re.search(r"time|when|:\d\d|before|after|order|gap|clock", q):
+        return ("Line the timestamps up: the change, the login that came just before it, the key being armed, "
+                "and the first symptom. Correct the key log's fast clock, and note any gap in a log and "
+                "what the other files say about it.")
+    return ("Cross-reference the four files: what was changed and where (system_changes.log), who was there "
+            "and which project owns each badge (login_records.log), which key was used and who armed it "
+            "(security_keys.log), and what it caused (incident_report.txt). No single file is enough.")
 
 
 def chat(team_id, message, request_id=None):
@@ -713,7 +728,8 @@ def submit_culprit(team_id, suspect_value):
         now = _now_iso()
         connection.execute(
             "UPDATE teams SET round2_score = ?, "
-            "total_score = COALESCE(round1_score, 0) + ? + COALESCE(round3_score, 0), "
+            "total_score = COALESCE(round1_score, 0) + COALESCE(transition_score, 0) + ? "
+            "+ COALESCE(round3_score, 0), "
             "current_state = ?, round2_completed_at = ?, updated_at = ? WHERE id = ?",
             (round2_score, round2_score, COMPLETED_STATE, now, now, team["id"]),
         )

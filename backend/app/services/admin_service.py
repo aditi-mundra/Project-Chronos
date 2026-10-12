@@ -31,6 +31,7 @@ import hashlib
 import hmac
 import io
 import json
+import secrets
 import sqlite3
 import time
 from datetime import datetime, timezone
@@ -82,24 +83,33 @@ def password_matches(candidate: str) -> bool:
     return hmac.compare_digest(expected.encode(), candidate.encode())
 
 
-def make_token() -> str:
-    payload = _b64(json.dumps({"sub": "admin", "exp": int(time.time()) + TOKEN_TTL_SECONDS}).encode())
+def make_token(role: str = "master") -> str:
+    payload = _b64(json.dumps(
+        {"sub": "admin", "role": role, "exp": int(time.time()) + TOKEN_TTL_SECONDS}
+    ).encode())
     signature = _b64(hmac.new(_signing_key(), payload.encode(), hashlib.sha256).digest())
     return f"{payload}.{signature}"
 
 
-def token_valid(token: str) -> bool:
+def token_role(token: str) -> Optional[str]:
+    """'master' | 'temp' for a valid, unexpired token, else None."""
     if not admin_enabled() or not token or "." not in token:
-        return False
+        return None
     payload, _, signature = token.partition(".")
     expected = _b64(hmac.new(_signing_key(), payload.encode(), hashlib.sha256).digest())
     if not hmac.compare_digest(expected, signature):
-        return False
+        return None
     try:
         data = json.loads(_unb64(payload))
-        return data.get("sub") == "admin" and int(data.get("exp", 0)) > time.time()
+        if data.get("sub") == "admin" and int(data.get("exp", 0)) > time.time():
+            return "temp" if data.get("role") == "temp" else "master"
     except Exception:
-        return False
+        pass
+    return None
+
+
+def token_valid(token: str) -> bool:
+    return token_role(token) is not None
 
 
 def _client_key(request: Request) -> str:
@@ -119,13 +129,142 @@ def record_login_failure(request: Request) -> None:
     _failures.setdefault(_client_key(request), []).append(time.time())
 
 
-def require_admin(authorization: str = Header(default="")) -> None:
-    """FastAPI dependency for every protected /api/admin route."""
+def require_admin(authorization: str = Header(default="")) -> str:
+    """FastAPI dependency for every protected /api/admin route. Returns the role."""
     if not admin_enabled():
         raise HTTPException(status_code=503, detail="Admin access is not configured on this server.")
     scheme, _, token = authorization.partition(" ")
-    if scheme.lower() != "bearer" or not token_valid(token.strip()):
+    role = token_role(token.strip()) if scheme.lower() == "bearer" else None
+    if role is None:
         raise HTTPException(status_code=401, detail="Admin authentication required.")
+    return role
+
+
+def require_master(authorization: str = Header(default="")) -> str:
+    """Password control is for the master password only (a one-time login cannot mint more)."""
+    role = require_admin(authorization)
+    if role != "master":
+        raise HTTPException(status_code=403, detail="Only the master password can manage access passwords.")
+    return role
+
+
+# --- access passwords (master + one-time temporary passwords) ------------------------
+#
+# The master password (CHRONOS_ADMIN_PASSWORD) never expires. Temporary passwords are added
+# by the master, work exactly once, and are then listed as "used". Nothing here touches
+# teams, scores or the leaderboard data.
+
+_PW_MIN, _PW_MAX, _PW_BATCH = 4, 64, 100
+_PW_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O/1/I
+
+
+def _pw_table(connection) -> None:
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS admin_passwords ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, password TEXT NOT NULL UNIQUE, "
+        "created_at TEXT NOT NULL, used_at TEXT, used_from TEXT)"
+    )
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def authenticate(candidate: str, client: str) -> Optional[str]:
+    """'master' for the master password, 'temp' when a one-time password was just consumed,
+    None otherwise. The consume is a single conditional UPDATE, so two simultaneous logins
+    with the same temporary password can never both succeed."""
+    if password_matches(candidate):
+        return "master"
+    if not isinstance(candidate, str) or not candidate:
+        return None
+    connection = get_connection()
+    try:
+        _pw_table(connection)
+        connection.execute("BEGIN IMMEDIATE")
+        cursor = connection.execute(
+            "UPDATE admin_passwords SET used_at = ?, used_from = ? WHERE password = ? AND used_at IS NULL",
+            (_now_iso(), client, candidate),
+        )
+        connection.commit()
+        return "temp" if cursor.rowcount == 1 else None
+    finally:
+        connection.close()
+
+
+def _pw_row(r) -> dict[str, Any]:
+    return {
+        "id": r["id"], "password": r["password"], "created_at": r["created_at"],
+        "used_at": r["used_at"], "used_from": r["used_from"],
+    }
+
+
+def list_passwords() -> dict[str, Any]:
+    connection = get_connection()
+    try:
+        _pw_table(connection)
+        rows = connection.execute("SELECT * FROM admin_passwords ORDER BY id").fetchall()
+        return {
+            "unused": [_pw_row(r) for r in rows if r["used_at"] is None],
+            "used": [_pw_row(r) for r in sorted(rows, key=lambda r: r["used_at"] or "", reverse=True)
+                     if r["used_at"] is not None],
+        }
+    finally:
+        connection.close()
+
+
+def add_passwords(passwords: list[str], generate: int = 0) -> dict[str, Any]:
+    """Add several temporary passwords at once (typed ones and/or `generate` random ones)."""
+    wanted = [(p or "").strip() for p in passwords or []]
+    wanted += ["".join(secrets.choice(_PW_ALPHABET) for _ in range(8)) for _ in range(max(0, generate))]
+    if not wanted:
+        raise HTTPException(status_code=400, detail="Give at least one password, or a number to generate.")
+    if len(wanted) > _PW_BATCH:
+        raise HTTPException(status_code=400, detail=f"At most {_PW_BATCH} passwords per request.")
+
+    master = _password()
+    added: list[str] = []
+    skipped: list[dict[str, str]] = []
+    connection = get_connection()
+    try:
+        _pw_table(connection)
+        connection.execute("BEGIN IMMEDIATE")
+        seen: set[str] = set()
+        for pw in wanted:
+            if not pw:
+                continue
+            if len(pw) < _PW_MIN or len(pw) > _PW_MAX:
+                skipped.append({"password": pw, "reason": f"must be {_PW_MIN}-{_PW_MAX} characters"})
+            elif pw == master:
+                skipped.append({"password": pw, "reason": "is the master password"})
+            elif pw in seen:
+                skipped.append({"password": pw, "reason": "listed twice"})
+            else:
+                seen.add(pw)
+                try:
+                    connection.execute(
+                        "INSERT INTO admin_passwords (password, created_at) VALUES (?, ?)", (pw, _now_iso())
+                    )
+                    added.append(pw)
+                except sqlite3.IntegrityError:
+                    skipped.append({"password": pw, "reason": "already exists (unused or used)"})
+        connection.commit()
+    finally:
+        connection.close()
+    return {"added": added, "skipped": skipped}
+
+
+def delete_unused_password(password_id: int) -> bool:
+    connection = get_connection()
+    try:
+        _pw_table(connection)
+        cursor = connection.execute(
+            "DELETE FROM admin_passwords WHERE id = ? AND used_at IS NULL", (password_id,)
+        )
+        connection.commit()
+        return cursor.rowcount == 1
+    finally:
+        connection.close()
 
 
 # --- leaderboard -----------------------------------------------------------------
@@ -206,7 +345,10 @@ def leaderboard() -> list[dict[str, Any]]:
         else:
             r2 = None
         r3 = float(t["round3_score"] or 0) if tid in r3_recorded_ids else None
-        recorded = [v for v in (r1, r2, r3) if v is not None]
+        # Transition Round (20 points, between Round 1 and Round 2): counted in the total only.
+        transition = float(t["transition_score"] or 0) if t["transition_completed_at"] else None
+        core = [v for v in (r1, r2, r3) if v is not None]
+        recorded = [v for v in (r1, transition, r2, r3) if v is not None]
         r1_seconds = (r1_done - r1_start).total_seconds() if (r1_done and r1_start) else None
 
         entries.append({
@@ -222,12 +364,13 @@ def leaderboard() -> list[dict[str, Any]]:
             "round1_score": r1,
             "round2_score": r2,
             "round3_score": r3,
+            "transition_score": transition,
             "round2_source": r2_source,
             "round2_provisional": r2 is not None and r2_source == "ai_deductions" and not r2_over,
             "round2_questions_used": questions if r2_source else None,
             "round2_points_deducted": lost if r2_source else None,
             "total_score": sum(recorded) if recorded else None,
-            "total_complete": len(recorded) == 3,
+            "total_complete": len(core) == 3,
             "recorded_rounds": [n for n, v in ((1, r1), (2, r2), (3, r3)) if v is not None],
             "r1_started_at": t["round1_started_at"],
             "r1_completed_at": t["round1_completed_at"],
@@ -268,7 +411,7 @@ def leaderboard_csv() -> str:
     writer = csv.writer(output)
     writer.writerow([
         "Rank", "Team Name", "Member 1", "Member 1 PRN", "Member 2", "Member 2 PRN",
-        "State", "Round 1 Score", "Round 1 Time", "Round 2 Score", "Round 3 Score",
+        "State", "Round 1 Score", "Round 1 Time", "Transition Score", "Round 2 Score", "Round 3 Score",
         "Round 2 AI Questions Used", "Round 2 Provisional",
         "Total (recorded rounds)", "All rounds recorded", "Round 3 Completed At",
     ])
@@ -277,6 +420,7 @@ def leaderboard_csv() -> str:
             t["rank"], t["team_name"], t["member_1_name"], t["member_1_prn"],
             t["member_2_name"], t["member_2_prn"], t["status"],
             "" if t["round1_score"] is None else t["round1_score"], t["r1_time_formatted"],
+            "" if t["transition_score"] is None else t["transition_score"],
             "" if t["round2_score"] is None else t["round2_score"],
             "" if t["round3_score"] is None else t["round3_score"],
             "" if t["round2_questions_used"] is None else t["round2_questions_used"],
@@ -285,6 +429,48 @@ def leaderboard_csv() -> str:
             "yes" if t["total_complete"] else "no", t["r3_completed_at"] or "",
         )])
     return output.getvalue()
+
+
+# Every table that holds rows for one team (the row itself is in `teams`).
+_TEAM_TABLES = (
+    "game_logs", "hints", "investments", "team_fragments", "submissions",
+    "round1_submissions", "round1_team_items",
+    "round2_chat_messages", "round2_submissions", "round2_team_cases", "round2_case_history",
+    "round3_submissions", "round3_team_cases",
+)
+
+
+def delete_team(team_id: int) -> dict[str, Any]:
+    """Permanently remove one team and everything recorded for it (host action, master admin).
+    Case / item catalogues and other teams are not touched."""
+    connection = get_connection()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        team = connection.execute("SELECT id, team_name FROM teams WHERE id = ?", (team_id,)).fetchone()
+        if team is None:
+            connection.rollback()
+            raise HTTPException(status_code=404, detail="Team not found.")
+        existing = {
+            r[0] for r in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+        }
+        removed = 0
+        for table in _TEAM_TABLES:
+            if table in existing:
+                removed += connection.execute(f'DELETE FROM "{table}" WHERE team_id = ?', (team_id,)).rowcount
+        connection.execute("DELETE FROM teams WHERE id = ?", (team_id,))
+        if "game_logs" in existing:
+            connection.execute(
+                "INSERT INTO game_logs (team_id, event_type, event_data, created_at) VALUES (NULL, 'ADMIN_TEAM_DELETED', ?, ?)",
+                (json.dumps({"team_id": team_id, "team_name": team["team_name"]}),
+                 datetime.now(timezone.utc).isoformat()),
+            )
+        connection.commit()
+        return {"deleted": True, "team_id": team_id, "team_name": team["team_name"], "rows_removed": removed}
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def recent_logs(limit: int) -> list[dict[str, Any]]:

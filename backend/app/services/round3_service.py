@@ -220,7 +220,31 @@ def _canonical_case(case_id: str):
     return next((c for c in ROUND_3_CANONICAL_CASES if c["case_id"] == case_id), None)
 
 
-def _state_payload(team, row, submission) -> dict:
+def _round2_inquiries(connection, team_id) -> dict:
+    """The team's own answered Round 2 AI questions, for review in Round 3. Points
+    deducted are never included."""
+    rows = connection.execute(
+        "SELECT question_number, user_prompt, ai_response, created_at FROM round2_chat_messages "
+        "WHERE team_id = ? AND TRIM(COALESCE(ai_response, '')) <> '' ORDER BY question_number",
+        (str(team_id),),
+    ).fetchall()
+    return {
+        "questions_used": len(rows),
+        "chat_messages": [
+            {"question_number": r["question_number"], "user_prompt": r["user_prompt"],
+             "ai_response": r["ai_response"], "created_at": r["created_at"]}
+            for r in rows
+        ],
+    }
+
+
+def _state_payload(team, row, submission, connection=None) -> dict:
+    inquiries = None
+    if connection is not None:
+        try:
+            inquiries = _round2_inquiries(connection, team["id"])
+        except Exception:  # Round 2 tables unavailable: the tab just shows nothing
+            inquiries = {"questions_used": 0, "chat_messages": []}
     return {
         "status": "success",
         "team_id": team["id"],
@@ -229,6 +253,7 @@ def _state_payload(team, row, submission) -> dict:
         "round3_started_at": team["round3_started_at"],
         "is_submitted": submission is not None,
         "scenario": _client_scenario(row) if row is not None else None,
+        "round2_investigation": inquiries,
     }
 
 
@@ -275,7 +300,7 @@ def start_round3(team_id) -> dict:
         submission = _submission(connection, tid)
 
         if _is_submitted(team, submission):
-            return _state_payload(team, _assigned_case(connection, tid), submission)
+            return _state_payload(team, _assigned_case(connection, tid), submission, connection)
 
         eligible, reason = _eligibility(team, submission)
         if not eligible:
@@ -296,7 +321,7 @@ def start_round3(team_id) -> dict:
             _log(connection, tid, "R3_START", {"round": 3, "case": row["case_id"], "from": reason})
             team = _team(connection, tid)
 
-        return _state_payload(team, row, None)
+        return _state_payload(team, row, None, connection)
 
 
 def get_scenario(team_id) -> dict:
@@ -313,7 +338,7 @@ def get_scenario(team_id) -> dict:
         ):
             raise _error(409, "ROUND_3_NOT_STARTED", "Round 3 has not been started for this team.")
 
-        return _state_payload(team, row, submission)
+        return _state_payload(team, row, submission, connection)
 
 
 # --- decision ------------------------------------------------------------------
@@ -322,7 +347,8 @@ def _record_result(connection, team_id, points: float, completed_at: str) -> Non
     """Persist the Round 3 result. This is the only place Round 3 touches scores."""
     connection.execute(
         "UPDATE teams SET round3_score = ?, "
-        "total_score = COALESCE(round1_score, 0) + COALESCE(round2_score, 0) + ?, "
+        "total_score = COALESCE(round1_score, 0) + COALESCE(transition_score, 0) "
+        "+ COALESCE(round2_score, 0) + ?, "
         "round3_completed_at = ?, current_state = ?, updated_at = ? WHERE id = ?",
         (points, points, completed_at, FINAL_STATE, completed_at, team_id),
     )

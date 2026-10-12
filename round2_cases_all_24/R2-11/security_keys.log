@@ -1,0 +1,20 @@
+SECURITY KEY LOG
+Case R2-11 | Covers 17:06:13 to 19:17:13 (master clock)
+
+CLOCK NOTE: this log's clock runs 41 seconds FAST. Subtract 41 s from every time in this file before comparing it with the other files.
+
+How keys work: a security key has to be armed by a badge before it can be used, and an armed key
+stays valid for the time shown. A standing authorization is a general permission and is not tied
+to one badge. Badges are explained in login_records.log (BADGE REGISTRY); terminals are written as
+codes (see its TERMINAL LIST).
+
+KEY EVENTS
+17:35:54 | Key VEGA-5347 | ARMED by badge B-1610 | valid 120 s | purpose: maintenance window
+17:37:29 | Key VEGA-5347 | DISARMED after use
+19:03:04 | Key ORION-1212 | ARMED by badge B-8476 | valid 120 s | never used
+19:05:04 | Key ORION-1212 | EXPIRED unused
+19:06:17 | Key ATLAS-3850 | ARMED by badge B-3786 | valid 120 s
+19:06:54 | Key ATLAS-3850 | USED at terminal T-2457 | Change #6717
+19:07:51 | Key HOLD-3856 | ARMED by badge B-8476 | valid 120 s
+
+END OF LOG

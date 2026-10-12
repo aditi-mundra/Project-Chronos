@@ -13,6 +13,8 @@ from .routes.auth import router as auth_router
 from .routes.round1 import router as round1_router
 from .routes.round2 import router as round2_router
 from .routes.round3 import router as round3_router
+from .routes.transition import router as transition_router
+from .routes.dev import router as dev_router
 from .routes.admin import router as admin_router
 from .services.round2_service import init_round2
 from .services.round3_service import init_round3
@@ -101,6 +103,10 @@ app.include_router(
 # Round 2 and Round 3 routers carry their own /api/roundN prefix.
 app.include_router(round2_router, dependencies=[Depends(require_team)])
 app.include_router(round3_router, dependencies=[Depends(require_team)])
+# Transition Round (between Round 1 and Round 2): clue, stopwatch result, physical password.
+app.include_router(transition_router, dependencies=[Depends(require_team)])
+# Tester shortcut (Ctrl+Shift+Alt+K): 404 unless CHRONOS_ENABLE_SKIP=1.
+app.include_router(dev_router, dependencies=[Depends(require_team)])
 
 # Host-only: every route except /login needs the admin bearer token.
 app.include_router(admin_router)

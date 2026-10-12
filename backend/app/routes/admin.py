@@ -5,6 +5,7 @@ There is no public leaderboard and no unauthenticated export.
 """
 
 from datetime import datetime, timezone
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
@@ -23,20 +24,68 @@ def login(body: LoginBody, request: Request):
     if not svc.admin_enabled():
         raise HTTPException(status_code=503, detail="Admin access is not configured on this server.")
     svc.check_login_allowed(request)
-    if not svc.password_matches(body.password):
+    role = svc.authenticate(body.password, svc._client_key(request))
+    if role is None:
         svc.record_login_failure(request)
-        raise HTTPException(status_code=401, detail="Invalid admin password.")
-    return {"success": True, "token": svc.make_token(), "expires_in": svc.TOKEN_TTL_SECONDS}
+        raise HTTPException(status_code=401, detail="Invalid or already used password.")
+    return {"success": True, "token": svc.make_token(role), "role": role,
+            "expires_in": svc.TOKEN_TTL_SECONDS}
 
 
-@router.get("/session", dependencies=[Depends(svc.require_admin)])
-def session():
-    return {"valid": True}
+@router.get("/session")
+def session(role: str = Depends(svc.require_admin)):
+    return {"valid": True, "role": role}
+
+
+class PasswordsBody(BaseModel):
+    passwords: Optional[List[str]] = Field(default=None, max_length=100)
+    generate: int = Field(default=0, ge=0, le=100)
+
+
+class SkipSwitchBody(BaseModel):
+    enabled: bool
+
+
+@router.get("/dev-skip", dependencies=[Depends(svc.require_master)])
+def get_dev_skip():
+    from ..services import dev_skip
+
+    return {"enabled": dev_skip.enabled()}
+
+
+@router.post("/dev-skip", dependencies=[Depends(svc.require_master)])
+def set_dev_skip(body: SkipSwitchBody):
+    from ..services import dev_skip
+
+    return dev_skip.set_enabled(body.enabled)
+
+
+@router.get("/passwords", dependencies=[Depends(svc.require_master)])
+def get_passwords():
+    return svc.list_passwords()
+
+
+@router.post("/passwords", dependencies=[Depends(svc.require_master)])
+def add_passwords(body: PasswordsBody):
+    return svc.add_passwords(body.passwords or [], body.generate)
+
+
+@router.delete("/passwords/{password_id}", dependencies=[Depends(svc.require_master)])
+def delete_password(password_id: int):
+    if not svc.delete_unused_password(password_id):
+        raise HTTPException(status_code=404, detail="No unused password with that id.")
+    return {"deleted": True}
 
 
 @router.get("/leaderboard", dependencies=[Depends(svc.require_admin)])
 def get_leaderboard():
     return svc.leaderboard()
+
+
+@router.delete("/teams/{team_id}", dependencies=[Depends(svc.require_master)])
+def delete_team(team_id: int):
+    """Permanently delete one team and all of its data (master admin only)."""
+    return svc.delete_team(team_id)
 
 
 @router.get("/export-csv", dependencies=[Depends(svc.require_admin)])
