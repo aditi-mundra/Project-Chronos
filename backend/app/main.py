@@ -1,12 +1,18 @@
 import mimetypes
 import os
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+_backend_dir = Path(__file__).resolve().parents[1]
+_root_dir = _backend_dir.parent
+for _p in (str(_root_dir), str(_backend_dir)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 try:
     from dotenv import load_dotenv
-    _root = Path(__file__).resolve().parents[2]
-    for _env_path in (_root / ".env", _root / "backend" / ".env"):
+    for _env_path in (_root_dir / ".env", _backend_dir / ".env"):
         if _env_path.is_file():
             load_dotenv(_env_path, override=False)
 except Exception:
@@ -18,17 +24,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .database.schema import (
-    create_tables,
-    seed_round1_items_if_empty,
-)
-from .services.round2_service import init_round2
-from .routes.auth import router as auth_router
-from .routes.round1 import router as round1_router
-from .routes.round2 import router as round2_router
-from .routes.round3 import router as round3_router
-from .routes.game import router as game_router
-from .routes.admin import router as admin_router
+try:
+    from .database.schema import (
+        create_tables,
+        seed_round1_items_if_empty,
+    )
+    from .services.round2_service import init_round2
+    from .routes.auth import router as auth_router
+    from .routes.round1 import router as round1_router
+    from .routes.round2 import router as round2_router
+    from .routes.round3 import router as round3_router
+    from .routes.game import router as game_router
+    from .routes.admin import router as admin_router
+except (ImportError, ValueError):
+    from backend.app.database.schema import (
+        create_tables,
+        seed_round1_items_if_empty,
+    )
+    from backend.app.services.round2_service import init_round2
+    from backend.app.routes.auth import router as auth_router
+    from backend.app.routes.round1 import router as round1_router
+    from backend.app.routes.round2 import router as round2_router
+    from backend.app.routes.round3 import router as round3_router
+    from backend.app.routes.game import router as game_router
+    from backend.app.routes.admin import router as admin_router
 
 
 @asynccontextmanager
@@ -49,21 +68,25 @@ app = FastAPI(
 )
 
 
-# CORS: only needed when the frontend is served from a different origin than the API
-# (e.g. a separately hosted frontend). Set CORS_ORIGINS="https://a.com,https://b.com"
-# in production; defaults to allowing any origin.
-CORS_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CORS_ORIGINS", "*").split(",")
-    if origin.strip()
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS: Allow all origins, methods, headers, and credentials for seamless LAN and local access
+cors_env = os.getenv("CORS_ORIGINS", "").strip()
+if cors_env and cors_env != "*":
+    origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=".*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 # Serve Round 1 images
@@ -139,3 +162,12 @@ def serve_frontend(full_path: str):
         return FileResponse(requested)
 
     return FileResponse(FRONTEND_INDEX)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    print(f"\n⚡ [Project Chronos] Starting API Server on http://{host}:{port} ...\n")
+    uvicorn.run("backend.app.main:app", host=host, port=port, reload=False)
+

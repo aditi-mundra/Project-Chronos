@@ -15,7 +15,8 @@ import {
   ShieldAlert,
   Lock,
   X,
-  CheckCircle
+  CheckCircle,
+  LogOut
 } from 'lucide-react';
 import api from '../services/api.js';
 import { soundFx } from '../utils/audio.js';
@@ -24,29 +25,35 @@ import { soundFx } from '../utils/audio.js';
  * Master Host Leaderboard View
  * Real-time team rankings, statistics, PRN lookups, CSV export, and database purge control.
  */
-export default function Leaderboard({ onBack }) {
+export default function Leaderboard({ onBack, onLogout }) {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState(null);
 
-  // Clear Database State (Two Warnings + Password 'admin')
+  // Clear Database State (Two Warnings + Password 'Chronos@123')
   const [clearDbStep, setClearDbStep] = useState(0); // 0: Closed, 1: Warning 1, 2: Warning 2
   const [adminPassword, setAdminPassword] = useState('');
   const [clearDbLoading, setClearDbLoading] = useState(false);
   const [clearDbError, setClearDbError] = useState('');
   const [clearDbSuccess, setClearDbSuccess] = useState('');
 
+  const handleLogout = () => {
+    soundFx.playError();
+    sessionStorage.removeItem('chronos_admin_token');
+    sessionStorage.removeItem('chronos_host_authed');
+    if (onLogout) {
+      onLogout();
+    }
+  };
+
   const fetchLeaderboard = async () => {
     try {
-      if (!sessionStorage.getItem('chronos_admin_token')) {
-        try {
-          const auth = await api.adminLogin('admin');
-          if (auth?.token) {
-            sessionStorage.setItem('chronos_admin_token', auth.token);
-          }
-        } catch (_) {}
+      const token = sessionStorage.getItem('chronos_admin_token');
+      if (!token) {
+        if (onLogout) onLogout();
+        return;
       }
       const data = await api.getAdminLeaderboard();
       setTeams(Array.isArray(data) ? data : []);
@@ -55,6 +62,9 @@ export default function Leaderboard({ onBack }) {
       console.error('Failed to fetch leaderboard:', err);
       if (err?.status === 401) {
         setAutoRefresh(false);
+        sessionStorage.removeItem('chronos_admin_token');
+        sessionStorage.removeItem('chronos_host_authed');
+        if (onLogout) onLogout();
       }
     } finally {
       setLoading(false);
@@ -276,6 +286,15 @@ export default function Leaderboard({ onBack }) {
           >
             <Trash2 className="w-3.5 h-3.5 text-rose-400" />
             <span>CLEAR DB</span>
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-rose-950/80 border border-slate-700 hover:border-rose-600 text-slate-300 hover:text-rose-200 text-xs font-bold font-tech uppercase tracking-wider flex items-center gap-1.5 shadow-md transition cursor-pointer active:scale-95"
+            title="Log out and protect leaderboard"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <span>LOGOUT</span>
           </button>
         </div>
       </div>
@@ -540,7 +559,7 @@ export default function Leaderboard({ onBack }) {
                 🚨 IRREVERSIBLE OPERATION: Once confirmed, all teams and competition data will be permanently wiped from the mainframe database.
               </p>
               <p className="text-slate-300">
-                To authorize the wipe, please enter the administrator password (<span className="font-mono text-cyan-300 font-bold">admin</span>):
+                To authorize the wipe, please enter the administrator password (<span className="font-mono text-cyan-300 font-bold">Chronos@123</span>):
               </p>
             </div>
 
@@ -550,7 +569,7 @@ export default function Leaderboard({ onBack }) {
                 <input
                   type="password"
                   autoFocus
-                  placeholder='Enter password "admin"...'
+                  placeholder='Enter password "Chronos@123"...'
                   value={adminPassword}
                   onChange={(e) => {
                     setAdminPassword(e.target.value);

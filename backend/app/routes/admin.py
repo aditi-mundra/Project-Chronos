@@ -16,17 +16,17 @@ from ..database.connection import get_connection
 
 router = APIRouter(prefix="/api/admin", tags=["Admin & Host Leaderboard"])
 
-DEFAULT_ADMIN_PASSWORDS = {"admin", "chronos2140"}
+DEFAULT_ADMIN_PASSWORDS = {"Chronos@123", "chronos@123"}
 ADMIN_PASSWORD = os.getenv("CHRONOS_ADMIN_PASSWORD", "").strip()
 ADMIN_SECRET_TOKEN = os.getenv("CHRONOS_ADMIN_TOKEN") or secrets.token_urlsafe(32)
-VALID_ADMIN_PASSWORDS = {ADMIN_PASSWORD.lower(), *DEFAULT_ADMIN_PASSWORDS} if ADMIN_PASSWORD else DEFAULT_ADMIN_PASSWORDS
+VALID_ADMIN_PASSWORDS = {ADMIN_PASSWORD.lower(), *{p.lower() for p in DEFAULT_ADMIN_PASSWORDS}} if ADMIN_PASSWORD else {p.lower() for p in DEFAULT_ADMIN_PASSWORDS}
 
 
 def is_valid_admin_password(pw: Optional[str]) -> bool:
     if not pw:
         return False
-    cleaned = pw.strip().strip('"').strip("'").lower()
-    return cleaned in VALID_ADMIN_PASSWORDS
+    cleaned = pw.strip().strip('"').strip("'")
+    return cleaned == "Chronos@123" or cleaned.lower() in VALID_ADMIN_PASSWORDS
 
 
 def require_admin(request: Request) -> None:

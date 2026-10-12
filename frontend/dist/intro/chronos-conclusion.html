@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PROJECT CHRONOS — TIMELINE CONVERGENCE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Super Sliced';
+  src: url('/fonts/SuperSliced.ttf') format('truetype'),
+       url('../fonts/SuperSliced.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #05070c;
+  --cyan: #06b6d4;
+  --gold: #f59e0b;
+  --rose: #ec4899;
+  --white: #f8fafc;
+  --font: "Chakra Petch", monospace, sans-serif;
+  --title-font: "Super Sliced", "Chakra Petch", sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: var(--font);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  background: #05070c;
+  overflow: hidden;
+}
+
+canvas#cv {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* CRT Scanline & Grain Overlay */
+#overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.14) 0 1px, transparent 1px 3px),
+              radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,0.58) 100%);
+  z-index: 10;
+}
+
+.scanbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -100px;
+  height: 90px;
+  background: linear-gradient(rgba(6, 182, 212, 0.08), transparent);
+  animation: scan 8s linear infinite;
+  pointer-events: none;
+  z-index: 11;
+}
+@keyframes scan {
+  to { transform: translateY(calc(100vh + 200px)); }
+}
+
+/* Flash Screen */
+#flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+/* HUD Telemetry */
+.hud {
+  position: absolute;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--cyan);
+  pointer-events: none;
+  z-index: 15;
+  text-shadow: 0 0 8px rgba(6,182,212,0.6);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+.hud.tl { top: 24px; left: 24px; }
+.hud.tr { top: 24px; right: 24px; text-align: right; }
+.hud.bl { bottom: 24px; left: 24px; }
+.hud.br { bottom: 24px; right: 24px; text-align: right; }
+
+/* Status Banners */
+#status-badge {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(12px, 1.8vw, 16px);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(5, 7, 12, 0.85);
+  padding: 8px 24px;
+  border-radius: 4px;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+  z-index: 20;
+  opacity: 0;
+}
+
+/* Main Cinematic Title */
+#center-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 25;
+  pointer-events: none;
+  width: 90%;
+  max-width: 1100px;
+}
+
+#big-title {
+  font-family: var(--title-font);
+  font-weight: 700;
+  font-size: clamp(34px, 7vw, 92px);
+  line-height: 0.95;
+  letter-spacing: 0.08em;
+  color: var(--white);
+  text-shadow: 0 0 40px rgba(6,182,212,0.8), 0 0 15px rgba(255,255,255,0.9);
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+#sub-title {
+  font-size: clamp(13px, 2vw, 22px);
+  letter-spacing: 0.45em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-top: 18px;
+  opacity: 0;
+  text-shadow: 0 0 12px rgba(6,182,212,0.6);
+}
+
+#metrics {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+  opacity: 0;
+}
+
+.metric-pill {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  padding: 6px 16px;
+  background: rgba(6,182,212,0.1);
+  border: 1px solid rgba(6,182,212,0.5);
+  border-radius: 999px;
+  color: #a5f3fc;
+  box-shadow: 0 0 15px rgba(6,182,212,0.2);
+}
+
+/* Interactive Action Buttons */
+#actions {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  z-index: 35;
+  opacity: 0;
+}
+
+.act-btn {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #05070c;
+  background: linear-gradient(135deg, #22d3ee, #38bdf8);
+  border: 1px solid #7dd3fc;
+  padding: 12px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(34,211,238,0.5);
+  transition: all 0.25s ease;
+}
+.act-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 35px rgba(34,211,238,0.8);
+}
+
+.act-btn.secondary {
+  background: rgba(15,23,42,0.7);
+  color: var(--cyan);
+  border: 1px solid rgba(6,182,212,0.4);
+  box-shadow: none;
+}
+.act-btn.secondary:hover {
+  background: rgba(6,182,212,0.2);
+  border-color: var(--cyan);
+}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="overlay"></div>
+  <div class="scanbar"></div>
+  <div id="flash"></div>
+
+  <!-- Telemetry HUD -->
+  <div class="hud tl" id="htl">TEMPORAL MATRIX // PROTOCOL 2140<br>SYS_STABILITY: CALIBRATING</div>
+  <div class="hud tr" id="htr">DISPERSION DELTA: FRACTURED<br>PARADOX STATE: RESOLVING</div>
+  <div class="hud bl" id="hbl">QUANTUM COHERENCE: 3-STRAND FLUX<br>GRAVITATIONAL COUPLING: ACTIVE</div>
+  <div class="hud br" id="hbr">UNIT CALLSIGN: ACTIVE ENGINEER<br>CHRONOS MAIN KERNEL // SYNC</div>
+
+  <div id="status-badge">TEMPORAL DIVERGENCE DETECTED</div>
+
+  <div id="center-banner">
+    <div id="big-title">TIMELINES MERGED</div>
+    <div id="sub-title">THE PRIME CONTINUUM IS RESTORED</div>
+    <div id="metrics">
+      <div class="metric-pill">ALL 3 BROKEN TIMELINES HARMONIZED</div>
+      <div class="metric-pill">PARADOX DECAY: 0.00%</div>
+      <div class="metric-pill">CHRONOS STABILITY: 100%</div>
+    </div>
+  </div>
+
+  <div id="actions">
+    <button class="act-btn" id="btn-debrief">VIEW FINAL DEBRIEF & STANDINGS ▸</button>
+    <button class="act-btn secondary" id="btn-replay">↻ REPLAY CONVERGENCE</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+"use strict";
+
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), cx = cv.getContext('2d');
+const flash = $('#flash'), badge = $('#status-badge');
+const bigTitle = $('#big-title'), subTitle = $('#sub-title'), metrics = $('#metrics'), actions = $('#actions');
+const huds = [$('#htl'), $('#htr'), $('#hbl'), $('#hbr')];
+
+let W = innerWidth, H = innerHeight, DPR = 1;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* Audio Engine */
+let AC = null, MV = null;
+const sounds = {};
+const SOUND_URLS = {
+  boot:   '/sounds/boot.wav',
+  woosh1: '/sounds/woosh1.mp3',
+  woosh2: '/sounds/woosh2.mp3',
+  woosh3: '/sounds/Woosh3.mp3',
+  glitch: '/sounds/glitch.mp3',
+  reveal: '/sounds/reveal.wav'
+};
+
+function getAC(){
+  if(!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if(AC.state === 'suspended') AC.resume().catch(()=>{});
+  return AC;
+}
+function getMaster(){
+  const ctx = getAC();
+  if(!MV){ MV = ctx.createGain(); MV.gain.value = 0.85; MV.connect(ctx.destination); }
+  return MV;
+}
+async function loadSound(k, u){
+  try {
+    const ctx = getAC();
+    let res = await fetch(u).catch(()=>null);
+    if(!res || !res.ok) res = await fetch('.'+u).catch(()=>null);
+    if(!res || !res.ok) res = await fetch('..'+u).catch(()=>null);
+    if(res && res.ok){
+      const ab = await res.arrayBuffer();
+      sounds[k] = await ctx.decodeAudioData(ab);
+    }
+  }catch(e){}
+}
+function preloadAudio(){
+  getAC(); getMaster();
+  return Promise.all(Object.entries(SOUND_URLS).map(([k,u]) => loadSound(k,u)));
+}
+preloadAudio();
+
+function playAudio(k, vol=1, rate=1){
+  try {
+    const ctx = getAC();
+    const buf = sounds[k];
+    if(!buf) return;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = rate;
+    const g = ctx.createGain();
+    g.gain.value = vol;
+    src.connect(g);
+    g.connect(getMaster());
+    src.start();
+  }catch(e){}
+}
+
+/* Synthesizer for low drone and temporal warp chord */
+function playWarpDrone(freq=80, dur=4.5){
+  try {
+    const ctx = getAC();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 3.5, ctx.currentTime + dur);
+    g.gain.setValueAtTime(0.01, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0.25, ctx.currentTime + dur * 0.7);
+    g.gain.linearRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.connect(g);
+    g.connect(getMaster());
+    osc.start();
+    osc.stop(ctx.currentTime + dur);
+  }catch(e){}
+}
+
+function playConvergenceChord(){
+  try {
+    const ctx = getAC();
+    [220, 277.18, 329.63, 440, 554.37, 659.25].forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, ctx.currentTime);
+      g.gain.setValueAtTime(0.18 / (i + 1), ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 3.5);
+      osc.connect(g);
+      g.connect(getMaster());
+      osc.start();
+      osc.stop(ctx.currentTime + 3.6);
+    });
+  }catch(e){}
+}
+
+/* =========================================================================
+   ANIMATION PARAMETERS & TIMELINE MODEL
+   ========================================================================= */
+const state = {
+  warpProgress: 0,    // 0 = 3 separated broken timelines, 0.7 = violent warp/spiral, 1 = fused single timeline
+  mergeStrength: 0,   // 0 = 3 separate lines, 1 = fused single beam
+  glowIntensity: 0.5,
+  coreRadius: 0,
+  flashAlpha: 0,
+  shake: 0
+};
+
+// Particles (chronon dust)
+const particles = [];
+for(let i=0; i<160; i++){
+  particles.push({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 1.5,
+    vy: (Math.random() - 0.5) * 1.5,
+    sz: 1 + Math.random() * 2.5,
+    c: i % 3 === 0 ? '#06b6d4' : (i % 3 === 1 ? '#f59e0b' : '#ec4899'),
+    alpha: 0.3 + Math.random() * 0.7
+  });
+}
+
+let animTime = 0;
+
+function render(){
+  animTime += 0.016;
+  cx.clearRect(0, 0, W, H);
+
+  // Background subtle grid
+  cx.save();
+  cx.strokeStyle = 'rgba(6, 182, 212, 0.05)';
+  cx.lineWidth = 1;
+  const gridSize = 60;
+  for(let x=0; x<W; x+=gridSize){
+    cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, H); cx.stroke();
+  }
+  for(let y=0; y<H; y+=gridSize){
+    cx.beginPath(); cx.moveTo(0, y); cx.lineTo(W, y); cx.stroke();
+  }
+  cx.restore();
+
+  // Screen shake if violent warping
+  if(state.shake > 0.01){
+    const sx = (Math.random() - 0.5) * state.shake * 18;
+    const sy = (Math.random() - 0.5) * state.shake * 18;
+    cx.translate(sx, sy);
+  }
+
+  // Draw Particles
+  particles.forEach(p => {
+    // If warping, attract particles into the singularity center
+    if(state.warpProgress > 0.2 && state.mergeStrength < 0.9){
+      const dx = (W/2) - p.x;
+      const dy = (H/2) - p.y;
+      p.x += dx * 0.04 * state.warpProgress;
+      p.y += dy * 0.04 * state.warpProgress;
+    } else if(state.mergeStrength >= 0.9){
+      // Flow rapidly along the single horizontal line
+      p.vx = 4 + Math.random() * 6;
+      p.vy = (H/2 - p.y) * 0.1;
+      p.x += p.vx;
+      p.y += p.vy;
+      if(p.x > W) p.x = -10;
+    } else {
+      p.x += p.vx;
+      p.y += p.vy;
+      if(p.x < 0) p.x = W;
+      if(p.x > W) p.x = 0;
+      if(p.y < 0) p.y = H;
+      if(p.y > H) p.y = 0;
+    }
+
+    cx.fillStyle = p.c;
+    cx.globalAlpha = p.alpha;
+    cx.fillRect(p.x, p.y, p.sz, p.sz);
+  });
+  cx.globalAlpha = 1;
+
+  const centerY = H / 2;
+  const warp = state.warpProgress;
+  const merge = state.mergeStrength;
+
+  /* -----------------------------------------------------------
+     TIMELINE DRAWING ENGINE
+     3 Broken Timelines:
+     - Top: Alpha (Future) - Cyan (#06b6d4)
+     - Middle: Beta (Present) - Amber (#f59e0b)
+     - Bottom: Gamma (Past) - Rose/Magenta (#ec4899)
+     When merge -> 1, all 3 Y-positions snap to centerY.
+     ----------------------------------------------------------- */
+  const timelines = [
+    {
+      id: 'alpha',
+      name: 'ALPHA // FUTURE TIMELINE',
+      baseY: H * 0.26,
+      color: '#06b6d4',
+      glowColor: 'rgba(6, 182, 212, 0.7)',
+      freq: 0.024,
+      amp: 28 * (1 - merge * 0.8),
+      speed: 3.2,
+      phase: 0
+    },
+    {
+      id: 'beta',
+      name: 'BETA // PRESENT TIMELINE',
+      baseY: H * 0.50,
+      color: '#f59e0b',
+      glowColor: 'rgba(245, 158, 11, 0.7)',
+      freq: 0.016,
+      amp: 36 * (1 - merge * 0.85),
+      speed: -2.4,
+      phase: 2.1
+    },
+    {
+      id: 'gamma',
+      name: 'GAMMA // PAST TIMELINE',
+      baseY: H * 0.74,
+      color: '#ec4899',
+      glowColor: 'rgba(236, 72, 153, 0.7)',
+      freq: 0.032,
+      amp: 24 * (1 - merge * 0.8),
+      speed: 4.1,
+      phase: 4.2
+    }
+  ];
+
+  if(merge < 0.98){
+    // DRAW THE 3 WARPING TIMELINES
+    timelines.forEach((tl, idx) => {
+      cx.save();
+      cx.shadowColor = tl.glowColor;
+      cx.shadowBlur = 18 * state.glowIntensity;
+      cx.strokeStyle = tl.color;
+      cx.lineWidth = 3 + (warp * 2.5);
+
+      cx.beginPath();
+      const points = [];
+      const step = 8;
+      for(let x=0; x<=W; x+=step){
+        // Normal broken waveform
+        const normY = tl.baseY + Math.sin(x * tl.freq + animTime * tl.speed + tl.phase) * tl.amp;
+        
+        // Warping vortex displacement
+        let targetY = normY;
+        if(warp > 0.05){
+          // Pull toward center Y
+          targetY = normY + (centerY - normY) * (warp * 0.95);
+          // Add chaotic spiral curl
+          const distToCenterX = (x - W/2) / (W/2);
+          const spiralWave = Math.sin(distToCenterX * 6 + animTime * 8 + idx * 2.1) * (70 * warp * (1 - merge));
+          targetY += spiralWave;
+        }
+
+        points.push({ x, y: targetY });
+      }
+
+      for(let i=0; i<points.length; i++){
+        if(i === 0) cx.moveTo(points[i].x, points[i].y);
+        else cx.lineTo(points[i].x, points[i].y);
+      }
+      cx.stroke();
+
+      // Core bright inner stroke
+      cx.lineWidth = 1.2;
+      cx.strokeStyle = '#ffffff';
+      cx.stroke();
+
+      // Timeline Labels (only when not fully warped)
+      if(warp < 0.45){
+        cx.fillStyle = tl.color;
+        cx.font = '10px "Chakra Petch", monospace';
+        cx.letterSpacing = '0.15em';
+        cx.fillText(`[ ${tl.name} ]`, 36, tl.baseY - 14);
+      }
+
+      cx.restore();
+    });
+
+    // Singularity vortex in center during high warp
+    if(warp > 0.25 && merge < 0.9){
+      cx.save();
+      const rad = 40 + Math.sin(animTime * 12) * 15 + warp * 50;
+      const grad = cx.createRadialGradient(W/2, centerY, 0, W/2, centerY, rad);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, 'rgba(6, 182, 212, 0.9)');
+      grad.addColorStop(0.6, 'rgba(236, 72, 153, 0.6)');
+      grad.addColorStop(1, 'transparent');
+      cx.fillStyle = grad;
+      cx.beginPath();
+      cx.arc(W/2, centerY, rad, 0, Math.PI * 2);
+      cx.fill();
+      cx.restore();
+    }
+
+  } else {
+    // -----------------------------------------------------------
+    // THE UNIFIED SINGLE FIXED TIMELINE (PERFECT COHERENCE)
+    // -----------------------------------------------------------
+    cx.save();
+
+    // 1. Massive outer glowing chronon aura
+    const auraGrad = cx.createLinearGradient(0, centerY - 60, 0, centerY + 60);
+    auraGrad.addColorStop(0, 'rgba(6, 182, 212, 0)');
+    auraGrad.addColorStop(0.5, 'rgba(6, 182, 212, 0.35)');
+    auraGrad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+    cx.fillStyle = auraGrad;
+    cx.fillRect(0, centerY - 60, W, 120);
+
+    // 2. Radiant multi-color laser beam
+    cx.shadowColor = '#22d3ee';
+    cx.shadowBlur = 35;
+    cx.strokeStyle = '#38bdf8';
+    cx.lineWidth = 8;
+    cx.beginPath();
+    cx.moveTo(0, centerY);
+    cx.lineTo(W, centerY);
+    cx.stroke();
+
+    // 3. Golden-White core laser line
+    cx.shadowColor = '#ffffff';
+    cx.shadowBlur = 18;
+    cx.strokeStyle = '#fef08a';
+    cx.lineWidth = 3.5;
+    cx.beginPath();
+    cx.moveTo(0, centerY);
+    cx.lineTo(W, centerY);
+    cx.stroke();
+
+    // 4. Pure white center streak
+    cx.shadowBlur = 6;
+    cx.strokeStyle = '#ffffff';
+    cx.lineWidth = 1.5;
+    cx.beginPath();
+    cx.moveTo(0, centerY);
+    cx.lineTo(W, centerY);
+    cx.stroke();
+
+    // 5. Flowing chronon energy pulses along the single fixed timeline
+    for(let i=0; i<6; i++){
+      const pulseX = ((animTime * 450 + i * (W / 6)) % (W + 200)) - 100;
+      const pGrad = cx.createRadialGradient(pulseX, centerY, 0, pulseX, centerY, 32);
+      pGrad.addColorStop(0, '#ffffff');
+      pGrad.addColorStop(0.4, '#38bdf8');
+      pGrad.addColorStop(1, 'transparent');
+      cx.fillStyle = pGrad;
+      cx.beginPath();
+      cx.arc(pulseX, centerY, 32, 0, Math.PI * 2);
+      cx.fill();
+    }
+
+    // 6. Chronos prime timeline indicators
+    cx.fillStyle = '#67e8f9';
+    cx.font = '11px "Chakra Petch", monospace';
+    cx.fillText('PRIME STRAND // CONTINUUM ZERO [UNIFIED]', 40, centerY - 22);
+    cx.fillText('ENTROPY: 0.00% // FLUX HARMONIZED', W - 320, centerY - 22);
+
+    cx.restore();
+  }
+
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
+/* =========================================================================
+   CINEMATIC GSAP TIMELINE SEQUENCE (WITH BUILT-IN OFFLINE/FAIL-SAFE ENGINE)
+   ========================================================================= */
+if (typeof window.gsap === 'undefined') {
+  window.gsap = {
+    timeline: function() {
+      const scheduled = [];
+      let startTime = null;
+      let runnerActive = false;
+
+      function startRunner() {
+        if (runnerActive) return;
+        runnerActive = true;
+        startTime = performance.now();
+
+        function tick(now) {
+          const elapsed = (now - startTime) / 1000;
+          for (const item of scheduled) {
+            if (item.type === 'call') {
+              if (elapsed >= item.time && !item.done) {
+                item.done = true;
+                try { item.fn(); } catch(_) {}
+              }
+            } else if (item.type === 'tween') {
+              if (elapsed >= item.time) {
+                const progress = Math.min(1, Math.max(0, (elapsed - item.time) / item.duration));
+                let easeVal = progress;
+                if (item.ease === 'power2.in') easeVal = progress * progress;
+                else if (item.ease === 'power2.out') easeVal = progress * (2 - progress);
+                else if (item.ease === 'expo.out') easeVal = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+
+                for (const target of item.targets) {
+                  for (const [prop, endVal] of Object.entries(item.vars)) {
+                    if (['duration', 'ease', 'stagger'].includes(prop)) continue;
+                    const startVal = item.startVals.get(target)?.[prop] ?? 0;
+                    const curVal = startVal + (endVal - startVal) * easeVal;
+                    if (target instanceof Element) {
+                      if (prop === 'opacity') target.style.opacity = curVal;
+                      else if (prop === 'scale') target.style.transform = `scale(${curVal})`;
+                      else if (prop === 'y') target.style.transform = `translateY(${curVal}px)`;
+                      else target.style[prop] = curVal;
+                    } else if (target && typeof target === 'object') {
+                      target[prop] = curVal;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if (elapsed < 14) {
+            requestAnimationFrame(tick);
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      const tl = {
+        to: function(targets, vars, position = 0) {
+          const list = Array.isArray(targets) || targets instanceof NodeList ? Array.from(targets) : [targets];
+          const duration = vars.duration || 1;
+          const stagger = vars.stagger || 0;
+          const startMap = new Map();
+
+          list.forEach((t, i) => {
+            const time = position + i * stagger;
+            const starts = {};
+            for (const [prop] of Object.entries(vars)) {
+              if (['duration', 'ease', 'stagger'].includes(prop)) continue;
+              if (t instanceof Element) {
+                if (prop === 'opacity') starts[prop] = parseFloat(window.getComputedStyle(t).opacity) || 0;
+                else if (prop === 'scale') starts[prop] = 0.85;
+                else if (prop === 'y') starts[prop] = 20;
+                else starts[prop] = parseFloat(t.style[prop]) || 0;
+              } else if (t && typeof t === 'object') {
+                starts[prop] = t[prop] !== undefined ? t[prop] : 0;
+              }
+            }
+            startMap.set(t, starts);
+            scheduled.push({
+              type: 'tween',
+              targets: [t],
+              vars,
+              time,
+              duration,
+              ease: vars.ease,
+              startVals: startMap
+            });
+          });
+
+          setTimeout(startRunner, 10);
+          return tl;
+        },
+        call: function(fn, params, position = 0) {
+          scheduled.push({
+            type: 'call',
+            fn,
+            time: position,
+            done: false
+          });
+          setTimeout(startRunner, 10);
+          return tl;
+        }
+      };
+      return tl;
+    }
+  };
+}
+
+function runCinematic(){
+  const tl = gsap.timeline();
+
+  // Phase 0: Start & HUD reveal
+  tl.call(()=>{ playAudio('boot', 0.85); playWarpDrone(75, 5.0); }, null, 0);
+  tl.to(huds, { opacity: 1, duration: 1.2, stagger: 0.15 }, 0.2);
+  tl.to(badge, { opacity: 1, duration: 0.8 }, 0.5);
+
+  // Phase 1: Temporal Anomaly & Jitter (0.5s - 3.2s)
+  tl.call(()=>{ playAudio('glitch', 0.7); }, null, 1.4);
+  tl.to(state, { glowIntensity: 1.2, duration: 1.5 }, 1.0);
+  tl.call(()=>{
+    badge.textContent = "TEMPORAL RESONANCE COLLAPSE // GRAVITATIONAL WARPING";
+    badge.style.color = "var(--rose)";
+    badge.style.borderColor = "var(--rose)";
+  }, null, 2.5);
+
+  // Phase 2: Violent Warping & Gravitational Inward Pull (3.2s - 7.0s)
+  tl.call(()=>{ playAudio('woosh1', 0.9); }, null, 3.2);
+  tl.call(()=>{ playAudio('woosh2', 0.95); }, null, 4.4);
+  tl.call(()=>{ playAudio('woosh3', 1.0); }, null, 5.6);
+  tl.to(state, {
+    warpProgress: 0.92,
+    shake: 0.8,
+    duration: 3.8,
+    ease: "power2.in"
+  }, 3.2);
+
+  // Phase 3: THE FLASH & THE MERGE (7.0s)
+  tl.call(()=>{
+    playAudio('reveal', 1.0);
+    playConvergenceChord();
+    flash.style.opacity = '1';
+    state.mergeStrength = 1.0;
+    state.warpProgress = 1.0;
+    state.shake = 0;
+    badge.textContent = "TIMELINES UNIFIED // PRIME CONTINUUM SYNCHRONIZED";
+    badge.style.color = "#34d399";
+    badge.style.borderColor = "#34d399";
+  }, null, 7.0);
+
+  // Shockwave dissipation
+  tl.to(flash, { opacity: 0, duration: 1.4, ease: "power2.out" }, 7.05);
+
+  // Phase 4: Big Kinetic Text Reveal (7.8s+)
+  tl.to(bigTitle, { opacity: 1, scale: 1, duration: 1.1, ease: "expo.out" }, 7.6);
+  tl.to(subTitle, { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" }, 8.2);
+  tl.to(metrics, { opacity: 1, duration: 0.8 }, 8.8);
+  tl.to(actions, { opacity: 1, duration: 0.8 }, 9.5);
+
+  return tl;
+}
+
+// Start sequence immediately, racing font load with short fallback
+if(document.fonts && document.fonts.ready){
+  Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 400))]).then(runCinematic);
+} else {
+  setTimeout(runCinematic, 50);
+}
+
+// Fail-safe final state. It also repairs pages resumed from a throttled/background tab.
+function forceFinalState(){
+  state.mergeStrength = 1.0;
+  state.warpProgress = 1.0;
+  state.shake = 0;
+  flash.style.opacity = '0';
+  badge.style.opacity = '1';
+  badge.textContent = 'TIMELINES UNIFIED // PRIME CONTINUUM SYNCHRONIZED';
+  badge.style.color = '#34d399';
+  badge.style.borderColor = '#34d399';
+  bigTitle.style.opacity = '1';
+  bigTitle.style.transform = 'scale(1)';
+  subTitle.style.opacity = '1';
+  subTitle.style.transform = 'translateY(0)';
+  metrics.style.opacity = '1';
+  actions.style.opacity = '1';
+  huds.forEach(hud => { hud.style.opacity = '1'; });
+}
+
+setTimeout(forceFinalState, 10000);
+window.addEventListener('pageshow', event => {
+  if (event.persisted) forceFinalState();
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && performance.now() > 10000) forceFinalState();
+});
+
+// Navigation & Actions
+function finishConclusion(){
+  try {
+    if(window.parent !== window){
+      window.parent.postMessage('CHRONOS_CONCLUSION_DONE', '*');
+    }
+  }catch(_){}
+}
+
+$('#btn-debrief').onclick = finishConclusion;
+$('#btn-replay').onclick = () => window.location.reload();
+
+// Click/keypress listeners
+window.addEventListener('keydown', e => {
+  if(e.key === 'Escape' || e.key === 'Enter') finishConclusion();
+});
+})();
+</script>
+</body>
+</html>

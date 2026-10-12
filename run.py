@@ -135,6 +135,44 @@ def resolve_npm_path() -> str:
 
     return ""
 
+def ensure_backend_dependencies():
+    """Checks and automatically installs backend dependencies if missing."""
+    needed = ["fastapi", "uvicorn", "pydantic"]
+    missing = []
+    for pkg in needed:
+        try:
+            __import__(pkg)
+        except ImportError:
+            missing.append(pkg)
+
+    if missing:
+        print(f"\033[93m[i] Installing required backend packages ({', '.join(missing)})... Please wait.\033[0m")
+        req_path = ROOT_DIR / "backend" / "requirements.txt"
+        try:
+            res = subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(req_path)], cwd=str(ROOT_DIR))
+            if res.returncode != 0:
+                subprocess.run([sys.executable, "-m", "pip", "install", "--user", "-r", str(req_path)], cwd=str(ROOT_DIR))
+            print("\033[92m[✔] Backend packages installed successfully.\033[0m")
+        except Exception as e:
+            print(f"\033[91m[!] Automatic package installation note: {e}\033[0m")
+
+def ensure_env_file():
+    """Ensures a default .env file exists for zero-configuration operation."""
+    env_file = ROOT_DIR / ".env"
+    if not env_file.exists():
+        default_content = (
+            "# Project Chronos — Auto-generated Configuration\n"
+            "CHRONOS_DB_PATH=database/chronos.db\n"
+            "PORT=8000\n"
+            "HOST=0.0.0.0\n"
+            "GROQ_MODEL=openai/gpt-oss-120b\n"
+            "CHRONOS_ADMIN_PASSWORD=Chronos@123\n"
+        )
+        try:
+            env_file.write_text(default_content, encoding="utf-8")
+        except Exception:
+            pass
+
 def build_frontend_if_needed(force_build=False):
     """Ensures frontend/dist is built and ready to be served by FastAPI."""
     index_html = DIST_DIR / "index.html"
@@ -169,35 +207,52 @@ def main():
     """)
     print("\033[0m")
 
+    # Ensure environment and packages
+    ensure_env_file()
+
     # Parse command line arguments
     dev_mode = "--dev" in sys.argv
     force_build = "--build" in sys.argv
     
     port = 8000
+    explicit_port = False
     for i, arg in enumerate(sys.argv):
         if arg == "--port" and i + 1 < len(sys.argv):
             try:
                 port = int(sys.argv[i + 1])
+                explicit_port = True
             except ValueError:
                 print(f"\033[91m[!] Invalid port: {sys.argv[i + 1]}. Defaulting to 8000.\033[0m")
 
     if is_port_in_use(port):
-        print(f"\033[91m[ERROR] Port {port} is already in use by another application.\033[0m")
-        print(f"        Please stop the conflicting process or choose another port: python3 run.py --port {port + 1}")
-        sys.exit(1)
+        if explicit_port:
+            print(f"\033[91m[ERROR] Port {port} is already in use by another application.\033[0m")
+            print(f"        Please stop the conflicting process or choose another port: python3 run.py --port {port + 1}")
+            sys.exit(1)
+        else:
+            print(f"\033[93m[!] Port {port} is already in use. Searching for next available port...\033[0m")
+            alt_port = port + 1
+            while alt_port < port + 50 and is_port_in_use(alt_port):
+                alt_port += 1
+            print(f"\033[92m[✔] Auto-selected available port: {alt_port}\033[0m")
+            port = alt_port
 
     print("[1/3] Checking Python & Backend Dependencies...")
+    ensure_backend_dependencies()
 
-    # 1. Initialize SQLite Database Schema
+    # Initialize SQLite Database Schema and Seed Data
     try:
-        from backend.app.database.schema import create_tables
+        from backend.app.database.schema import create_tables, seed_round1_items_if_empty
+        from backend.app.services.round2_service import init_round2
         create_tables()
-        print("\033[92m[✔] Database schema verified.\033[0m")
+        seed_round1_items_if_empty()
+        init_round2()
+        print("\033[92m[✔] Database schema & game items verified.\033[0m")
     except Exception as e:
         print(f"\033[93m[!] Database initialization note: {e}\033[0m")
 
     if not dev_mode:
-        # Build frontend for single-server hosting
+        # Build frontend for single-server hosting (instant if pre-built)
         build_frontend_if_needed(force_build=force_build)
 
     processes = []

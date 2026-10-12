@@ -51,28 +51,30 @@ if errorlevel 1 (
   )
 )
 
-rem ---- Frontend: build it so the backend can serve it (needs Node.js) ----
-set "HAVE_NODE=0"
-where npm >nul 2>nul
-if not errorlevel 1 set "HAVE_NODE=1"
+rem ---- Frontend: use pre-compiled production bundle (instant zero-setup launch) ----
+if not exist "%ROOT%frontend\dist\index.html" (
+  set "HAVE_NODE=0"
+  where npm >nul 2>nul
+  if not errorlevel 1 set "HAVE_NODE=1"
 
-if "%HAVE_NODE%"=="1" (
-  if not exist "%ROOT%frontend\node_modules" (
-    echo Installing frontend packages ^(internet needed the first time^)...
+  if "%HAVE_NODE%"=="1" (
+    if not exist "%ROOT%frontend\node_modules" (
+      echo Installing frontend packages ^(internet needed the first time^)...
+      pushd "%ROOT%frontend"
+      call npm install
+      popd
+    )
+    echo Building the frontend...
+    rem "/" = same origin: the app calls whatever address it was opened from.
+    set "VITE_API_BASE=/"
     pushd "%ROOT%frontend"
-    call npm install
+    call npm run build
+    if errorlevel 1 set "BUILD_FAILED=1"
     popd
+    if defined BUILD_FAILED echo [WARNING] Frontend build failed.
+  ) else (
+    echo [NOTE] Node.js not found.
   )
-  echo Building the frontend...
-  rem "/" = same origin: the app calls whatever address it was opened from.
-  set "VITE_API_BASE=/"
-  pushd "%ROOT%frontend"
-  call npm run build
-  if errorlevel 1 set "BUILD_FAILED=1"
-  popd
-  if defined BUILD_FAILED echo [WARNING] Frontend build failed - using the previous build if there is one.
-) else (
-  echo [NOTE] Node.js not found - using the existing frontend build.
 )
 
 if not exist "%ROOT%frontend\dist\index.html" (

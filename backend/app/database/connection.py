@@ -2,12 +2,18 @@ import sqlite3
 import os
 from pathlib import Path
 
-# Legacy path handling (keeping local's logic for dynamic environment but simplified)
+# Canonical database path resolution
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 PRIMARY_DB_PATH = PROJECT_ROOT / "database" / "chronos.db"
 
-# We'll use the environment variable if set, otherwise the canonical path
-DB_PATH = Path(os.getenv("CHRONOS_DB_PATH")) if os.getenv("CHRONOS_DB_PATH") else PRIMARY_DB_PATH
+# Resolve CHRONOS_DB_PATH relative to PROJECT_ROOT if relative, otherwise use primary
+raw_db_path = os.getenv("CHRONOS_DB_PATH")
+if raw_db_path:
+    p = Path(raw_db_path)
+    DB_PATH = p if p.is_absolute() else (PROJECT_ROOT / p).resolve()
+else:
+    DB_PATH = PRIMARY_DB_PATH
+
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def get_connection():

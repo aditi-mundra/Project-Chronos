@@ -59,6 +59,13 @@ def test_leaderboard_total_calculation_with_negative_round1():
             expected_total = round(r1 + r2 + r3, 2)
             assert row["total_score"] == expected_total, f"Team {name} total_score expected {expected_total}, got {row['total_score']}"
 
+        # Verify password protection on /api/admin/login
+        assert client.post("/api/admin/login", json={"password": "wrong"}).status_code == 401
+        assert client.post("/api/admin/login", json={"password": "admin"}).status_code == 401
+        login_res = client.post("/api/admin/login", json={"password": "Chronos@123"})
+        assert login_res.status_code == 200
+        assert login_res.json()["token"] == ADMIN_SECRET_TOKEN
+
         # Fetch leaderboard data via API endpoint
         assert client.get("/api/admin/leaderboard").status_code == 401
         res = client.get("/api/admin/leaderboard", headers=ADMIN_HEADERS)

@@ -175,7 +175,7 @@ export default function LandingGlitch({ onStart, onAdminMode, isStarting = false
         {/* Technical Subtext */}
         <div className="text-[11px] font-mono text-slate-500 flex items-center justify-center gap-4">
           <button onClick={() => onAdminMode?.()} className="hover:text-cyan-400 cursor-pointer transition">
-            HOST: AUTHORITATIVE
+            HOST: LEADERBOARD
           </button>
           <span>•</span>
           <span>ROUNDS: 3 PHASES</span>

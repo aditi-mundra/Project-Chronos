@@ -53,18 +53,19 @@ if ! "$VPY" -c "import fastapi, uvicorn" >/dev/null 2>&1; then
   "$VPY" -m pip install --quiet -r "$ROOT/backend/requirements.txt" || fail "Could not install the backend packages."
 fi
 
-# ---- Frontend: build it so the backend can serve it (needs Node.js) ----
-if command -v npm >/dev/null 2>&1; then
-  if [ ! -x "$ROOT/frontend/node_modules/.bin/vite" ]; then
-    echo "Installing frontend packages (internet needed the first time)..."
-    (cd "$ROOT/frontend" && npm install) || echo "[WARNING] npm install failed."
+# ---- Frontend: use pre-compiled production bundle (instant zero-setup launch) ----
+if [ ! -f "$ROOT/frontend/dist/index.html" ]; then
+  if command -v npm >/dev/null 2>&1; then
+    if [ ! -x "$ROOT/frontend/node_modules/.bin/vite" ]; then
+      echo "Installing frontend packages (internet needed the first time)..."
+      (cd "$ROOT/frontend" && npm install) || echo "[WARNING] npm install failed."
+    fi
+    echo "Building the frontend..."
+    (cd "$ROOT/frontend" && VITE_API_BASE=/ npm run build) \
+      || echo "[WARNING] Frontend build failed."
+  else
+    echo "[NOTE] Node.js not found."
   fi
-  echo "Building the frontend..."
-  # "/" = same origin: the app calls whatever address it was opened from.
-  (cd "$ROOT/frontend" && VITE_API_BASE=/ npm run build) \
-    || echo "[WARNING] Frontend build failed - using the previous build if there is one."
-else
-  echo "[NOTE] Node.js not found - using the existing frontend build."
 fi
 
 [ -f "$ROOT/frontend/dist/index.html" ] || fail "No frontend build found. Install Node.js from https://nodejs.org and run this again."

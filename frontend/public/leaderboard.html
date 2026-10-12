@@ -528,12 +528,12 @@
           type="password" 
           id="passkey-input" 
           class="auth-input" 
-          placeholder="Enter passkey: admin or chronos2140" 
+          placeholder="Enter passkey: Chronos@123" 
           autocomplete="off"
           autofocus
         />
         <div id="auth-err" style="color: #f43f5e; font-size: 11px; margin-bottom: 12px; display: none;">
-          Access Denied: Invalid temporal passkey (use 'admin' or 'chronos2140').
+          Access Denied: Invalid temporal passkey (use 'Chronos@123').
         </div>
         <button type="submit" style="width: 100%; justify-content: center; padding: 10px; font-weight: 700;">
           AUTHENTICATE SUPERVISOR
@@ -566,7 +566,7 @@
           📦 Download Project ZIP
         </button>
       </a>
-      <button class="btn-lock" onclick="lockPortal()">🔒 Lock Portal</button>
+      <button class="btn-lock" onclick="lockPortal()">🔒 Log Out</button>
     </div>
   </header>
 
@@ -604,14 +604,14 @@
         <strong>IRREVERSIBLE OPERATION:</strong> All competition data will be permanently wiped from the mainframe.
       </p>
       <p style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">
-        To authorize, enter supervisor password (<code style="color: #67e8f9;">admin</code>):
+        To authorize, enter supervisor password (<code style="color: #67e8f9;">Chronos@123</code>):
       </p>
       <form onsubmit="submitClearDb(event)">
         <input 
           type="password" 
           id="clear-db-pass" 
           class="auth-input" 
-          placeholder='Enter password "admin"...' 
+          placeholder='Enter password "Chronos@123"...' 
           style="border-color: #e11d48;"
           autocomplete="off"
         />
@@ -676,15 +676,15 @@
   </main>
 
   <script>
-    const HOST_KEYS = ['admin', 'chronos2140'];
+    const HOST_KEYS = ['Chronos@123', 'chronos@123'];
     let rawLeaderboard = [];
     let countdown = 5;
     let pollTimer = null;
 
     function isHostKey(str) {
       if (!str) return false;
-      const cleaned = str.trim().replace(/^["']|["']$/g, '').toLowerCase();
-      return HOST_KEYS.includes(cleaned);
+      const cleaned = str.trim().replace(/^["']|["']$/g, '');
+      return cleaned === 'Chronos@123' || HOST_KEYS.includes(cleaned.toLowerCase());
     }
 
     // Check existing auth
@@ -720,7 +720,12 @@
     function lockPortal() {
       sessionStorage.removeItem('chronos_host_authed');
       sessionStorage.removeItem('chronos_admin_token');
-      window.location.reload();
+      document.getElementById('auth-overlay').style.display = 'flex';
+      document.getElementById('passkey-input').value = '';
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
     }
 
     function initLeaderboard() {

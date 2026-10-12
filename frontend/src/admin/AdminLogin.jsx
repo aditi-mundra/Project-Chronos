@@ -4,7 +4,7 @@ import { soundEngine } from '../components/AudioEngine';
 import ThemeSelector from '../components/ThemeSelector';
 import api from '../services/api.js';
 
-export default function AdminLogin({ onLoginSuccess }) {
+export default function AdminLogin({ onLoginSuccess, onBack }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -16,7 +16,7 @@ export default function AdminLogin({ onLoginSuccess }) {
       soundEngine.playPurgeConfirm();
       onLoginSuccess();
     } catch (_) {
-      setError('Invalid Admin Security Key.');
+      setError('Invalid Security Key. Access Denied.');
     }
   };
 
@@ -41,21 +41,21 @@ export default function AdminLogin({ onLoginSuccess }) {
           </div>
           
           <h2 className="font-orbitron font-black text-2xl lg:text-3xl text-white">
-            ADMINISTRATOR <span style={{ color: 'var(--neon-primary)' }}>ACCESS</span>
+            LEADERBOARD <span style={{ color: 'var(--neon-primary)' }}>ACCESS</span>
           </h2>
           
           <p className="text-xs font-mono text-[var(--text-dim)] uppercase tracking-wider">
-            PROJECT CHRONOS • EVENT COMMAND CENTER
+            PROJECT CHRONOS • SUPERVISOR AUTHENTICATION
           </p>
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-sm text-red-200 text-center">
+          <div className="p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-sm text-red-200 text-center font-mono">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5 font-mono">
+        <form onSubmit={handleSubmit} className="space-y-4 font-mono">
           <div>
             <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">
               SECURITY PASSPHRASE
@@ -64,7 +64,8 @@ export default function AdminLogin({ onLoginSuccess }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter host security key"
+              placeholder="Enter supervisor password"
+              autoFocus
               className="w-full px-4 py-3.5 rounded-xl bg-black/60 border border-white/15 text-white font-mono text-base outline-none focus:border-[var(--neon-primary)] focus:ring-2 focus:ring-[var(--neon-primary)] transition-all"
             />
           </div>
@@ -77,9 +78,20 @@ export default function AdminLogin({ onLoginSuccess }) {
               boxShadow: '0 0 25px var(--neon-glow)'
             }}
           >
-            <span>ACCESS CONTROL CONSOLE</span>
+            <span>VIEW LEADERBOARD</span>
             <ArrowRight className="w-5 h-5 text-white" />
           </button>
+
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="w-full py-3 rounded-xl border border-white/10 hover:border-cyan-500/50 text-slate-400 hover:text-white font-mono text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer bg-black/30"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>RETURN TO MISSION</span>
+            </button>
+          )}
         </form>
       </div>
     </div>

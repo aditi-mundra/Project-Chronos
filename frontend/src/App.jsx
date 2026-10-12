@@ -15,19 +15,19 @@ import Completion from './pages/Completion.jsx';
 import Leaderboard from './admin/Leaderboard.jsx';
 import AdminControls from './components/AdminControls.jsx';
 import AdminLogin from './admin/AdminLogin.jsx';
-import Dashboard from './admin/Dashboard.jsx';
 
 // View order:
-//  'landing'  -> Glitch title page  (START MISSION button)
-//  'intro'    -> Full-screen GSAP HTML cinematic intro
-//  'login'    -> Team authentication form
-//  'prelobby' -> Post-login lobby: START ROUND 1 -> 5 second countdown -> Round 1
-//  'round1'   -> Round 1 (timeline classification)
-//  'round2lobby' -> Lobby after Round 1: PLAY ROUND 2 -> waiting state
-//  'round2'   -> Round 2 Terminal Investigation
-//  'round3'   -> Round 3 Final Accusation
-//  'completion' -> Mission Concluded Debrief
-//  'leaderboard' -> Master Host Leaderboard
+//  'landing'         -> Glitch title page  (START MISSION button)
+//  'intro'           -> Full-screen GSAP HTML cinematic intro
+//  'login'           -> Team authentication form
+//  'prelobby'        -> Post-login lobby: START ROUND 1 -> 5 second countdown -> Round 1
+//  'round1'          -> Round 1 (timeline classification)
+//  'round2lobby'     -> Lobby after Round 1: PLAY ROUND 2 -> waiting state
+//  'round2'          -> Round 2 Terminal Investigation
+//  'round3'          -> Round 3 Final Accusation
+//  'completion'      -> Mission Concluded Debrief
+//  'leaderboard'     -> Master Host Leaderboard (password-protected)
+//  'leaderboardAuth' -> Protected Leaderboard password gate
 //
 // A logged-in team (session in localStorage) is routed by its server-side state on reload
 // ('resuming'): READY -> prelobby, ROUND1_ACTIVE -> round1, ROUND1_COMPLETED -> round2lobby.
@@ -40,10 +40,9 @@ function AppContent() {
   const { team, logoutTeam } = useAuth();
   const [currentView, setCurrentView] = useState(() => {
     const path = window.location.pathname;
-    if (path === '/leaderboard') {
-      return sessionStorage.getItem('chronos_admin_token') ? 'leaderboard' : 'adminLogin';
+    if (path === '/leaderboard' || path === '/admin') {
+      return sessionStorage.getItem('chronos_admin_token') ? 'leaderboard' : 'leaderboardAuth';
     }
-    if (path === '/admin') return 'adminLogin';
     return team ? 'resuming' : 'landing';
   });
   const [isCrtActive, setIsCrtActive] = useState(false);
@@ -179,7 +178,7 @@ function AppContent() {
         >
           <LandingGlitch
             onStart={handleStartMission}
-            onAdminMode={() => setCurrentView('adminLogin')}
+            onAdminMode={() => setCurrentView(sessionStorage.getItem('chronos_admin_token') ? 'leaderboard' : 'leaderboardAuth')}
             isStarting={isCrtActive}
           />
         </div>
@@ -261,22 +260,24 @@ function AppContent() {
           />
         )}
 
-        {/* Master Host Leaderboard */}
-        {currentView === 'leaderboard' && (
-          <Leaderboard
+        {/* Protected Password Access for Leaderboard */}
+        {currentView === 'leaderboardAuth' && (
+          <AdminLogin
+            onLoginSuccess={() => setCurrentView('leaderboard')}
             onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
           />
         )}
 
-        {currentView === 'adminLogin' && (
-          <AdminLogin onLoginSuccess={() => setCurrentView(window.location.pathname === '/leaderboard' ? 'leaderboard' : 'adminDashboard')} />
-        )}
-        
-        {currentView === 'adminDashboard' && (
-          <Dashboard onLogout={() => {
-            sessionStorage.removeItem('chronos_admin_token');
-            setCurrentView('landing');
-          }} />
+        {/* Master Host Leaderboard */}
+        {currentView === 'leaderboard' && (
+          <Leaderboard
+            onBack={() => setCurrentView(team ? 'round2lobby' : 'landing')}
+            onLogout={() => {
+              sessionStorage.removeItem('chronos_admin_token');
+              sessionStorage.removeItem('chronos_host_authed');
+              setCurrentView('leaderboardAuth');
+            }}
+          />
         )}
 
       </main>

@@ -43,9 +43,8 @@ export default function AdminControls({ currentView, onSelectView }) {
       });
     }
     if (view === 'leaderboard' && !sessionStorage.getItem('chronos_admin_token')) {
-      api.adminLogin('admin').then(res => {
-        if (res?.token) sessionStorage.setItem('chronos_admin_token', res.token);
-      }).catch(() => {});
+      onSelectView('leaderboardAuth');
+      return;
     }
     onSelectView(view);
   };

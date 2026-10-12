@@ -19,11 +19,12 @@ venv.bak/
 
 # Node.js & Frontend build artifacts
 node_modules/
-dist/
 dist-ssr/
 *.local
 .npm
 .vite/
+# Pre-compiled frontend bundle is tracked so cloned repos work instantly with zero setup
+!frontend/dist/**
 
 # SQLite Database local files (chronos.db tracked in .gitkeep if empty)
 *.db
