@@ -374,67 +374,80 @@ export default function Round2Lobby({ result, onStartRound2, onLogout }) {
                   </div>
                 </div>
 
-                {/* State Controls: Start Stopwatch */}
-                {!isStopwatchActive && !isCompleted && (
-                  <div className="pt-2">
-                    <button
-                      onClick={handleStartStopwatch}
-                      className="group relative inline-flex items-center justify-center w-full py-4 px-6 text-sm sm:text-base font-bold font-tech tracking-widest uppercase transition-all duration-300 rounded-xl text-slate-950 bg-gradient-to-r from-cyan-400 via-purple-300 to-cyan-400 hover:from-cyan-300 hover:to-purple-200 shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:shadow-[0_0_40px_rgba(168,85,247,0.7)] hover:scale-[1.01] active:scale-95 border border-cyan-200 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Play className="w-4 h-4 text-slate-950 fill-current animate-pulse" />
-                        <span>START STOPWATCH</span>
-                      </div>
-                    </button>
-                  </div>
-                )}
-
-                {/* Password Entry Gate (Visible when RUNNING) */}
-                {isStopwatchActive && (
-                  <form onSubmit={handleVerifyPassword} className="space-y-3 pt-1">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
-                        <Key className="w-3.5 h-3.5 text-purple-400" />
-                        <span>ENTER PASSWORD</span>
-                      </label>
-
-                      <div className="relative">
-                        <input
-                          ref={inputRef}
-                          type="text"
-                          value={passwordInput}
-                          onChange={(e) => setPasswordInput(e.target.value)}
-                          placeholder="Enter password..."
-                          className="w-full px-4 py-3 rounded-xl bg-black/90 border border-purple-500/70 text-purple-100 placeholder-slate-600 font-mono text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 transition tracking-wider"
-                        />
-                      </div>
-                    </div>
-
-                    {verifyError && (
-                      <div className="p-2.5 rounded-lg bg-rose-950/60 border border-rose-500/80 text-rose-300 font-mono text-xs flex items-center gap-2 animate-shake">
-                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                        <span>{verifyError}</span>
+                {/* State Controls: Start Stopwatch & Password Entry */}
+                {!isCompleted && (
+                  <div className="space-y-4 pt-1">
+                    {!isStopwatchActive && (
+                      <div>
+                        <button
+                          onClick={handleStartStopwatch}
+                          className="group relative inline-flex items-center justify-center w-full py-3.5 px-6 text-sm font-bold font-tech tracking-widest uppercase transition-all duration-300 rounded-xl text-slate-950 bg-gradient-to-r from-cyan-400 via-purple-300 to-cyan-400 hover:from-cyan-300 hover:to-purple-200 shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:shadow-[0_0_40px_rgba(168,85,247,0.7)] hover:scale-[1.01] active:scale-95 border border-cyan-200 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Play className="w-4 h-4 text-slate-950 fill-current animate-pulse" />
+                            <span>START RECON STOPWATCH</span>
+                          </div>
+                        </button>
+                        <div className="relative my-3 flex items-center justify-center">
+                          <div className="border-t border-purple-900/60 w-full" />
+                          <span className="bg-[#070c18] px-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest absolute">
+                            OR VERIFY TOKEN
+                          </span>
+                        </div>
                       </div>
                     )}
 
-                    <button
-                      type="submit"
-                      disabled={verifying || !passwordInput.trim()}
-                      className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:to-pink-500 text-white font-mono font-bold text-xs sm:text-sm tracking-wider uppercase transition shadow-[0_0_20px_rgba(168,85,247,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      {verifying ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>VERIFYING...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-4 h-4" />
-                          <span>SUBMIT PASSWORD</span>
-                        </>
+                    {/* Password Entry Gate */}
+                    <form onSubmit={handleVerifyPassword} className="space-y-3">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
+                            <Key className="w-3.5 h-3.5 text-purple-400" />
+                            <span>ENTER AUTHENTICATION PASSWORD</span>
+                          </label>
+                          <span className="text-[10px] font-mono text-cyan-400/80">
+                            LIVE GOOGLE REGISTRY
+                          </span>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            ref={inputRef}
+                            type="text"
+                            value={passwordInput}
+                            onChange={(e) => setPasswordInput(e.target.value)}
+                            placeholder="Enter sector password..."
+                            className="w-full px-4 py-3 rounded-xl bg-black/90 border border-purple-500/70 text-purple-100 placeholder-slate-600 font-mono text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 transition tracking-wider"
+                          />
+                        </div>
+                      </div>
+
+                      {verifyError && (
+                        <div className="p-2.5 rounded-lg bg-rose-950/60 border border-rose-500/80 text-rose-300 font-mono text-xs flex items-center gap-2 animate-shake">
+                          <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span>{verifyError}</span>
+                        </div>
                       )}
-                    </button>
-                  </form>
+
+                      <button
+                        type="submit"
+                        disabled={verifying || !passwordInput.trim()}
+                        className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:to-pink-500 text-white font-mono font-bold text-xs sm:text-sm tracking-wider uppercase transition shadow-[0_0_20px_rgba(168,85,247,0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {verifying ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>VALIDATING VIA GOOGLE REGISTRY...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            <span>SUBMIT & UNLOCK ROUND 2</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
                 )}
 
                 {/* Completed State Feedback */}

@@ -29,7 +29,7 @@ Work execution needs to start and demonstration to be displayed by <b>3rd Octobe
   - **FastAPI Endpoints**: Implemented `/api/round3/start`, `/api/round3/scenario`, `/api/round3/submit`, `/api/round3/verdict`, and debug routes.
   - **Dramatic Visual UI/UX**: Created `Round3.jsx` following `theme.md` with Obsidian/Deep Violet/Electric Indigo/Solar Cream palette, holographic candidate dossier matrix, interactive tabbed profiles, supporting evidence correlation grid, Web Audio synthesizer cues, high-tension confirmation hold-to-lock modal, and cinematic debrief reveal leading to `Completion.jsx`.
   - **Testing & Verification**: Created and passed 10-point automated test suite in `backend/tests/test_round3.py`.
-  - **Deployment & Connection Hardening**: Unified entire application deployment into single-command runners (`./start.sh` and `run.py`), hardened SQLite connection with WAL mode, 30s busy timeout, directory auto-provisioning, and 0.0.0.0 LAN binding across backend and frontend.
+  - **Deployment & Connection Hardening**: Unified entire application deployment into a single-command cross-platform runner (`python main.py`), hardened SQLite connection with WAL mode, 30s busy timeout, directory auto-provisioning, and 0.0.0.0 LAN binding across backend and frontend.
 
 ## Theme 
 Finalised the theme by the Events Team and Samarth generated a .md file for documentation and easier access to the individual rounds by documenting it. Unified stack, database, theme established. Reference Palette also added therein.

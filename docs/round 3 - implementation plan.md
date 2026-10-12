@@ -293,7 +293,7 @@ In `backend/app/database/schema.py`:
 ```bash
 ./start.sh
 # or
-python3 run.py
+python main.py
 ```
 
 ### ⚙️ Database Hardening Configuration

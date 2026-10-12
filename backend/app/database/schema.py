@@ -217,6 +217,7 @@ def _migrate_teams_schema(connection):
         "transition_end_time": "TEXT",
         "transition_time_diff": "FLOAT DEFAULT 0.0",
         "transition_status": "TEXT DEFAULT 'NOT_STARTED'",
+        "transition_password_used": "TEXT DEFAULT ''",
         "created_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
         "updated_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
     }

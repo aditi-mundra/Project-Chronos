@@ -1,4 +1,6 @@
-from fastapi import APIRouter
+from typing import Optional
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from ..services.round1_service import (
     get_round1_items,
@@ -16,11 +18,6 @@ def get_items(team_id: int):
     Get the 25 Round 1 images assigned to the team.
     """
     return get_round1_items(team_id)
-
-
-from typing import Optional
-from fastapi import HTTPException
-from pydantic import BaseModel
 
 
 class Round1SubmitPayload(BaseModel):

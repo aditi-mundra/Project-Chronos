@@ -1,7 +1,7 @@
 """
 Round 2 cases: 24 different investigations, one assigned per team per game.
 
-Case data lives in `round2_cases_all_24/R2-01 ... R2-24/` (case.json plus the
+Case data lives in `backend/data/round2_cases/R2-01 ... R2-24/` (case.json plus the
 Alpha / Beta / Gamma text files). This module loads those folders into the
 database on first use and decides which case a team plays.
 
@@ -21,11 +21,31 @@ it already played (until it has played all 24).
 from __future__ import annotations
 
 import json
+import os
 import random
 from pathlib import Path
 
-# .../Round2_Test/backend/app/services/round2_cases.py -> .../Round2_Test
-CASES_DIR = Path(__file__).resolve().parents[3] / "round2_cases_all_24"
+# Canonical location: backend/data/round2_cases (modular & concealed)
+_BASE_DIR = Path(__file__).resolve().parents[2]  # backend directory
+_ROOT_DIR = _BASE_DIR.parent                     # project root
+
+
+def _resolve_cases_dir() -> Path:
+    env_dir = os.environ.get("ROUND2_CASES_DIR")
+    if env_dir and Path(env_dir).is_dir():
+        return Path(env_dir)
+    for candidate in [
+        _BASE_DIR / "data" / "round2_cases",
+        _BASE_DIR / "round2_cases",
+        _ROOT_DIR / "data" / "round2_cases",
+        _ROOT_DIR / "round2_cases",
+    ]:
+        if candidate.is_dir():
+            return candidate
+    return _BASE_DIR / "data" / "round2_cases"
+
+
+CASES_DIR = _resolve_cases_dir()
 
 _seeded = set()   # database files already loaded by this process
 _PROJECT_NAMES = {"alpha": "Alpha", "beta": "Beta", "gamma": "Gamma"}

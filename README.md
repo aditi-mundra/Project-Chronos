@@ -16,14 +16,11 @@ Project Chronos is engineered for seamless **Local Area Network (LAN) hosting** 
 # Windows PowerShell: $env:CHRONOS_ADMIN_PASSWORD="your-private-passkey"
 export CHRONOS_ADMIN_PASSWORD="your-private-passkey"
 
-# Option 1: Python Launcher (Cross-platform: Windows, Mac, Linux)
-python run.py
-
-# Option 2: Shell Script (macOS / Linux)
+# Option 1: Shell Launcher (macOS / Linux)
 ./start.sh
 
-# Option 3: Windows Batch File (Windows)
-start.bat
+# Option 2: Python Launcher (Cross-platform: Windows, Mac, Linux)
+python main.py
 ```
 
 The host dashboard remains disabled when `CHRONOS_ADMIN_PASSWORD` is not set. Never share this passkey with participant machines.

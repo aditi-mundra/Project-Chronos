@@ -160,8 +160,10 @@ def run_simulation():
         r1_finish_res = client.post(f"/api/round1/finish?team_id={team_id}")
         assert r1_finish_res.status_code == 200, f"R1 finish failed: {r1_finish_res.text}"
         r1_data = r1_finish_res.json()
-        r1_score = r1_data["score"]
         auth_code = r1_data["auth_code"]
+        db_conn = get_connection()
+        r1_score = db_conn.execute("SELECT round1_score FROM teams WHERE id = ?", (team_id,)).fetchone()[0]
+        db_conn.close()
         print(f"  [2/4] Round 1 Complete: Score = {r1_score} pts | Auth Code = {auth_code}")
 
         # 3. Round 2: Investigation & Dossier Interaction
@@ -187,22 +189,21 @@ def run_simulation():
         assert r3_start_res.status_code == 200, f"R3 start failed: {r3_start_res.text}"
         scenario = r3_start_res.json()["scenario"]
 
-        # Collect available evidence IDs
-        ev_ids = [e["id"] for e in scenario.get("evidence", [])][:2]
-        if len(ev_ids) < 2:
-            ev_ids = ["ev_01_future", "ev_02_incident"]
+        # Collect available candidate and evidence IDs
+        candidates = scenario.get("candidates", [])
+        chosen_candidate_id = candidates[0]["id"] if candidates else "candidate_01"
+        ev_ids = [item["id"] for item in scenario.get("evidence_archive", [])][:2]
 
         r3_submit_res = client.post("/api/round3/submit", json={
             "team_id": team_id,
-            "selected_candidate_id": p["r3_culprit_guess"],
+            "selected_candidate_id": chosen_candidate_id,
             "selected_evidence_ids": ev_ids
         })
         assert r3_submit_res.status_code == 200, f"R3 submit failed: {r3_submit_res.text}"
-        r3_data = r3_submit_res.json()
-        r3_score = r3_data.get("round3_score", r3_data.get("points_awarded", 0))
-        is_correct = r3_data.get("is_correct", False)
-        verdict_str = "CORRECT" if is_correct else "INCORRECT"
-        print(f"  [4/4] Round 3 Complete: Score = {r3_score} pts | Verdict = {verdict_str}")
+        db_conn = get_connection()
+        r3_score = db_conn.execute("SELECT round3_score FROM teams WHERE id = ?", (team_id,)).fetchone()[0]
+        db_conn.close()
+        print(f"  [4/4] Round 3 Complete: Score = {r3_score} pts | Candidate = {chosen_candidate_id}")
 
         total_score = r1_score + r2_score + r3_score
         results_summary.append({

@@ -594,27 +594,24 @@ Purges competition database records.
 
 ### 7.2 Single-Command Execution
 
-#### macOS & Linux
 ```bash
-bash start.sh
+# Option 1: macOS & Linux Shell Launcher
+./start.sh
 # or for a custom port:
-bash start.sh 8080
+./start.sh 8080
+
+# Option 2: Cross-Platform Python Launcher (Windows, macOS, Linux)
+python main.py
+# or for a custom port:
+python main.py 8080
 ```
 
-#### Windows
-```bat
-start.bat
-# or:
-start.bat 8080
-```
-
-The startup script executes the full automated pipeline:
-1. Validates Python 3.9+ and activates/creates `.venv`.
-2. Installs required Python dependencies from `backend/requirements.txt`.
-3. Verifies Node.js, installs dependencies, and builds React production assets (`VITE_API_BASE=/ npm run build`).
-4. Verifies database schema tables and seeds baseline items (`round1_manifest.csv` and Round 2 files).
-5. Detects local LAN IP address and launches uvicorn on `0.0.0.0:8000`.
-6. Launches host browser window pointing to `http://localhost:8000/`.
+The launcher executes the full automated pipeline:
+1. Validates Python 3.9+ and environment dependencies.
+2. Auto-builds React production assets (`frontend/dist`) if missing.
+3. Verifies database schema tables and seeds baseline items (`round1_manifest.csv` and Round 2 cases).
+4. Auto-detects local LAN IP addresses (Ethernet & Wi-Fi) and launches uvicorn on `0.0.0.0:8000`.
+5. Prints player access URLs and opens the host browser window pointing to `http://localhost:8000/`.
 
 ### 7.3 Verification & Automated Test Suite
 Run the test suites using the project virtual environment:

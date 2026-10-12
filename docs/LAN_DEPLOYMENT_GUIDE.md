@@ -42,14 +42,11 @@ This guide details how to host and deploy **Project Chronos** across local area 
 On the **Host / Instructor / Organizer PC**:
 
 ```bash
-# Option 1: Using Python Launcher (Cross-Platform: Windows / macOS / Linux)
-python3 run.py
-
-# Option 2: Using Shell Script (macOS / Linux)
+# Option 1: Shell Launcher (macOS / Linux)
 ./start.sh
 
-# Option 3: Using Windows Batch Script (Windows)
-start.bat
+# Option 2: Python Launcher (Cross-Platform: Windows / macOS / Linux)
+python main.py
 ```
 
 ### Step 2: Note the LAN IP Address

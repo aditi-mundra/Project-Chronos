@@ -55,7 +55,7 @@ When deploying on GitHub Codespaces, Actions, or cloud platforms (Render, Railwa
 
 Start the server:
 ```bash
-python3 run.py
+python3 main.py
 ```
 Open in browser:
 ```

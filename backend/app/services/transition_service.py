@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 from ..database.connection import get_connection
+from .google_sheets_service import google_sheets_service
 
 CLUES_FILE = Path(__file__).resolve().parents[3] / "docs" / "clues.md"
 
@@ -216,7 +217,8 @@ def get_transition_info(team_id: int) -> Dict[str, Any]:
                 transition_start_time,
                 transition_end_time,
                 transition_time_diff,
-                transition_status
+                transition_status,
+                transition_password_used
             FROM teams
             WHERE id = ?
             """,
@@ -254,6 +256,12 @@ def get_transition_info(team_id: int) -> Dict[str, Any]:
             except Exception:
                 pass
 
+        pw_used = ""
+        try:
+            pw_used = team["transition_password_used"] or ""
+        except Exception:
+            pass
+
         return {
             "team_id": team["id"],
             "team_name": team["team_name"],
@@ -268,6 +276,7 @@ def get_transition_info(team_id: int) -> Dict[str, Any]:
             "elapsed_seconds": round(float(elapsed_seconds), 2),
             "is_completed": status == "COMPLETED",
             "can_proceed": status == "COMPLETED",
+            "password_used": pw_used,
         }
     finally:
         conn.close()
@@ -315,14 +324,10 @@ def start_stopwatch(team_id: int) -> Dict[str, Any]:
 
 def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str, Any]:
     cleaned = (password or "").strip()
-
-    # Verify against placeholder password Chronos@123
-    is_valid = (cleaned == DEFAULT_PLACEHOLDER_PASSWORD or cleaned.lower() == DEFAULT_PLACEHOLDER_PASSWORD.lower())
-
-    if not is_valid:
+    if not cleaned:
         return {
             "success": False,
-            "error": "Invalid security override password. Stopwatch continues running.",
+            "error": "Password cannot be empty.",
             "is_completed": False
         }
 
@@ -331,7 +336,7 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT transition_start_time, transition_status, transition_time_diff
+            SELECT id, team_name, transition_zone, transition_start_time, transition_status, transition_time_diff
             FROM teams
             WHERE id = ?
             """,
@@ -349,6 +354,25 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
                 "is_completed": True,
             }
 
+        team_name = row["team_name"]
+        team_zone = row["transition_zone"] or ""
+
+        # Validate password against Google Spreadsheet API
+        val_result = google_sheets_service.validate_and_use_password(
+            password=cleaned,
+            team_id=team_id,
+            team_name=team_name,
+            zone=team_zone
+        )
+
+        if not val_result.get("valid"):
+            error_msg = val_result.get("error") or "Invalid security override password. Stopwatch continues running."
+            return {
+                "success": False,
+                "error": error_msg,
+                "is_completed": False
+            }
+
         start_time = row["transition_start_time"]
         now_dt = datetime.now(timezone.utc)
         now_iso = now_dt.isoformat(timespec="milliseconds")
@@ -362,29 +386,40 @@ def verify_password_and_stop_stopwatch(team_id: int, password: str) -> Dict[str,
                 elapsed_seconds = max(0.0, (now_dt - start_dt).total_seconds())
             except Exception:
                 pass
+        else:
+            # If team entered password without initiating stopwatch first, record start time as now
+            cursor.execute(
+                "UPDATE teams SET transition_start_time = ? WHERE id = ?",
+                (now_iso, team_id)
+            )
 
         cursor.execute(
             """
             UPDATE teams
             SET transition_end_time = ?,
                 transition_time_diff = ?,
-                transition_status = 'COMPLETED'
+                transition_status = 'COMPLETED',
+                transition_password_used = ?
             WHERE id = ?
             """,
-            (now_iso, elapsed_seconds, team_id),
+            (now_iso, elapsed_seconds, cleaned, team_id),
         )
 
-        _log_event(cursor, team_id, "TRANSITION_STOPWATCH_STOPPED", {
+        _log_event(cursor, team_id, "TRANSITION_PASSWORD_VERIFIED", {
+            "password": cleaned,
             "stop_time": now_iso,
             "elapsed_seconds": elapsed_seconds,
+            "source": val_result.get("source", "GOOGLE_SPREADSHEET"),
+            "zone": val_result.get("zone"),
         })
         conn.commit()
 
         return {
             "success": True,
-            "message": "SECURITY OVERRIDE VERIFIED // ACCESS GRANTED",
+            "message": val_result.get("message", "SECURITY OVERRIDE VERIFIED // ACCESS GRANTED"),
             "elapsed_seconds": round(float(elapsed_seconds), 2),
             "is_completed": True,
+            "zone": val_result.get("zone"),
         }
     finally:
         conn.close()
