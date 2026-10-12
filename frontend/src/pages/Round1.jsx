@@ -155,6 +155,27 @@ export default function Round1({ onComplete }) {
     window.setTimeout(() => setSuccessFlash(false), 400);
   };
 
+  const unplaceFragment = (fragmentId) => {
+    if (finishingRef.current || timeUp) return;
+    const fragment = fragments.find((item) => item.id === fragmentId);
+    if (!fragment) return;
+
+    setZones((current) => {
+      const next = {
+        PAST: current.PAST.filter((id) => id !== fragmentId),
+        PRESENT: current.PRESENT.filter((id) => id !== fragmentId),
+        FUTURE: current.FUTURE.filter((id) => id !== fragmentId),
+      };
+      const uniqueCount = new Set(Object.values(next).flat()).size;
+      const nextIntegrity = fragments.length ? 42 + (58 * uniqueCount / fragments.length) : 42;
+      setIntegrity(Math.min(100, nextIntegrity));
+      return next;
+    });
+
+    setSelectedId((current) => (current === fragmentId ? null : current));
+    addLog(`${fragment.fragmentCode} unselected from timeline sector`, 'info');
+  };
+
   // Pointer-based drag: a ghost follows the pointer via transform inside a
   // requestAnimationFrame loop (no React re-render per move), the sector under
   // the pointer is highlighted, and the round's scroll area auto-scrolls near the edges.
@@ -182,7 +203,7 @@ export default function Round1({ onComplete }) {
 
     const tick = () => {
       const ghost = ghostRef.current;
-      if (ghost) ghost.style.transform = `translate3d(${state.x - 36}px, ${state.y - 36}px, 0) scale(1.06) rotate(-3deg)`;
+      if (ghost) ghost.style.transform = `translate3d(${state.x - 65}px, ${state.y - 55}px, 0) scale(1.06) rotate(-3deg)`;
       const margin = 80;
       const scroller = rootRef.current;
       if (scroller) {
@@ -315,6 +336,14 @@ export default function Round1({ onComplete }) {
             <div><span>SYSTEM</span><b className={`status-dot ${systemState.toLowerCase()}`} /> <strong>{systemState}</strong></div>
             <div><span>DRIFT</span><strong className="flicker-text">+08.72ms</strong></div>
             <div><span>TEAM</span><strong>{team?.team_name}</strong></div>
+            {(team?.member_1_prn || team?.member_2_prn) && (
+              <div className="prn-readout">
+                <span>PRN</span>
+                <strong>
+                  {team.member_1_prn}{team.member_2_prn && team.member_2_prn !== team.member_1_prn ? ` / ${team.member_2_prn}` : ''}
+                </strong>
+              </div>
+            )}
           </div>
         </header>
 
@@ -355,6 +384,7 @@ export default function Round1({ onComplete }) {
                 selected={selectedId === fragment.id}
                 dragging={draggingId === fragment.id}
                 onSelect={() => setSelectedId(fragment.id)}
+                onDeselect={() => setSelectedId(null)}
                 onPointerDown={(event) => beginDrag(event, fragment.id)}
               />
             ))}
@@ -375,6 +405,7 @@ export default function Round1({ onComplete }) {
               onBeginDrag={beginDrag}
               onPlace={placeFragment}
               onSelect={setSelectedId}
+              onUnplace={unplaceFragment}
             />
           ))}
         </section>
@@ -411,31 +442,73 @@ export default function Round1({ onComplete }) {
   );
 }
 
-function FragmentCard({ fragment, index, selected, dragging, onSelect, onPointerDown }) {
+function FragmentCard({ fragment, index, selected, dragging, onSelect, onDeselect, onPointerDown }) {
   const rotation = ((index * 17) % 9) - 4;
   const y = ((index * 13) % 7) - 3;
+  const lastTapRef = useRef(0);
+
+  const handlePointerDown = (event) => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 350) {
+      if (selected && onDeselect) {
+        event.stopPropagation();
+        event.preventDefault();
+        onDeselect();
+        lastTapRef.current = 0;
+        return;
+      }
+    }
+    lastTapRef.current = now;
+    onPointerDown(event);
+  };
+
   return (
     <article
       className={`fragment-card ${selected ? 'selected' : ''} ${dragging ? 'dragging' : ''}`}
       style={{ '--rot': `${rotation}deg`, '--float': `${y}px` }}
       onClick={onSelect}
-      onPointerDown={onPointerDown}
-      title="Drag to a temporal sector, or select then click a sector"
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        if (selected && onDeselect) onDeselect();
+      }}
+      onPointerDown={handlePointerDown}
+      title="Drag to a temporal sector, click to select, or double-tap to deselect"
     >
       <div className="fragment-corner">◈ {fragment.fragmentCode}</div>
-      <div className="fragment-image-wrap"><img src={fragment.image} alt="Recovered technology fragment" draggable={false} /><div className="scan-line" /><div className="image-noise" /></div>
-      <div className="fragment-meta"><span>UNKNOWN</span><b>{String(fragment.id).padStart(3, '0')}</b></div>
-      <div className="fragment-footer"><span>TM-SIGNATURE</span><strong>20██</strong></div>
+      <div className="fragment-image-wrap">
+        <img src={fragment.image} alt="Recovered technology fragment" draggable={false} />
+        <div className="scan-line" />
+        <div className="image-noise" />
+      </div>
+      <div className="fragment-meta">
+        <span>UNKNOWN</span>
+        <b>{String(fragment.id).padStart(3, '0')}</b>
+      </div>
+      <div className="fragment-footer">
+        <span>TM-SIGNATURE</span>
+        <strong>20██</strong>
+      </div>
     </article>
   );
 }
 
-function DropZone({ era, ids, fragments, selectedId, draggingId, isOver, onBeginDrag, onPlace, onSelect }) {
+function DropZone({
+  era,
+  ids,
+  fragments,
+  selectedId,
+  draggingId,
+  isOver,
+  onBeginDrag,
+  onPlace,
+  onSelect,
+  onUnplace,
+}) {
   const meta = ERA_META[era];
   const selectedInZone = selectedId && ids.includes(selectedId);
   // Sector name grows subtly with the number of fragments it holds.
   const growth = Math.min(ids.length, 12) / 12;
-  const zoneVars = { '--zone-title': `${15 + growth * 3}px`, '--zone-count': `${14 + growth * 3}px` };
+  const zoneVars = { '--zone-title': `${22 + growth * 4}px`, '--zone-count': `${20 + growth * 4}px` };
   return (
     <div
       className={`drop-zone ${era.toLowerCase()} ${selectedInZone ? 'selected-zone' : ''} ${isOver ? 'drag-over' : ''}`}
@@ -443,25 +516,75 @@ function DropZone({ era, ids, fragments, selectedId, draggingId, isOver, onBegin
       style={zoneVars}
       onClick={() => selectedId && !selectedInZone && onPlace(selectedId, era)}
     >
-      <div className="zone-head"><span className="zone-symbol">{meta.symbol}</span><div><h2>{meta.label}</h2><p>{meta.sub}</p></div><b>{ids.length.toString().padStart(2, '0')}</b></div>
+      <div className="zone-head">
+        <span className="zone-symbol">{meta.symbol}</span>
+        <div>
+          <h2>{meta.label}</h2>
+          <p>{meta.sub}</p>
+        </div>
+        <b>{ids.length.toString().padStart(2, '0')}</b>
+      </div>
       <div className="zone-content">
         {ids.length === 0 && <div className="drop-prompt">DROP TEMPORAL FRAGMENTS HERE</div>}
         {ids.map((id) => {
           const fragment = fragments.find((item) => item.id === id);
           return fragment ? (
-            <img
+            <MiniFragment
               key={id}
-              className={`mini-fragment ${selectedId === id ? 'mini-selected' : ''} ${draggingId === id ? 'dragging' : ''}`}
-              src={fragment.image}
-              alt="Placed fragment"
-              draggable={false}
-              onClick={(event) => { event.stopPropagation(); onSelect(id); }}
-              onPointerDown={(event) => { event.stopPropagation(); onBeginDrag(event, id); }}
+              id={id}
+              fragment={fragment}
+              selected={selectedId === id}
+              dragging={draggingId === id}
+              onSelect={onSelect}
+              onBeginDrag={onBeginDrag}
+              onUnplace={onUnplace}
             />
           ) : null;
         })}
       </div>
-      <div className="zone-footer">SECTOR • {era} • ROUTE ACCEPTED</div>
+      <div className="zone-footer">SECTOR • {era} • ROUTE ACCEPTED (DOUBLE TAP TO UNSELECT)</div>
+    </div>
+  );
+}
+
+function MiniFragment({ id, fragment, selected, dragging, onSelect, onBeginDrag, onUnplace }) {
+  const lastTapRef = useRef(0);
+
+  const handlePointerDown = (event) => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 350) {
+      // Double tap detected!
+      event.stopPropagation();
+      event.preventDefault();
+      onUnplace(id);
+      lastTapRef.current = 0;
+      return;
+    }
+    lastTapRef.current = now;
+    onBeginDrag(event, id);
+  };
+
+  return (
+    <div
+      className={`mini-fragment-wrap ${selected ? 'mini-selected' : ''} ${dragging ? 'dragging' : ''}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(id);
+      }}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        onUnplace(id);
+      }}
+      onPointerDown={handlePointerDown}
+      title="Double-click or double-tap to unselect from section"
+    >
+      <img
+        className="mini-fragment"
+        src={fragment.image}
+        alt="Placed fragment"
+        draggable={false}
+      />
+      <span className="mini-fragment-tag">{fragment.fragmentCode}</span>
     </div>
   );
 }

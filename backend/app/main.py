@@ -3,6 +3,16 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+    _root = Path(__file__).resolve().parents[2]
+    for _env_path in (_root / ".env", _root / "backend" / ".env"):
+        if _env_path.is_file():
+            load_dotenv(_env_path, override=False)
+except Exception:
+    pass
+
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse

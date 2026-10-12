@@ -49,6 +49,11 @@ def chat(body: ChatBody):
     return svc.chat(body.team_id, body.message)
 
 
+@router.get("/ai-status")
+def ai_status():
+    return svc.get_ai_status()
+
+
 @router.get("/conversation")
 def conversation(team_id: int):
     return svc.get_conversation(team_id)

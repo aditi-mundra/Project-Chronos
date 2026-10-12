@@ -10,7 +10,9 @@ import {
   ArrowRight, 
   X, 
   Bot,
-  ExternalLink
+  ExternalLink,
+  User,
+  Sparkles
 } from 'lucide-react';
 import { soundFx } from '../utils/audio.js';
 import api from '../services/api.js';
@@ -71,6 +73,11 @@ export default function Round3({
         const scen = startRes.scenario || startRes.case || {};
         if (startRes.round2_investigation && !scen.round2_investigation) {
           scen.round2_investigation = startRes.round2_investigation;
+        }
+
+        const chatMsgs = scen?.round2_investigation?.chat_messages || startRes?.round2_investigation?.chat_messages || [];
+        if (chatMsgs && chatMsgs.length > 0) {
+          setActiveRightTab('ai_inquiries');
         }
 
         setScenarioData(scen);
@@ -208,6 +215,39 @@ export default function Round3({
           </div>
         </div>
 
+        {/* Carried Forward AI Intel Banner */}
+        {chatMessages.length > 0 && (
+          <div className="bg-gradient-to-r from-cyan-950/90 via-slate-900/95 to-indigo-950/80 border border-cyan-500/40 rounded-2xl p-3.5 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_25px_rgba(6,182,212,0.18)]">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
+                <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+              </div>
+              <div className="text-xs font-mono">
+                <span className="text-cyan-300 font-bold tracking-wide flex items-center gap-1.5">
+                  ROUND 2 AI INTEL SYNCHRONIZED
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                    {chatMessages.length} / 3 LOGGED
+                  </span>
+                </span>
+                <p className="text-slate-300 text-[11px] sm:text-xs mt-0.5">
+                  Your interrogation transcript has been carried forward. Review the AI Analyst's timeline deductions in the right-hand panel to verify your accusation.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                soundFx.playKeystroke();
+                setActiveRightTab('ai_inquiries');
+              }}
+              className="text-xs font-mono font-bold text-cyan-950 bg-cyan-400 hover:bg-cyan-300 px-3.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer transition shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+            >
+              <span>INSPECT AI TRANSCRIPT ({chatMessages.length})</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Main Grid: Suspects on Left (7 cols), Round 2 Telemetry & Evidence on Right (5 cols) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
@@ -303,7 +343,7 @@ export default function Round3({
                     soundFx.playKeystroke();
                     setActiveRightTab('ai_inquiries');
                   }}
-                  className={`flex-1 py-1.5 px-2.5 rounded-lg font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`flex-1 py-1.5 px-2.5 rounded-lg font-mono text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer relative ${
                     activeRightTab === 'ai_inquiries'
                       ? 'bg-cyan-600 text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                       : 'text-slate-400 hover:text-cyan-300'
@@ -311,6 +351,12 @@ export default function Round3({
                 >
                   <Bot className="w-3.5 h-3.5" />
                   <span>ANALYST Q&A ({chatMessages.length})</span>
+                  {chatMessages.length > 0 && (
+                    <span className="relative flex h-2 w-2 ml-1">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  )}
                 </button>
               </div>
 
@@ -370,10 +416,15 @@ export default function Round3({
 
               {/* TAB 2: Round 2 AI Analyst Inquiries & API Responses */}
               {activeRightTab === 'ai_inquiries' && (
-                <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
-                    <span>ROUND 2 INTERROGATION TRANSCRIPT:</span>
-                    <span className="text-cyan-300 font-bold">{chatMessages.length} / 3 INQUIRIES USED</span>
+                <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-2 py-1.5 bg-cyan-950/40 rounded-lg border border-cyan-900/50">
+                    <span className="flex items-center gap-1.5 text-cyan-300 font-bold">
+                      <Bot className="w-3.5 h-3.5 text-cyan-400" />
+                      ROUND 2 INTERROGATION TRANSCRIPT
+                    </span>
+                    <span className="text-emerald-400 font-bold font-mono">
+                      {chatMessages.length} / 3 INQUIRIES LOGGED
+                    </span>
                   </div>
 
                   {chatMessages.length === 0 ? (
@@ -381,32 +432,49 @@ export default function Round3({
                       <Bot className="w-8 h-8 text-cyan-400 mx-auto opacity-70" />
                       <div className="font-tech text-white font-bold text-sm">NO AI INQUIRIES FILED</div>
                       <p className="text-xs font-mono text-slate-400 leading-relaxed">
-                        Team asked no analyst questions in Round 2.
+                        Team asked no analyst questions during Round 2. Check the Evidence Logs tab for audit trails.
                       </p>
                     </div>
                   ) : (
                     chatMessages.map((msg, idx) => (
                       <div
                         key={idx}
-                        className="p-3.5 rounded-xl bg-[#070c18]/90 border border-cyan-900/60 space-y-2"
+                        className="p-3.5 sm:p-4 rounded-xl bg-[#070c18]/95 border border-cyan-800/60 space-y-3 shadow-md"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 uppercase font-bold">
-                            INQUIRY #{msg.question_number || idx + 1}
+                        <div className="flex items-center justify-between border-b border-cyan-950 pb-2">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700 text-cyan-300 uppercase font-bold tracking-wider">
+                            INQUIRY #{msg.question_number || idx + 1} OF 3
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                            ROUND 2 RECORD
                           </span>
                         </div>
 
-                        <div className="text-xs font-mono text-slate-300 bg-black/50 p-2.5 rounded-lg border border-cyan-950">
-                          <span className="text-cyan-400 font-bold block mb-1">TEAM PROMPT:</span>
-                          <p className="italic">"{msg.user_prompt}"</p>
+                        {/* Team Question */}
+                        <div className="text-xs font-mono bg-black/60 p-2.5 sm:p-3 rounded-lg border border-cyan-950 space-y-1">
+                          <span className="text-cyan-400 font-bold flex items-center gap-1 text-[10px] tracking-wider uppercase">
+                            <User className="w-3 h-3 text-cyan-400" />
+                            TEAM QUESTION:
+                          </span>
+                          <p className="italic text-slate-200 leading-relaxed">"{msg.user_prompt}"</p>
                         </div>
 
-                        <div className="text-xs font-mono text-cyan-200 bg-cyan-950/30 p-2.5 rounded-lg border border-cyan-900/40">
-                          <span className="text-emerald-400 font-bold block mb-1 flex items-center gap-1.5">
-                            <Bot className="w-3.5 h-3.5" />
-                            CHRONOS ANALYST RESPONSE:
-                          </span>
-                          <p className="leading-relaxed whitespace-pre-wrap">{msg.ai_response || "(No response recorded)"}</p>
+                        {/* AI Analyst Response */}
+                        <div className="bg-cyan-950/25 p-3 sm:p-3.5 rounded-lg border border-cyan-900/50 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-emerald-400 font-bold text-[10px] font-mono tracking-wider flex items-center gap-1.5">
+                              <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                              CHRONOS AI ANALYST ASSESSMENT:
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-[13px] font-sans text-slate-100 leading-relaxed whitespace-pre-wrap">
+                            {msg.ai_response || "(No response recorded)"}
+                          </p>
+                          <div className="pt-2 border-t border-cyan-950/60 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                            <span>Telemetry & timeline synthesis</span>
+                            <span className="text-cyan-400 font-bold">Identity Protected</span>
+                          </div>
                         </div>
                       </div>
                     ))

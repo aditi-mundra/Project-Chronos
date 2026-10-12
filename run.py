@@ -26,6 +26,14 @@ ROOT_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = ROOT_DIR / "frontend"
 DIST_DIR = FRONTEND_DIR / "dist"
 
+try:
+    from dotenv import load_dotenv
+    for env_file in (ROOT_DIR / ".env", ROOT_DIR / "backend" / ".env"):
+        if env_file.is_file():
+            load_dotenv(env_file, override=False)
+except Exception:
+    pass
+
 # Ensure root is in sys.path
 sys.path.insert(0, str(ROOT_DIR))
 

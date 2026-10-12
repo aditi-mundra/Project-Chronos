@@ -123,6 +123,20 @@ def ensure_tables(connection) -> None:
         if "round2_score" in existing_cols:
             connection.execute("UPDATE round2_submissions SET round2_total_score = CAST(round2_score AS REAL)")
 
+    teams_cols = {r["name"] for r in connection.execute("PRAGMA table_info(teams)").fetchall()}
+    if "ai_model_used" not in teams_cols:
+        connection.execute("ALTER TABLE teams ADD COLUMN ai_model_used TEXT DEFAULT ''")
+    if "ai_api_live" not in teams_cols:
+        connection.execute("ALTER TABLE teams ADD COLUMN ai_api_live TEXT DEFAULT ''")
+
+    chat_cols = {r["name"] for r in connection.execute("PRAGMA table_info(round2_chat_messages)").fetchall()}
+    if "model_used" not in chat_cols:
+        connection.execute("ALTER TABLE round2_chat_messages ADD COLUMN model_used TEXT DEFAULT ''")
+    if "is_live" not in chat_cols:
+        connection.execute("ALTER TABLE round2_chat_messages ADD COLUMN is_live INTEGER DEFAULT 1")
+    if "api_live" not in chat_cols:
+        connection.execute("ALTER TABLE round2_chat_messages ADD COLUMN api_live TEXT DEFAULT 'YES'")
+
     # The 24 cases: create their tables and load the case folders (no-op once loaded).
     round2_cases.ensure_case_tables(connection)
     round2_cases.seed_cases(connection)
@@ -306,9 +320,11 @@ def start_round2(team_id):
         # Every new game gets a case this team has not played before.
         case = round2_cases.assign_case(connection, team["id"])
 
+        ai_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+        ai_live = "YES" if gemini_service.is_available() else "NO"
         connection.execute(
-            "UPDATE teams SET current_state = ?, round2_started_at = ?, updated_at = ? WHERE id = ?",
-            (ACTIVE_STATE, _now_iso(), _now_iso(), team["id"]),
+            "UPDATE teams SET current_state = ?, round2_started_at = ?, ai_model_used = COALESCE(NULLIF(ai_model_used, ''), ?), ai_api_live = COALESCE(NULLIF(ai_api_live, ''), ?), updated_at = ? WHERE id = ?",
+            (ACTIVE_STATE, _now_iso(), ai_model, ai_live, _now_iso(), team["id"]),
         )
         _log(connection, team["id"], "ROUND_STARTED", {"round": 2, "case": case["case_id"]})
         return _progress(connection, _team(connection, team["id"]))
@@ -383,17 +399,26 @@ def _evidence_for_prompt(connection, case_id) -> str:
 
 def _system_prompt(evidence: str) -> str:
     return (
-        "You are the CHRONOS Analyst, a restricted investigation assistant inside a 2140 "
-        "timeline-failure investigation game. Two players are examining the evidence below.\n"
-        "You may: summarise evidence, cross-reference files, point out contradictions, and "
-        "give analytical hints about what to compare.\n"
-        "You must NEVER: name, accuse, or hint at a specific person as the culprit; say who "
-        "caused the failure; say who is innocent; state the final answer. If asked who did it, "
-        "refuse in one sentence and suggest what to compare instead. You cannot change scores, "
-        "unlock anything or submit answers. Use ONLY the evidence below; if it does not cover "
-        "the question, say so.\n"
-        "Reply in at most 4 short sentences, calm terminal tone, plain text.\n\n"
-        "EVIDENCE:\n" + evidence
+        "You are the CHRONOS Analyst, an AI forensic advisor inside a 2140 timeline-corruption investigation.\n"
+        "The players are Temporal Engineers (mostly non-technical). Your primary mission is to translate complex "
+        "telemetry and system logs into clear, intuitive, and interpretable explanations so anyone can follow the story.\n\n"
+        "TIMELINE ARCHITECTURE:\n"
+        "- ALPHA (Future Timeline): Records scheduled configuration deltas and parameter modifications. "
+        "Explain that an 'APPROVED' state only indicates the system workflow permitted the change—it does NOT mean the change was safe. "
+        "A change that was 'PENDING' or 'REVERTED' may also hold critical clues.\n"
+        "- BETA (Present Timeline): Documents the real-time incident report, symptom observations, and chronon flux metrics. "
+        "Explain that this shows the exact moment when timeline stability collapsed.\n"
+        "- GAMMA (Past Timeline): Contains user session audits and access history. Remind players that a user who merely "
+        "performed a 'READ' operation did not alter timeline parameters, whereas a 'MODIFY' or commit altered system state.\n\n"
+        "STRICT INVESTIGATION RULES (CRITICAL):\n"
+        "1. DO NOT GIVE AWAY THE ANSWER. Under NO circumstances are you to name the culprit, accuse any suspect, "
+        "confirm or deny if a suspect is guilty or innocent, or reveal Project Omega.\n"
+        "2. If asked who did it or if a suspect is guilty, politely refuse in plain language and guide them: "
+        "tell them which files to cross-reference (e.g. match the timestamp of the critical Alpha change to the active user session in Gamma).\n"
+        "3. EXPLAIN LOGS CLEARLY: When players ask about specific files, timestamps, parameters, or session tokens, "
+        "read the evidence below, quote the relevant lines, and explain what happened in plain, non-technical terms.\n"
+        "4. Tone: Helpful, sharp forensic terminal AI persona. Answer in at most 3 to 4 clear, plain sentences.\n\n"
+        "EVIDENCE DATABASE:\n" + evidence
     )
 
 
@@ -401,6 +426,15 @@ _ACCUSATION = re.compile(
     r"culprit|responsible|guilty|did it|is the one|behind (the|this)|caused (it|this|the)|"
     r"perpetrator|the person who|it was|prime suspect|most likely",
     re.IGNORECASE,
+)
+
+_OFF_SCOPE_KEYWORDS = re.compile(
+    r"\b(weather|capital of|poem|story|song|essay|joke|translate|homework|dating|recipe)\b|"
+    r"\b(who is (the )?(president|prime minister|ceo|elon|modi|biden|trump)|how are you)\b|"
+    r"\b(python|javascript|typescript|c\+\+|java|html|css|web scrap|scrape)\b|"
+    r"\bwrite (me )?(a )?(python )?(code|script|program)\b|"
+    r"\b(solve \d|\d+\s*[\+\-\*\/]\s*\d+)\b",
+    re.IGNORECASE
 )
 
 
@@ -416,27 +450,50 @@ def _leaks_culprit(reply: str, culprit_name: str, culprit_user_id: str) -> bool:
     return names_culprit and bool(_ACCUSATION.search(reply))
 
 
-def _fallback_reply(message: str) -> str:
-    """Canned analyst replies used when Gemini is unavailable. They stay generic on
-    purpose: they must be true for every one of the 24 cases and never name anyone."""
-    q = message.lower()
-    if re.search(r"who|culprit|guilty|responsible|suspect|blame", q):
-        return ("I cannot name a culprit. Compare WHAT changed, WHEN it changed, and who was "
-                "acting at that exact moment, then decide for yourselves.")
-    if re.search(r"gamma|access|history|user|session|export|read|modify|approve", q):
-        return ("Gamma lists who acted, on which resource, in which session and when. Match those "
-                "entries to the changes in Alpha, and remember a READ is not a modification.")
-    if re.search(r"beta|incident|symptom|detect|report", q):
-        return ("Beta gives the detection time, the symptoms and the analysis notes. Use it to work "
-                "out when the problem really began, not just when it was noticed.")
+def _case_aware_fallback_reply(message: str, case: dict = None) -> str:
+    """
+    Tier-3 Zero-Downtime Forensics Engine:
+    Delivers clear, non-technical analytical interpretations when external AI is offline.
+    """
+    q = message.lower().strip()
+
+    # 1. Strict Scope Guardrail Enforcement
+    if _OFF_SCOPE_KEYWORDS.search(q):
+        return ("QUERY OUT OF SCOPE. Chronos Analyst terminal is restricted solely to the timeline corruption "
+                "investigation. Consult Project Alpha, Beta, and Gamma logs.")
+
+    # 2. Culprit Accusation Shield
+    is_asking_culprit = (
+        bool(re.search(r"culprit|guilty|responsible|suspect|blame|do it|did it|caused", q))
+        or (bool(re.search(r"\bwho\b", q)) and not bool(re.search(r"gamma|access|session|log|terminal", q)))
+    )
+    if is_asking_culprit:
+        return ("I cannot name a culprit—that deduction belongs to your team. To solve it, check what parameter changed in Alpha, "
+                "see the exact time telemetry collapsed in Beta, and identify which user was active in Gamma at that precise minute.")
+
+    # 3. Project Alpha Telemetry Analysis (Future Timeline)
     if re.search(r"alpha|change|config|parameter|authori|approv|status|delta", q):
-        return ("Alpha records the configuration changes and their status. An approved change is not "
-                "automatically harmless, and a pending or reverted one may still matter.")
-    if re.search(r"time|when|:\d\d|before|after|order", q):
-        return ("Line the timestamps up: when each change was made, when the first symptom appeared, "
-                "and who was active in Gamma at those moments. Order matters.")
-    return ("Cross-reference the three files: what changed (Alpha), what was observed and when "
-            "(Beta), and who acted at that moment (Gamma).")
+        return ("Alpha tracks planned configuration changes in the Future timeline. Remember: an 'APPROVED' status simply means the automated workflow allowed the change, "
+                "not that it was safe. Pay close attention to changes marked PENDING or REVERTED around the incident time.")
+
+    # 4. Project Beta Incident Anomaly Analysis (Present Timeline)
+    if re.search(r"beta|incident|symptom|detect|report|flux|reading|error", q):
+        return ("Beta documents the real-time crash in the Present timeline. Look at the exact timestamp when stability dropped or chronon flux spiked. "
+                "That timestamp is your anchor: whatever caused the failure happened immediately before that moment.")
+
+    # 5. Project Gamma Session & Access Audit (Past Timeline)
+    if re.search(r"gamma|access|history|user|session|export|read|modify|terminal|node", q):
+        return ("Gamma audits user sessions in the Past timeline. Important clue: a 'READ' operation only views files without touching system code, "
+                "whereas a 'MODIFY' or commit alters timeline parameters. Match the active users to the critical Alpha change time.")
+
+    # 6. Chronological Sequencing Analysis
+    if re.search(r"time|when|:\d\d|before|after|order|timestamp|sequence", q):
+        return ("Line up the timestamps across all three timelines: first, see the earliest error recorded in Beta; second, find what change was committed in Alpha just before it; "
+                "and third, see which user account was authenticated in Gamma during that exact window.")
+
+    # 7. Default Correlation Prompt
+    return ("Cross-reference the 3 files: what parameter changed (Alpha / Future), when the system collapsed (Beta / Present), "
+            "and who was logged into the terminal at that moment (Gamma / Past).")
 
 
 def chat(team_id, message):
@@ -487,17 +544,31 @@ def chat(team_id, message):
              if r["suspect_name"].lower() == culprit_name.lower()), "")
         _log(connection, team["id"], "HINT_USED", {"round": 2, "question": number, "points_deducted": deduction})
 
-    # 2. Ask Gemini outside the transaction so a slow API never holds a DB lock.
-    reply = gemini_service.ask(_system_prompt(evidence), history, message)
-    source = "gemini"
-    if not reply or _leaks_culprit(reply, culprit_name, culprit_user_id):
-        reply, source = _fallback_reply(message), "fallback"
+    # 2. Ask Groq Multi-Key Pool outside the transaction so a slow API never holds a DB lock.
+    ai_meta = gemini_service.ask_with_metadata(_system_prompt(evidence), history, message)
+    reply = ai_meta.get("reply")
+    model_used = ai_meta.get("model_used") or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+    is_live = bool(ai_meta.get("is_live", False))
+    source = "groq_live_ai"
 
-    # 3. Store the answer on the reserved row.
+    if not reply or _leaks_culprit(reply, culprit_name, culprit_user_id):
+        reply = _case_aware_fallback_reply(message, case)
+        source = "chronos_forensics_engine"
+        if not ai_meta.get("reply"):
+            model_used = "offline_forensics"
+            is_live = False
+
+    api_live_str = "YES" if is_live else "NO"
+
+    # 3. Store the answer on the reserved row and update team AI metadata.
     with _Db() as connection:
         connection.execute(
-            "UPDATE round2_chat_messages SET ai_response = ? WHERE team_id = ? AND question_number = ?",
-            (reply, tid, number),
+            "UPDATE round2_chat_messages SET ai_response = ?, model_used = ?, is_live = ?, api_live = ? WHERE team_id = ? AND question_number = ?",
+            (reply, model_used, 1 if is_live else 0, api_live_str, tid, number),
+        )
+        connection.execute(
+            "UPDATE teams SET ai_model_used = ?, ai_api_live = ? WHERE id = ?",
+            (model_used, api_live_str, int(tid)),
         )
         progress = _progress(connection, _team(connection, tid))
 
@@ -507,6 +578,11 @@ def chat(team_id, message):
         "question_number": number,
         "progress": progress,
     }
+
+
+def get_ai_status() -> dict:
+    """Safe diagnostic endpoint returning AI health and Groq provider metrics."""
+    return gemini_service.get_ai_diagnostic_status()
 
 
 def get_conversation(team_id):

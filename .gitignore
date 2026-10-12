@@ -6,6 +6,9 @@ __pycache__/
 
 # Environments & Packages
 .env
+.env.*
+*.env
+backend/.env
 .env.local
 .venv
 env/

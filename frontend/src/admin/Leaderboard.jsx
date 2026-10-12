@@ -92,7 +92,9 @@ export default function Leaderboard({ onBack }) {
       'Round 2 Score',
       'Round 3 Score',
       'Total Score',
-      'Status'
+      'Status',
+      'AI Model Used',
+      'AI API Live'
     ];
 
     const rows = teams.map((t) => [
@@ -113,7 +115,9 @@ export default function Leaderboard({ onBack }) {
         : Number(t.round1_score ?? t.r1_score ?? 0) +
           Number(t.round2_score ?? t.r2_score ?? 0) +
           Number(t.round3_score ?? t.r3_score ?? 0),
-      `"${t.status || 'ACTIVE'}"`
+      `"${t.status || 'ACTIVE'}"`,
+      `"${t.ai_model_used || 'openai/gpt-oss-120b'}"`,
+      `"${t.ai_api_live || 'YES'}"`
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');

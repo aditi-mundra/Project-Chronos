@@ -30,6 +30,8 @@ def create_tables():
                 round2_completed_at TEXT,
                 round3_started_at TEXT,
                 round3_completed_at TEXT,
+                ai_model_used TEXT DEFAULT '',
+                ai_api_live TEXT DEFAULT '',
                 created_at TEXT,
                 updated_at TEXT
             );
@@ -205,6 +207,8 @@ def _migrate_teams_schema(connection):
         "total_score": "REAL DEFAULT 0.0",
         "status": "TEXT DEFAULT 'ACTIVE'",
         "current_state": "TEXT DEFAULT 'READY'",
+        "ai_model_used": "TEXT DEFAULT ''",
+        "ai_api_live": "TEXT DEFAULT ''",
         "created_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
         "updated_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
     }
@@ -215,6 +219,18 @@ def _migrate_teams_schema(connection):
                 connection.execute(f"ALTER TABLE teams ADD COLUMN {column} {col_type}")
             except Exception:
                 pass
+
+    try:
+        connection.execute(
+            """
+            UPDATE teams
+            SET ai_model_used = COALESCE(NULLIF(ai_model_used, ''), 'openai/gpt-oss-120b'),
+                ai_api_live = COALESCE(NULLIF(ai_api_live, ''), 'YES')
+            WHERE ai_model_used IS NULL OR ai_model_used = '' OR ai_api_live IS NULL OR ai_api_live = ''
+            """
+        )
+    except Exception:
+        pass
 
     try:
         connection.execute(

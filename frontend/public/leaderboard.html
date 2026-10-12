@@ -938,7 +938,9 @@
         'Round 2 Score',
         'Round 3 Score',
         'Total Score',
-        'Status'
+        'Status',
+        'AI Model Used',
+        'AI API Live'
       ];
 
       const rows = rawLeaderboard.map(t => {
@@ -959,7 +961,9 @@
           r2,
           r3,
           total,
-          `"${t.status || 'ACTIVE'}"`
+          `"${t.status || 'ACTIVE'}"`,
+          `"${t.ai_model_used || 'openai/gpt-oss-120b'}"`,
+          `"${t.ai_api_live || 'YES'}"`
         ];
       });
 

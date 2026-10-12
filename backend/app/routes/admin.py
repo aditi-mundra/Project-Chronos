@@ -108,6 +108,8 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 round2_completed_at,
                 round3_started_at,
                 round3_completed_at,
+                ai_model_used,
+                ai_api_live,
                 created_at,
                 updated_at
             FROM teams
@@ -172,6 +174,8 @@ def fetch_leaderboard_data() -> List[Dict[str, Any]]:
                 "total_min": -25.0,
                 "current_state": r["current_state"] or "READY",
                 "status": status_val,
+                "ai_model_used": r["ai_model_used"] or "openai/gpt-oss-120b",
+                "ai_api_live": r["ai_api_live"] or "YES",
             })
         return entries
     finally:
@@ -219,7 +223,9 @@ def export_leaderboard_csv(request: Request):
         "Round 1 Auth Code",
         "Round 2 Score (Max 20)",
         "Round 3 Score (Max 30)",
-        "Total Score (Max 100)"
+        "Total Score (Max 100)",
+        "AI Model Used",
+        "AI API Live"
     ])
 
     for t in entries:
@@ -237,7 +243,9 @@ def export_leaderboard_csv(request: Request):
             t["round1_auth_code"],
             t["round2_score"],
             t["round3_score"],
-            t["total_score"]
+            t["total_score"],
+            t.get("ai_model_used", ""),
+            t.get("ai_api_live", "")
         ])
 
     csv_data = output.getvalue()
