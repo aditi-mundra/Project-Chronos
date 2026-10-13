@@ -22,7 +22,7 @@ def setting(name: str, default: str = "") -> str:
 
     for env_file in _ENV_FILES:
         try:
-            for line in env_file.read_text(encoding="utf-8").splitlines():
+            for line in env_file.read_text(encoding="utf-8-sig").splitlines():  # utf-8-sig: Notepad / PowerShell add a BOM
                 line = line.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
