@@ -31,7 +31,7 @@ export default function AdminLogin({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6 text-[var(--text-body)] font-space relative">
+    <div className="min-h-[calc(100vh-2.5rem)] bg-[var(--bg-primary)] flex items-center justify-center p-6 text-[var(--text-body)] font-space relative">
       {/* Top Right Theme Selector */}
       <div className="fixed top-6 right-6 z-50">
         <ThemeSelector />

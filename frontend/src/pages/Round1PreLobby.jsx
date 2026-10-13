@@ -4,7 +4,6 @@ import { soundFx } from '../utils/audio.js';
 import {
   Play,
   Cpu,
-  Activity,
   Users,
   IdCard,
   LogOut
@@ -13,14 +12,14 @@ import {
 /**
  * Post-login holding screen.
  * Round 1 itself (GET /api/round1/items ...) is owned by the Round 1 page; this screen only
- * confirms the team identity, runs the 5-second get-ready countdown and then hands over via
+ * confirms the team identity, plays the HUD interlude and then hands over via
  * `onStartRound1`. The team's Round 1 clock does not start until the Round 1 page loads.
  */
-const START_DELAY_SECONDS = 5;
+const HUD_SECONDS = 18; // one full loop of the HUD animation, then Round 1 opens
 
 export default function Round1PreLobby({ onStartRound1, onLogout }) {
   const { team, logoutTeam } = useAuth();
-  const [countdown, setCountdown] = useState(null); // null = idle, otherwise seconds left
+  const [showHud, setShowHud] = useState(false);
   const handedOverRef = useRef(false);
 
   const handleLogout = () => {
@@ -30,32 +29,35 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
   };
 
   const handleStartRound1 = () => {
-    if (countdown !== null) return;
+    if (showHud) return;
     soundFx.playAccessGranted();
-    setCountdown(START_DELAY_SECONDS);
+    setShowHud(true);
   };
 
   useEffect(() => {
-    if (countdown === null) return undefined;
-
-    if (countdown <= 0) {
-      if (!handedOverRef.current) {
-        handedOverRef.current = true;
-        if (onStartRound1) onStartRound1(team);
-      }
-      return undefined;
-    }
-
-    soundFx.playDataPing();
-    const timer = setTimeout(() => setCountdown((value) => value - 1), 1000);
+    if (!showHud) return undefined;
+    const timer = setTimeout(() => {
+      if (handedOverRef.current) return;
+      handedOverRef.current = true;
+      if (onStartRound1) onStartRound1(team);
+    }, HUD_SECONDS * 1000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [countdown]);
+  }, [showHud]);
 
-  const isCountingDown = countdown !== null;
 
   return (
     <div className="relative min-h-[calc(100vh-2.5rem)] flex items-center justify-center p-3 sm:p-5 lg:p-6">
+      {showHud && (
+        <div className="fixed inset-0 z-50 bg-black">
+          <iframe
+            title="Timeline clash diagnostic"
+            src="/transition-hud.html"
+            className="block w-full h-full border-0 bg-black"
+            allow="autoplay"
+          />
+        </div>
+      )}
       {/* Ambience Grid */}
       <div className="absolute inset-0 cyber-grid opacity-30 pointer-events-none" />
       <div className="absolute inset-0 bg-radial from-transparent via-[#05070c]/80 to-[#05070c] pointer-events-none" />
@@ -141,7 +143,6 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
 
           {/* Primary CTA Button */}
           <div className="mt-6 sm:mt-7">
-            {!isCountingDown ? (
               <button
                 onClick={handleStartRound1}
                 className="group relative inline-flex items-center justify-center w-full py-3.5 sm:py-4 px-8 text-base sm:text-lg font-bold font-tech tracking-widest uppercase transition-all duration-300 rounded-xl text-slate-950 bg-gradient-to-r from-emerald-400 via-cyan-300 to-emerald-400 hover:from-emerald-300 hover:to-cyan-200 shadow-[0_0_30px_rgba(16,185,129,0.5)] hover:shadow-[0_0_45px_rgba(16,185,129,0.8)] hover:scale-[1.02] active:scale-95 border border-emerald-200 cursor-pointer"
@@ -151,19 +152,6 @@ export default function Round1PreLobby({ onStartRound1, onLogout }) {
                   <span>CLICK TO START ROUND 1</span>
                 </div>
               </button>
-            ) : (
-              <div className="p-4 sm:p-5 rounded-xl bg-emerald-950/70 border border-emerald-500/80 text-emerald-300 font-mono space-y-1" role="status" aria-live="polite">
-                <div className="flex items-center justify-center gap-2 font-bold text-sm sm:text-base tracking-widest">
-                  <Activity className="w-5 h-5 text-emerald-400 animate-pulse" />
-                  <span>{countdown > 0 ? 'ROUND 1 STARTS IN' : 'INITIALIZING TIMELINE...'}</span>
-                </div>
-                {countdown > 0 && (
-                  <div className="text-6xl sm:text-7xl font-extrabold font-tech text-emerald-300 leading-none py-1 drop-shadow-[0_0_18px_rgba(16,185,129,0.8)]">
-                    {countdown}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
         </div>

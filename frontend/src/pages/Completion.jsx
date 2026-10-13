@@ -76,7 +76,7 @@ export default function Completion({
   const verdictDetails = verdictData?.verdict_details || {};
 
   return (
-    <div className="relative min-h-screen bg-[var(--bg-primary)] text-[var(--text-body)] flex flex-col items-center justify-center p-3 sm:p-5 lg:p-6 overflow-x-hidden font-space">
+    <div className="relative min-h-[calc(100vh-2.5rem)] bg-[var(--bg-primary)] text-[var(--text-body)] flex flex-col items-center justify-center p-3 sm:p-5 lg:p-6 overflow-x-hidden font-space">
       <div className="absolute inset-0 cyber-grid opacity-30 pointer-events-none" />
       <div className="absolute inset-0 bg-radial from-transparent via-[#05070c]/85 to-[#05070c] pointer-events-none" />
 
