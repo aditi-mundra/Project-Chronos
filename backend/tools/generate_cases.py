@@ -5,7 +5,7 @@ Generate the 24 Round 2 evidence sets and the matching 24 Round 3 cases.
 
 Writes (deterministically, so the output is reviewable and repeatable):
 
-  round2_cases_all_24/R2-01 ... R2-24/
+  backend/data/round2_cases_all_24/R2-01 ... R2-24/
       case.json                the case (culprit = Project Alpha / Beta / Gamma)
       system_changes.log       the four evidence files Round 3 refers to
       login_records.log
@@ -54,7 +54,7 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CASES_DIR = ROOT / "round2_cases_all_24"
+CASES_DIR = ROOT / "backend" / "data" / "round2_cases_all_24"
 R3_JSON = ROOT / "backend" / "app" / "data" / "round3_cases.json"
 
 N_CASES = 24

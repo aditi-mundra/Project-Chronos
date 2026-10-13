@@ -26,7 +26,10 @@ For development: `npm run dev` in `frontend/` (set `VITE_API_BASE` if the API is
 | --- | --- | --- |
 | `CHRONOS_ADMIN_PASSWORD` | for the admin console | Host password. Empty = admin API disabled (503). There is no default. |
 | `CHRONOS_ADMIN_SECRET` | no | Signing secret for admin tokens (derived from the password when empty). |
-| `GEMINI_API_KEY` / `GEMINI_MODEL` | no | Round 2 analyst. Without a key the built-in fallback replies are used. |
+| `GROQ_API_KEYS` / `GROQ_API_KEY` / `GROQ_MODEL` | no | Round 2 analyst, tried first. Comma separated list of Groq keys: each question starts on the next key; a rate-limited or rejected key is skipped for a while and the model cascade (gpt-oss-120b, gpt-oss-20b, qwen3.8-27b) is walked on that key. |
+| `GEMINI_API_KEYS` / `GEMINI_API_KEY` / `GEMINI_MODEL` | no | Round 2 analyst, tried when every Groq key failed (or none is set). |
+| `CHRONOS_AI_DISABLED` | no | `1` = never call a provider. With no working key the built-in case-safe replies are used, so Round 2 always works. |
+| `AI_TOTAL_TIMEOUT` | no | Seconds one question may spend over all attempts (default 20). |
 | `ROUND2_DURATION_SECONDS` | no | Round 2 length (default 1200). |
 | `CORS_ORIGINS` | no | Only for a separately hosted frontend (default `*`). |
 | `CHRONOS_DB_PATH` | no | Use another SQLite file (default `backend/chronos.db`). Used by the tests. |
@@ -59,7 +62,7 @@ duplicate submission, admin protection, the read-only leaderboard, and repeatabl
   returns the stored result. The culprit, valid evidence and narrative never leave the database before
   the team's own decision; `/verdict` returns only what the team filed and the debrief narrative.
 - **Round 2 evidence and Round 3 cases.** `python backend/tools/generate_cases.py` regenerates the 24 evidence
-  sets (`round2_cases_all_24/`) and the matching 24 Round 3 cases (`backend/app/data/round3_cases.json`)
+  sets (`backend/data/round2_cases_all_24/`) and the matching 24 Round 3 cases (`backend/app/data/round3_cases.json`)
   together, so the files a Round 3 evidence item cites are the files the team investigated. Each case has the
   four files `system_changes.log`, `login_records.log`, `security_keys.log`, `incident_report.txt` (plain
   language: badges, terminal codes, VIEW ONLY < TEST ONLY < FULL CONTROL); the culprit is Project Alpha /
@@ -87,7 +90,7 @@ duplicate submission, admin protection, the read-only leaderboard, and repeatabl
 
 1. Set `CHRONOS_ADMIN_PASSWORD` (and optionally `GEMINI_API_KEY`) in `.env`.
 2. Back up `backend/chronos.db`, then start the server once: the Round 2 case library is
-   re-synchronised from `round2_cases_all_24/` and the Round 3 tables are created/upgraded.
+   re-synchronised from `backend/data/round2_cases_all_24/` and the Round 3 tables are created/upgraded.
 3. Teams that were logged in before this build must log in again (their old session has no token).
 4. Decide the Round 2 scoring rule (see below) before the awards.
 
@@ -101,3 +104,18 @@ duplicate submission, admin protection, the read-only leaderboard, and repeatabl
 - The admin "clear database" action from the Round 3 source was not ported (too destructive for a
   live event); reset the database from the command line instead.
 - Admin login throttling is in-memory (per process).
+
+## Round 2 analyst AI: providers and fall-over
+
+`backend/app/services/ai_service.py`, tried in this order for each question:
+
+1. **Groq**: every configured key, each with a model cascade. Keys rotate round-robin so teams
+   spread over the pool; HTTP 429 rests a key for the `Retry-After` time (default 60 s), 401/403
+   (and Google's `API key not valid`) for 10 minutes; a retired model is skipped for 10 minutes.
+2. **Gemini**: the same, with its own keys and models.
+3. **Built-in replies** (`round2_service._fallback_reply`): used when nothing answered, and
+   whenever a model reply would name the culprit (`_leaks_culprit`).
+
+The host can see the state at `GET /api/admin/ai-status` (admin token): provider names, number
+of keys, how many are resting, models, last error. It never returns a key. Keys live only in the
+git-ignored `.env`; nothing secret is written in the code, the logs or the status.

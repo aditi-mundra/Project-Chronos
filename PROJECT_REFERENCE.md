@@ -533,7 +533,7 @@ POST /api/round2/submit                 body {team_id, suspect}  (+30 right, +0 
 
 Backend verifies that the team is allowed to access requested evidence.
 
-**24 cases.** The case folders are in `round2_cases_all_24/` (`R2-01 ... R2-24`:
+**24 cases.** The case folders are in `backend/data/round2_cases_all_24/` (`R2-01 ... R2-24`:
 `case.json` + Alpha / Beta / Gamma text). They are loaded into the single database at
 server start (`round2_cases`, `round2_case_files`, `round2_case_suspects`). A random
 case is assigned to a team the moment the team is created in auth

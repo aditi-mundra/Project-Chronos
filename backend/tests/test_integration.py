@@ -25,6 +25,8 @@ _TMP = tempfile.mkdtemp(prefix="chronos_test_")
 os.environ["CHRONOS_DB_PATH"] = str(Path(_TMP) / "chronos_test.db")
 os.environ["CHRONOS_ADMIN_PASSWORD"] = "test-admin-password-not-real"
 os.environ["GEMINI_API_KEY"] = ""          # force the built-in fallback replies
+os.environ["GROQ_API_KEYS"] = ""
+os.environ["CHRONOS_AI_DISABLED"] = "1"    # never reach a real provider, whatever .env holds
 sys.path.insert(0, str(ROOT))
 
 from fastapi.testclient import TestClient  # noqa: E402

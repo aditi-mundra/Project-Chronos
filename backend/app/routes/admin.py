@@ -60,6 +60,15 @@ def set_dev_skip(body: SkipSwitchBody):
     return dev_skip.set_enabled(body.enabled)
 
 
+@router.get("/ai-status", dependencies=[Depends(svc.require_admin)])
+def get_ai_status():
+    """Round 2 analyst AI: providers, number of keys, models, resting keys, last error.
+    Counts and names only; a key is never returned."""
+    from ..services import ai_service
+
+    return ai_service.status()
+
+
 @router.get("/passwords", dependencies=[Depends(svc.require_master)])
 def get_passwords():
     return svc.list_passwords()

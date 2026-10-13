@@ -7,7 +7,7 @@ Load the 24 Round 2 cases into the database and show who has which case.
 The server does exactly this on every start-up (see main.py -> init_round2), so this
 script is only a manual check. It uses the same loader and the same random assignment
 as the app, so the two can never disagree. The case folders are read from
-`round2_cases_all_24/` in the project root; a broken case folder is skipped and
+`backend/data/round2_cases_all_24/`; a broken case folder is skipped and
 reported instead of stopping the load.
 """
 

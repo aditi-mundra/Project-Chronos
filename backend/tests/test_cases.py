@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-CASES_DIR = ROOT / "round2_cases_all_24"
+CASES_DIR = ROOT / "backend" / "data" / "round2_cases_all_24"
 R3_FILE = ROOT / "backend" / "app" / "data" / "round3_cases.json"
 
 CHANGES, LOGINS, KEYS, INCIDENT = "system_changes.log", "login_records.log", "security_keys.log", "incident_report.txt"

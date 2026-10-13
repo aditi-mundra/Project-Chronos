@@ -1,7 +1,7 @@
 """
 Round 2 cases: 24 different investigations, one assigned per team per game.
 
-Case data lives in `round2_cases_all_24/R2-01 ... R2-24/` (case.json plus the four
+Case data lives in `backend/data/round2_cases_all_24/R2-01 ... R2-24/` (case.json plus the four
 evidence files Round 3 refers to: system_changes.log, login_records.log,
 security_keys.log, incident_report.txt). The culprit of every case is one of
 Project Alpha / Beta / Gamma. The files are produced by backend/tools/generate_cases.py. This module loads those folders into the
@@ -26,8 +26,8 @@ import json
 import random
 from pathlib import Path
 
-# .../Round2_Test/backend/app/services/round2_cases.py -> .../Round2_Test
-CASES_DIR = Path(__file__).resolve().parents[3] / "round2_cases_all_24"
+# .../backend/app/services/round2_cases.py -> .../backend/data/round2_cases_all_24
+CASES_DIR = Path(__file__).resolve().parents[2] / "data" / "round2_cases_all_24"
 
 _seeded = set()   # database files already loaded by this process
 # file id (key of player_files in case.json) -> display name / tag

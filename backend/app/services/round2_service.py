@@ -29,7 +29,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 
 from ..database.connection import get_connection
-from . import gemini_service, round2_cases
+from . import ai_service, round2_cases
 
 # --- rules from the PRD ----------------------------------------------------
 MAX_AI_QUESTIONS = 3
@@ -637,9 +637,12 @@ def chat(team_id, message, request_id=None):
             (r["user_id"] for r in round2_cases.case_suspects(connection, case["case_id"])
              if r["suspect_name"].lower() == culprit_name.lower()), "")
 
-    # 2. Ask Gemini outside the transaction so a slow API never holds a DB lock.
-    reply = gemini_service.ask(_system_prompt(evidence), history, message)
-    source = "gemini"
+    # 2. Ask the AI outside the transaction so a slow API never holds a DB lock. ai_service
+    #    tries every Groq key and model, then every Gemini key, and returns nothing when all
+    #    of them fail: the canned reply below is then used (Round 2 never depends on an API).
+    answer = ai_service.ask_with_metadata(_system_prompt(evidence), history, message)
+    reply = answer["reply"]
+    source = answer["provider"] or "ai"
     if not reply or _leaks_culprit(reply, culprit_name, culprit_user_id):
         reply, source = _fallback_reply(message), "fallback"
 

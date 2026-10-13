@@ -2,8 +2,8 @@
 Runtime settings.
 
 Values come from the process environment first, then from a `.env` file
-(backend/.env or <project>/.env), the same places gemini_service already reads
-GEMINI_API_KEY from. Nothing secret is ever hard-coded here.
+(backend/.env or <project>/.env), the same places ai_service reads the Groq and
+Gemini keys from. Nothing secret is ever hard-coded here.
 """
 
 from __future__ import annotations
